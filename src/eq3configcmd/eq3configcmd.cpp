@@ -1,0 +1,72 @@
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <stdlib.h>
+
+#include <CommandManager.h>
+
+void printUsage();
+void removeLeadingPathseperators(std::string& filename);
+
+int main(int argc, char** argv)
+{
+	if(argc >= 1) {
+		//Parse command line args...
+		//First must be the commandName
+		int argsOffset = 1;
+		std::string commandName(argv[0]);
+
+		if(commandName.find("eq3configcmd") != std::string::npos) {
+			//commandName is name of the executable -> check if more parameters are given.
+			if(argc >= 2) {
+				commandName = argv[1];
+				argsOffset = 2;
+			}
+			else {
+				printUsage();
+				return -2;
+			}
+		}
+		//Remove leading stuff from commandName
+		removeLeadingPathseperators(commandName);
+		//	std::cout << "CommandName: " << commandName.c_str() << std::endl;
+		
+		Command* pCommand = CommandManager::getInstance()->getCommand(commandName);
+		if(pCommand == NULL) {
+			std::cout << "ERROR: unknown command \"" <<  commandName.c_str()  << "\"" << std::endl;
+			std::vector<std::string> cmdNames = CommandManager::getInstance()->getCommandNames();
+			std::cout << "Supported commands are:" << std::endl;
+			for(unsigned int i = 0; i < cmdNames.size(); i++) {
+				std::cout << cmdNames.at(i).c_str() << std::endl;
+			}
+			return -3;
+		}
+		//Set params
+		pCommand->setParams(argc, argsOffset, argv);
+
+		//Execute
+		return pCommand->execute();
+	}
+	else {
+		printUsage();
+		return -1;
+	}
+	return 0;
+}
+
+void printUsage() {
+	std::cout << std::endl
+		<< "eq3configcmd, (c) 2013 eQ-3 Entwicklung GmbH" << std::endl
+		<< std::endl
+		<< "Usage:" << std::endl
+		<< "\t eq3configcmd <command> [<args>]" << std::endl << std::endl
+		<< "Try \"eq3configcmd help\" for additional information." << std::endl;
+}
+
+void removeLeadingPathseperators(std::string& filename)
+{
+	int index = filename.find_last_of('/');
+	if(index != std::string::npos) {
+		filename.assign(filename.substr(index+1));
+	}
+}

@@ -10,7 +10,10 @@
 #include <vector>
 #include <utils.h>
 
-MessageParser::MessageParser():lastAlarmValue(false),lastServicevalue(0),lastCommand(NONE) {
+MessageParser::MessageParser()
+  : lastCommand(NONE),
+    lastAlarmValue(false),
+    lastServicevalue(0) {
 	// TODO Automatisch generierter Konstruktorstub
 
 }

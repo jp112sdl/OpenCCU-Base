@@ -17,7 +17,10 @@ UpdateAvailable::UpdateAvailable() :
 		updateAvailable(false) {
 	// TODO Automatisch generierter Konstruktorstub
 	char data[1024];
-	int versionFile = open("/boot/VERSION", O_RDONLY);
+	int versionFile = open("/VERSION", O_RDONLY);
+	if (versionFile <= 0) {
+	  versionFile = open("/boot/VERSION", O_RDONLY);
+	}
 	if (versionFile > 0) {
 		read(versionFile, data, 1024);
 		std::string versionContetn = data;
@@ -35,7 +38,7 @@ UpdateAvailable::UpdateAvailable() :
 	this->lastUpdateServerRequest = time_millis();
 	this->waitRequesTime = 20000 + (rand() % 20000);
 	int idsFile = open("/var/ids",O_RDONLY);
-	if(idsFile)
+	if(idsFile > 0)
 	{
 		read(idsFile, data, 1024);
 		std::vector<std::string> idsLines = SplitString(data,"\n");
@@ -72,7 +75,11 @@ bool UpdateAvailable::isInfoPending() {
 bool UpdateAvailable::requestUpdateServer() {
 	std::string systemCommand = "wget -T 3 -q -O /tmp/avilableversion.html \"http://update.homematic.com/firmware/download?cmd=check_version&serial=";
 	systemCommand += this->serialNumber;
+  #if defined(PLATFORM_CCU3)
+	systemCommand += "&product=HM-CCU3\"";
+  #else
 	systemCommand += "&product=HM-CCU2\"";
+  #endif
 	system(systemCommand.c_str());
 	XMLResults xmlResult;
 	XMLNode rootNode = XMLNode::parseFile( "/tmp/avilableversion.html", "html", &xmlResult );

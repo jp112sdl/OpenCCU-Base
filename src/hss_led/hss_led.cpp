@@ -14,7 +14,9 @@
 #include <ConsoleLogger.h>
 #include "led.h"
 #include "InfoLed.h"
+#if !defined(PLATFORM_CCU3)
 #include "InternetLed.h"
+#endif
 #include "utils.h"
 #include "MessageParser.h"
 
@@ -34,12 +36,10 @@ int main(int argc, char **argv)
 	int receivedSize = 0;
 		UdpCannel udp;
 		std::string msg;
-		led power("power");
 
 		MessageParser parser;
 		InfoLed infoLed;
-		InternetLed internetLed;
-	//Zeitmessung z("Start von hss_lcd");
+	//Zeitmessung z("Start von hss_led");
 
 	logger = 0; //Variable in <Logger.h>
 	Logger::LogLevel loglevel = Logger::LOG_INFO;
@@ -81,10 +81,17 @@ int main(int argc, char **argv)
 
 	logger->SetLevel(loglevel);
 
-	LOG(Logger::LOG_INFO, "hss_lcd: Programm initialisiert.");
+	LOG(Logger::LOG_INFO, "hss_led: Programm initialisiert.");
 	udp.OpenSocket();
 	udp.BindServer();
+  #if !defined(PLATFORM_CCU3)
+	led power("power");
 	power.LedOn();
+  #endif
+
+  #if !defined(PLATFORM_CCU3)
+	InternetLed internetLed;
+  #endif
 
 	while(run)
 	{
@@ -98,7 +105,10 @@ int main(int argc, char **argv)
 			}
 		}
 		infoLed.updateLedState();
+
+    #if !defined(PLATFORM_CCU3)
 		internetLed.updateLedState();
+    #endif
 	}
 
 

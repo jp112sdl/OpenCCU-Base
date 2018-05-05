@@ -3,9 +3,11 @@
 #include <Logger.h>
 #include <string>
 #include <PropertyMap.h>
+#include "led.h"
 
 RFLGWInfoLED::RFLGWInfoLED() 
-: rfLgwExists(false)
+  : rfLgwExists(false),
+    lastState(led::UNKNOWN)
 {
 	rfLgwExists = isRfLgwPresent();
 }
@@ -15,25 +17,25 @@ RFLGWInfoLED::~RFLGWInfoLED() {
 
 void RFLGWInfoLED::ledOff()
 {
-	setLED(0);
+	setLED(led::LED_OFF);
 }
 
 void RFLGWInfoLED::ledOn()
 {
-	setLED(1);
+	setLED(led::LED_ON);
 }
 
 void RFLGWInfoLED::ledFlashSlow()
 {
-	setLED(2);
+	setLED(led::LED_SLOW);
 }
 
 void RFLGWInfoLED::ledFlashFast()
 {
-	setLED(3);
+	setLED(led::LED_FAST);
 }
 
-void RFLGWInfoLED::setLED(const unsigned int ledState)
+void RFLGWInfoLED::setLED(led::LedState ledState)
 {
 	if(rfLgwExists) {
 		std::string url("http://127.0.0.1:2001");
@@ -41,13 +43,36 @@ void RFLGWInfoLED::setLED(const unsigned int ledState)
 		XmlRpc::XmlRpcValue params;
 		XmlRpc::XmlRpcValue result;
 	
-		params[0] = (int)ledState;
+    switch(ledState)
+    {
+		  case led::LED_OFF:
+        params[0] = 0;
+      break;
+
+      case led::LED_ON:
+        params[0] = 1;
+      break;
+
+      case led::LED_SLOW:
+        params[0] = 2;
+      break;
+
+      case led::LED_FAST:
+        params[0] = 3;
+      break;
+
+      default:
+        return;
+      break;
+    }
 	
 		bool success = client.execute("setRFLGWInfoLED", params, result);
 		if ((!success) || (client.isFault()))
 		{
 			LOG(Logger::LOG_ERROR, "Error setting rf-lgw info led");
 		}
+
+    lastState = ledState;
 	}
 }
 
@@ -77,3 +102,26 @@ bool RFLGWInfoLED::isRfLgwPresent()
     return false;
 }
 
+led::LedState RFLGWInfoLED::getLedState() {
+  return lastState;
+}
+
+void RFLGWInfoLED::switchLed(enum led::LedState state) {
+  switch(state) {
+    case led::LED_OFF:
+      ledOff();
+    break;
+    case led::LED_ON:
+      ledOn();
+    break;
+    case led::LED_SLOW:
+      ledFlashSlow();
+    break;
+    case led::LED_FAST:
+      ledFlashFast();
+    break;
+    default:
+      // nothing
+    break;
+  }
+}

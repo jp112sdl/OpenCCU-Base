@@ -14,6 +14,9 @@
 #include "UpdateAvailable.h"
 #include "MessageParser.h"
 #include "RFLGWInfoLED.h"
+#if defined(PLATFORM_CCU3)
+#include "Network.h"
+#endif
 
 class InfoLed {
 public:
@@ -23,7 +26,14 @@ public:
 	bool checkMessage(std::string &msg);
 
 private:
+  #if defined(PLATFORM_CCU3)
+	led redLed;
+	led greenLed;
+	led blueLed;
+	Network net;
+  #else
 	led infoLed;
+  #endif
 	const unsigned long infoLedRefreshTime;
 	unsigned long nextInfoUpdate;
 	ServiceMessage service;

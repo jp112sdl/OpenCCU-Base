@@ -13,19 +13,22 @@ class led {
 public:
 	enum LedState
 		{
+			UNKNOWN=-1,
 			LED_OFF,
 			LED_ON,
 			LED_SLOW,
 			LED_FAST,
-			UNKNOWN,
+			LED_SLOW1,
+			LED_FAST1,
 		};
 	led(std::string ledDirectory);
 	virtual ~led();
 	void LedOff();
 	void LedOn();
-	void LedFlashSlow();
-	void LedFlashFast();
+	void LedFlashSlow(int cycle=0);
+	void LedFlashFast(int cycle=0);
 	LedState getLedState();
+  void switchLed(enum LedState state);
 private:
 	std::string ledDirectory;
 	void timerOn();

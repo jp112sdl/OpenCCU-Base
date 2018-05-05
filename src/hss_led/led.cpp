@@ -11,10 +11,18 @@
 #include <unistd.h>
 #include <string.h>
 
-const std::string delay_on_fast = "100\n";
-const std::string delay_off_fast = "100\n";
-const std::string delay_on_slow = "499\n";
-const std::string delay_off_slow = "499\n";
+#define DELAY_ON_FAST  100
+#define DELAY_OFF_FAST 100
+#define DELAY_ON_SLOW  499
+#define DELAY_OFF_SLOW 499
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
+const std::string delay_on_fast = "" STR(DELAY_ON_FAST) "\n";
+const std::string delay_off_fast = "" STR(DELAY_OFF_FAST) "\n";
+const std::string delay_on_slow = "" STR(DELAY_ON_SLOW) "\n";
+const std::string delay_off_slow = "" STR(DELAY_OFF_SLOW) "\n";
 
 led::led(std::string ledName) {
 	this->ledDirectory = "/sys/class/leds/";
@@ -35,6 +43,16 @@ void led::LedOff() {
 	}
 	fwrite("none", 1, 4, trigger);
 	fclose(trigger);
+
+	pathToFile = this->ledDirectory + "brightness";
+	trigger = fopen(pathToFile.c_str(), "w");
+	if (trigger == NULL) {
+		LOG(Logger::LOG_ERROR, "%s kann nicht zugegriffen werden",
+				pathToFile.c_str());
+		return;
+	}
+	fwrite("0", 1, 1, trigger);
+	fclose(trigger);
 }
 
 void led::LedOn() {
@@ -49,8 +67,10 @@ void led::LedOn() {
 	fclose(trigger);
 }
 
-void led::LedFlashSlow() {
+void led::LedFlashSlow(int cycle) {
 
+  if(cycle > 0)
+    usleep((cycle*DELAY_ON_SLOW)*1000); // ms -> us
 
 	std::string pathToDelayOnFile = this->ledDirectory + "delay_on";
 	std::string pathToDelayOffFile = this->ledDirectory + "delay_off";
@@ -60,26 +80,30 @@ void led::LedFlashSlow() {
 	}
 	timerOn();
 	//sleep(2);
-	FILE* delay_on = fopen(pathToDelayOnFile.c_str(), "w");
 	FILE* delay_off = fopen(pathToDelayOffFile.c_str(), "w");
 	if (delay_off == NULL) {
 		LOG(Logger::LOG_ERROR, "%s kann nicht zugegriffen werden",
 				pathToDelayOffFile.c_str());
 		return;
 	}
+	FILE* delay_on = fopen(pathToDelayOnFile.c_str(), "w");
 	if (delay_on == NULL) {
 		LOG(Logger::LOG_ERROR, "%s kann nicht zugegriffen werden",
 				pathToDelayOnFile.c_str());
+    fclose(delay_off);
 		return;
 	}
-	fwrite(delay_off_slow.c_str(), 1, 4, delay_off);
-	fwrite(delay_on_slow.c_str(), 1, 4, delay_on);
+	fwrite(delay_off_slow.c_str(), 1, delay_off_slow.length(), delay_off);
+	fwrite(delay_on_slow.c_str(), 1, delay_on_slow.length(), delay_on);
 
 	fclose(delay_off);
 	fclose(delay_on);
 }
 
-void led::LedFlashFast() {
+void led::LedFlashFast(int cycle) {
+
+  if(cycle > 0)
+    usleep((cycle*DELAY_ON_FAST)*1000); // ms -> us
 
 	std::string pathToTriggerFile = this->ledDirectory + "trigger";
 	std::string pathToDelayOnFile = this->ledDirectory + "delay_on";
@@ -91,24 +115,52 @@ void led::LedFlashFast() {
 	timerOn();
 
 	//sleep(2);
-	FILE* delay_on = fopen(pathToDelayOnFile.c_str(), "w");
 	FILE* delay_off = fopen(pathToDelayOffFile.c_str(), "w");
 	if (delay_off == NULL) {
 		LOG(Logger::LOG_ERROR, "%s kann nicht zugegriffen werden",
 				pathToDelayOffFile.c_str());
 		return;
 	}
+	FILE* delay_on = fopen(pathToDelayOnFile.c_str(), "w");
 	if (delay_on == NULL) {
 		LOG(Logger::LOG_ERROR, "%s kann nicht zugegriffen werden",
 				pathToDelayOnFile.c_str());
+    fclose(delay_off);
 		return;
 	}
-	int count = fwrite(delay_off_fast.c_str(), 1, 4, delay_off);
-	count = fwrite(delay_on_fast.c_str(), 1, 4, delay_on);
+	fwrite(delay_off_fast.c_str(), 1, delay_off_fast.length(), delay_off);
+	fwrite(delay_on_fast.c_str(), 1, delay_on_fast.length(), delay_on);
 
 	fclose(delay_off);
 	fclose(delay_on);
 }
+
+void led::switchLed(enum LedState state) {
+  switch(state) {
+    case led::LED_OFF:
+      LedOff();
+    break;
+    case led::LED_ON:
+      LedOn();
+    break;
+    case led::LED_SLOW:
+      LedFlashSlow();
+    break;
+    case led::LED_FAST:
+      LedFlashFast();
+    break;
+    case led::LED_SLOW1:
+      LedFlashSlow(1);
+    break;
+    case led::LED_FAST1:
+      LedFlashFast(1);
+    break;
+    default:
+      // nothing
+    break;
+  }
+}
+
 void led::timerOn() {
 	std::string pathToTriggerFile = this->ledDirectory + "trigger";
 	FILE* trigger = fopen(pathToTriggerFile.c_str(), "w");
@@ -117,9 +169,8 @@ void led::timerOn() {
 				pathToTriggerFile.c_str());
 		return;
 	}
-	int count = fwrite("timer", 1, 6, trigger);
+	fwrite("timer", 1, 6, trigger);
 	fclose(trigger);
-
 }
 
 led::LedState led::getLedState() {

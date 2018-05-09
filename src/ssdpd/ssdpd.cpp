@@ -278,8 +278,13 @@ struct in_addr getOwnIP(std::string interface) {
 std::string getSerialNum() {
 	char data[1024];
 	std::string serialContetn;
+  #if defined(PLATFORM_CCU3)
+	int serialFile = open("/var/board_serial",
+			O_RDONLY);
+  #else
 	int serialFile = open("/sys/module/plat_eq3ccu2/parameters/board_serial",
 			O_RDONLY);
+  #endif
 	if (serialFile > 0) {
 		size_t readDataSize = read(serialFile, data, 1024);
 		if(readDataSize >0)

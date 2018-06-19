@@ -291,27 +291,25 @@ static void sendAlive(int sock, struct sockaddr_in* sa, int mx) {
 }
 
 static std::string getSerialNum() {
-	char data[1024];
-	std::string serialContetn;
-	int serialFile;
-	serialFile = open("/var/board_sgtin", O_RDONLY);
-	if(serialFile == -1)
-		serialFile = open("/var/board_serial", O_RDONLY);
-	if(serialFile == -1)
-		serialFile = open("/sys/module/plat_eq3ccu2/parameters/board_serial", O_RDONLY);
-	if (serialFile > 0) {
-		size_t readDataSize = read(serialFile, data, 1024);
-		if(readDataSize >0)
-		{
+	std::string serialContetn = "";
+	FILE* serialFile = NULL;
+	serialFile = fopen("/var/board_sgtin", "r");
+	if (serialFile == NULL)
+		serialFile = fopen("/var/board_serial", "r");
+	if (serialFile == NULL)
+		serialFile = fopen("/sys/module/plat_eq3ccu2/parameters/board_serial", "r");
+	if (serialFile != NULL) {
+		char *data = NULL;
+		size_t dataSize = 0;
+		ssize_t readDataSize = getline(&data, &dataSize, serialFile);
+		if(readDataSize > 0)
 			serialContetn = data;
-		}
-		close(serialFile);
+		fclose(serialFile);
+		free(data);
 	}
 	int pos = serialContetn.find('\n');
 	if(pos != -1)
-	{
 		serialContetn.erase(pos,1);
-	}
 	return serialContetn;
 
 }

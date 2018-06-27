@@ -252,19 +252,23 @@ static std::string getIPAddress() {
     temp_addr = interfaces;
     while(temp_addr != NULL) {
       // ignore non ipv4, if not up or if a loopback or not running interface
-      if(temp_addr->ifa_addr->sa_family == AF_INET &&
+      if(temp_addr->ifa_addr != NULL && temp_addr->ifa_addr->sa_family == AF_INET &&
          (temp_addr->ifa_flags & IFF_UP) == IFF_UP &&
          (temp_addr->ifa_flags & IFF_LOOPBACK) != IFF_LOOPBACK &&
+         (temp_addr->ifa_flags & IFF_POINTOPOINT) != IFF_POINTOPOINT &&
          (temp_addr->ifa_flags & IFF_RUNNING) == IFF_RUNNING) {
         ipAddress=inet_ntoa(((struct sockaddr_in*)temp_addr->ifa_addr)->sin_addr);
         break;
       }
       temp_addr = temp_addr->ifa_next;
     }
-  }
 
-  // Free memory
-  freeifaddrs(interfaces);
+    // Free memory
+    freeifaddrs(interfaces);
+  }
+  else
+    perror("getifaddr() failed");
+
   return ipAddress;
 }
 
@@ -321,7 +325,6 @@ static std::string getSerialNum() {
 int main(int argc, char ** argv) {
 	char buffer[2048];
 
-	int cnt;
 	struct sockaddr_in sa_mcast_client;
 	struct sockaddr_in sa_peer;
 
@@ -432,7 +435,7 @@ int main(int argc, char ** argv) {
 			socklen_t len_r;
 			len_r = sizeof(struct sockaddr_in);
 			memset(buffer, 0, sizeof(buffer));
-			cnt = recvfrom(ssdpSock, buffer, sizeof(buffer) - 1, 0,
+			ssize_t cnt = recvfrom(ssdpSock, buffer, sizeof(buffer) - 1, 0,
 					(struct sockaddr *) &sa_peer, &len_r);
 			if (cnt < 0) {
 				perror("recvfrom failed");
@@ -440,7 +443,10 @@ int main(int argc, char ** argv) {
 			} else if (cnt == 0) { /* end of transmission */
 				break;
 			}
-			buffer[cnt] = '\0';
+
+			if(cnt < (ssize_t)sizeof(buffer))
+				buffer[cnt] = '\0';
+
 			if (strncmp(buffer, "M-SEARCH", 8) == 0) {
 				std::string request = buffer;
 				std::string st_header = get_header_field(request, "ST:");

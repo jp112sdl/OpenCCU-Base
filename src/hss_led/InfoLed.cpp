@@ -185,16 +185,32 @@ void InfoLed::updateLedState() {
   }
 
   // check if all essential homematic services are running or not
-  if(isProcessRunning("/var/run/HMIPServer.pid", "java") == false ||
-     isProcessRunning("/var/run/eq3configd.pid", "eq3configd") == false ||
-     isProcessRunning("/var/run/multimacd.pid", "multimacd") == false ||
-     isProcessRunning("/var/run/rfd.pid", "rfd") == false ||
-     isProcessRunning("/var/run/ReGaHss.pid", "ReGaHss") == false ||
-     isProcessRunning("/var/run/ssdpd.pid", "ssdpd") == false)
+  if(system("ls /bin/rfd > /dev/null 2>&1") == 0)
   {
-    newStateRed = led::LED_ON;
-    newStateGreen = led::LED_OFF;
-    newStateBlue = led::LED_OFF;
+    // normal CCU3 system
+    if(isProcessRunning("/var/run/HMIPServer.pid", "java") == false ||
+       isProcessRunning("/var/run/eq3configd.pid", "eq3configd") == false ||
+       isProcessRunning("/var/run/multimacd.pid", "multimacd") == false ||
+       isProcessRunning("/var/run/rfd.pid", "rfd") == false ||
+       isProcessRunning("/var/run/ReGaHss.pid", "ReGaHss") == false ||
+       isProcessRunning("/var/run/ssdpd.pid", "ssdpd") == false)
+    {
+      newStateRed = led::LED_ON;
+      newStateGreen = led::LED_OFF;
+      newStateBlue = led::LED_OFF;
+    }
+  }
+  else
+  {
+    // rescue system
+    if(isProcessRunning("/var/run/eq3configd.pid", "eq3configd") == false ||
+       isProcessRunning("/var/run/ReGaHss.pid", "ReGaHss") == false ||
+       isProcessRunning("/var/run/ssdpd.pid", "ssdpd") == false)
+    {
+      newStateRed = led::LED_ON;
+      newStateGreen = led::LED_OFF;
+      newStateBlue = led::LED_OFF;
+    }
   }
 
   if(((newStateRed != oldStateRed || newStateGreen != oldStateGreen || newStateBlue != oldStateBlue) &&

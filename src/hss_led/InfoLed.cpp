@@ -57,7 +57,7 @@ InfoLed::~InfoLed() {
 	// TODO !CodeTemplates.destructorstub.tododesc!
 }
 
-bool InfoLed::isProcessRunning(const char *filename, const char *pname) {
+bool InfoLed::isProcessRunning(const char *filename, const char *pname, const bool allowPartialMatch/*=false*/) {
 
   bool res = false;
 
@@ -87,8 +87,14 @@ bool InfoLed::isProcessRunning(const char *filename, const char *pname) {
           if(pos != std::string::npos)
             cmdLine = cmdLine.substr(pos + 1);
           // Compare against requested process name
-          if(strcasecmp(pname, cmdLine.c_str()) == 0)
-            res = true;
+          if(allowPartialMatch) {
+        	res = (cmdLine.find(pname) != std::string::npos);
+          }
+          else {//exact match only - default behavior
+			  if(strcasecmp(pname, cmdLine.c_str()) == 0) {
+				res = true;
+			  }
+          }
         }
       }
     }
@@ -195,7 +201,7 @@ void InfoLed::updateLedState() {
   // on all systems (prodimage+CCU)
   bool allProcessesRunning = false;
   if(isProcessRunning("/var/run/eq3configd.pid", "eq3configd") == true &&
-     isProcessRunning("/var/run/ReGaHss.pid", "ReGaHss") == true &&
+     isProcessRunning("/var/run/ReGaHss.pid", "ReGaHss", true) == true &&
      isProcessRunning("/var/run/ssdpd.pid", "ssdpd") == true)
   {
     // on full CCU we test for more

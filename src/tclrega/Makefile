@@ -5,13 +5,13 @@ STRIP = $(CROSS)strip
 
 TARGET = tclrega.so
 
-TCLPATH = ../base/tcl
+TCLPATH = ../tcl
 TCLVERSION = $(shell awk -F "[ \t]*=[ \t]*" 'NF==2 && $$1 == "VERSION" {print $$2}' $(TCLPATH)/unix/Makefile)
 TCLINCLUDEPATH = $(TCLPATH)/generic
 TCLLIBPATH = $(TCLPATH)/unix
 TCLLIB = -L$(TCLLIBPATH) -ltcl$(TCLVERSION)
 
-LIBXMLPARSERPATH = ../libs/xmlparser
+LIBXMLPARSERPATH = ../xmlparser
 LIBXMLPARSER = xmlparser
 
 TARGETOBJS = tclrega.o

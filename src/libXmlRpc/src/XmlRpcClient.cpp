@@ -128,7 +128,6 @@ XmlRpcClient::XmlRpcClient(const char* path, const char* uri/*=0*/)
 
 XmlRpcClient::~XmlRpcClient()
 {
-	//printf("\nXmlRpcClient::~XmlRpcClient(): close()\n");
 	close();
 }
 
@@ -287,7 +286,6 @@ XmlRpcClient::doConnect()
 {
   //close old socket if not already closed (bugfix)
   if(this->getfd() >= 0) {
-	//printf("Closing socket with fd: %d\n", this->getfd());
 	XmlRpcSocket::close(this->getfd());  
   }	
 
@@ -302,7 +300,6 @@ XmlRpcClient::doConnect()
     XmlRpcUtil::error("Error in XmlRpcClient::doConnect: Could not create socket (%s).", XmlRpcSocket::getErrorMsg().c_str());
     return false;
   }
-  //printf("XmlRpcClient::doConnect() : New FD: %d\n", fd);
   XmlRpcUtil::log(3, "XmlRpcClient::doConnect: fd %d.", fd);
   this->setfd(fd);
 
@@ -369,8 +366,8 @@ XmlRpcClient::generateRequest(const char* methodName, XmlRpcValue const& params)
 		body += REQUEST_END_METHODNAME;
 		
 		// If params is an array, each element is a separate parameter
+		body += PARAMS_TAG;
 		if (params.valid()) {
-			body += PARAMS_TAG;
 			if (params.getType() == XmlRpcValue::TypeArray)
 			{
 				for (int i=0; i<params.size(); ++i) {
@@ -386,8 +383,8 @@ XmlRpcClient::generateRequest(const char* methodName, XmlRpcValue const& params)
 				body += PARAM_ETAG;
 			}
 			
-			body += PARAMS_ETAG;
 		}
+		body += PARAMS_ETAG;
 		body += REQUEST_END;
 		
 		std::string header = generateHeader(body);
@@ -483,11 +480,11 @@ XmlRpcClient::readHeader()
 	  }
   }else{
 	  for (char *cp = hp; (bp == 0) && (cp < ep); ++cp) {
-		  if ((ep - cp > 16) && (strncasecmp(cp, "Content-length: ", 16) == 0))
+		  if ((ep - cp >= 16) && (strncasecmp(cp, "Content-length: ", 16) == 0))
 			  lp = cp + 16;
-		  else if ((ep - cp > 4) && (strncmp(cp, "\r\n\r\n", 4) == 0))
+		  else if ((ep - cp >= 4) && (strncmp(cp, "\r\n\r\n", 4) == 0))
 			  bp = cp + 4;
-		  else if ((ep - cp > 2) && (strncmp(cp, "\n\n", 2) == 0))
+		  else if ((ep - cp >= 2) && (strncmp(cp, "\n\n", 2) == 0))
 			  bp = cp + 2;
 	  }
   }
@@ -512,7 +509,7 @@ XmlRpcClient::readHeader()
 	  }
 	  
 	  _contentLength = atoi(lp);
-	  if (_contentLength <= 0) {
+	  if (_contentLength < 0) {
 		  XmlRpcUtil::error("Error in XmlRpcClient::readHeader: Invalid Content-length specified (%d).", _contentLength);
 		  return false;
 	  }

@@ -33,14 +33,11 @@ TARGET = ssdpd
 
 OBJS = $(TARGET).o
 
-LIBELVUTILSPATH = ../elvutils
-LIBELVUTILS = elvutils
-
 CC = $(CROSS)g++
 CXX = $(CROSS)g++
 STRIP = $(CROSS)strip
-CXXFLAGS +=  -O2 -I$(LIBELVUTILSPATH) -Wall
-LDFLAGS += -L$(LIBELVUTILSPATH) -l$(LIBELVUTILS) -lpthread
+CXXFLAGS += -O2 -Wall
+LDFLAGS += -lpthread
 
 all: configure info $(TARGET)
 

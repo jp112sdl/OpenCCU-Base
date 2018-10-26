@@ -11,13 +11,14 @@
 #include <map>
 #include <strings.h>
 #include <string.h>
-#include <utils.h>
 #include <fstream>
 #include <net/if.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <sstream>
 #include <errno.h>
+#include <vector>
+#include <sys/time.h>
 
 //static const char* RESPONSE_URL =
 //		"http://127.0.0.1/upnp/basic_dev.cgi?ssdp=response";
@@ -29,6 +30,14 @@ static const int REPEAT_AFTER = 1800;
 
 static std::string serial;
 static std::string uuid;
+
+long long time_millis()
+{
+  struct timeval te;
+  gettimeofday(&te, NULL); // get current time
+  long long milliseconds = te.tv_sec*1000LL + te.tv_usec/1000; // calculate milliseconds
+  return milliseconds;
+}
 
 #if 0
 static bool InterfaceByTargetAddress(unsigned long address, std::string* interface)
@@ -220,7 +229,7 @@ static void send_udp(int s, struct sockaddr_in* sa, std::string response, int mx
 	if (end != std::string::npos)
 		end += 4;
 	std::set<int>::iterator it = delays.begin();
-	unsigned long t = time_millis();
+	long long t = time_millis();
 	while (end != std::string::npos) {
 		std::string msg = response.substr(start, end - start);
 		fetch_uuid(msg);
@@ -228,7 +237,7 @@ static void send_udp(int s, struct sockaddr_in* sa, std::string response, int mx
 		end = response.find("\x0d\x0a\x0d\x0a", start);
 		if (end != std::string::npos)
 			end += 4;
-		int delay = t + (*it) - time_millis();
+		long delay = t + (*it) - time_millis();
 		if (delay > 0)
 			usleep(delay * 1000);
 		int n;

@@ -216,6 +216,8 @@ static void send_udp(int s, struct sockaddr_in* sa, std::string response, int mx
 		start += 4;
 	}
 	std::set<int> delays;
+	if(mx <= 0)
+		mx = 1;
 	while (nb_packets) {
 		int delay = rand() / (RAND_MAX / (mx * 1000));
 		while (delays.find(delay) != delays.end()) {

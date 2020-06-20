@@ -82,7 +82,7 @@ XMLAttribute XMLNode::emptyXMLAttribute={ NULL, NULL};
 int _tcslen(const char *c)   { return strlen(c); }
 int _tcsnicmp(const char *c1, const char *c2, int l) { return strncasecmp(c1,c2,l); }
 int _tcsicmp(const char *c1, const char *c2) { return strcasecmp(c1,c2); }
-char *_tcsstr(const char *c1, const char *c2) { return (char*)strstr(c1,c2); }
+char *_tcsistr(const char *c1, const char *c2) { return (char*)strcasestr(c1,c2); }
 char *_tcschr(const char *c1, int c2) { return (char*)strchr(c1,c2); }
 char *_tcscpy(char *c1, const char *c2) { return (char*)strcpy(c1,c2); }
 #endif
@@ -781,7 +781,7 @@ int XMLNode::ParseClearTag(void *px, void *pa)
 	LPCTSTR lpXML=&pXML->lpXML[pXML->nIndex];
 
     // Find the closing tag
-    lpszTemp = _tcsstr(lpXML, pClear->lpszClose);
+    lpszTemp = _tcsistr(lpXML, pClear->lpszClose);
 
     // Iterate through the tokens until we find the closing tag.
     if (lpszTemp)
@@ -1271,8 +1271,8 @@ XMLNode XMLNode::parseString(LPCTSTR lpszXML, LPCTSTR tag, XMLResults *pResults)
     static XMLClearTag tags[] =
     {
         {    _T("<![CDATA["),    _T("]]>")       },
-        {    _T("<PRE>"),        _T("</PRE>")    },
-        {    _T("<Script>"),     _T("</Script>") },
+        //{    _T("<PRE>"),        _T("</PRE>")    },
+        //{    _T("<Script>"),     _T("</Script>") },
         {    _T("<!--"),         _T("-->")       },
         {    _T("<!DOCTYPE"),    _T(">")         },
         {    NULL,               NULL            }

@@ -79,7 +79,7 @@ install: $(TARGET)
 	$(ROMFSINST) -p 755 $(TARGET) /bin/$(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LD_FLAGS) -o $(TARGET) $(OBJS)
+	$(CXX) -o $(TARGET) $(OBJS) $(LD_FLAGS)
 	cp -f $(TARGET) $(TARGET).debug || true
 	$(STRIP) $(TARGET)
 

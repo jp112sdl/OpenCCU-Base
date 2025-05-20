@@ -3527,8 +3527,8 @@ getExtendedDescription = function(oChannelDescr)  {
     //HmIPW-WRC6 - ch. 13 activates all keys
     //HmIP-WRC6-230 - ch 18 activates all keys
     var maxSingleChn = -1;
-    if (deviceType.toLowerCase() == "hmipw-wrc6") {maxSingleChn = 12}
-    else if (deviceType.toLowerCase() == "hmip-wrc6-230") {maxSingleChn = 17}
+    if (deviceType.toLowerCase() == "hmipw-wrc6") {maxSingleChn = 12;}
+    else if (deviceType.toLowerCase() == "hmip-wrc6-230") {maxSingleChn = 17;}
     result = (channelIndex <= maxSingleChn) ? translateKey("chType_OPTICAL_SIGNAL_RECEIVER") : translateKey("chType_OPTICAL_SIGNAL_RECEIVERA");
   }
 

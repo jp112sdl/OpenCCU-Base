@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <fstream>
 #include <dynamic.h>
+#include <inttypes.h>
 
 using namespace XmlRpc;
 
@@ -459,7 +460,7 @@ bool HS485Device::SaveToXml(XMLNode* node)
 		sprintf(buffer+2*i, "%02X", (int)sysinfo[i]);
 	}
 	if(*buffer)node->addAttributeConst("sysinfo", buffer);
-	sprintf(buffer, "0x%08lX", GetAddress());
+	snprintf(buffer, sizeof(buffer), "0x%08" PRIu32, GetAddress());
 	node->addAttributeConst("address", buffer);
 	for(channels_t::iterator it=channels.begin();it!=channels.end();it++)
 	{
@@ -518,7 +519,7 @@ bool HS485Device::LoadFromXml(XMLNode& node)
 
 	temp=node.getAttribute("address");
 	if(!temp)return false;
-	unsigned long address=strtoul(temp, NULL, 0);
+	uint32_t address=strtoul(temp, NULL, 0);
 	SetAddress(address);
 
 	int i=0;
@@ -598,7 +599,7 @@ bool HS485Device::DetermineSerial(bool has_serial)
 {
 	if(!has_serial){
 		char buffer[16];
-		sprintf(buffer, "ELV%08lX", GetAddress());
+		snprintf(buffer, sizeof(buffer), "ELV%08" PRIu32, GetAddress());
 		SetSerial(buffer);
 		return true;
 	}

@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <set>
+#include <inttypes.h>
 
 using namespace XmlRpc;
 
@@ -69,7 +70,7 @@ bool HS485Manager::ReplaceDevice(const std::string& oldDeviceSerial, const std::
 		throw XmlRpcException("Second parameter: Unknown instance", -2);
 	}
 	//Perform replacement
-	const unsigned long oldDevAddress = oldDev->GetAddress();
+	const uint32_t oldDevAddress = oldDev->GetAddress();
 	bool done = oldDev->replaceDeviceWith(newDev);
 	if(done) {
 		dev_instances.erase(oldDeviceSerial);
@@ -270,7 +271,7 @@ bool HS485Manager::ParseAddress(const std::string& address, std::string * dev_ad
 	return true;
 }
 
-bool HS485Manager::ParseAddress(const std::string& address, unsigned long * dev_address, int * channel)
+bool HS485Manager::ParseAddress(const std::string& address, uint32_t* dev_address, int * channel)
 {
 	std::string serial;
 	if(address.size() && address[0]=='@'){
@@ -290,7 +291,7 @@ bool HS485Manager::ParseAddress(const std::string& address, unsigned long * dev_
 }
 
 /*
-bool HS485Manager::ParseAddress(const std::string& address, unsigned long * dev_address, int * channel)
+bool HS485Manager::ParseAddress(const std::string& address, uint32_t* dev_address, int * channel)
 {
 	std::string::size_type colon=address.find(':');
 	if(colon>=address.size()-1)*channel=-1;
@@ -319,7 +320,7 @@ HS485LogicalInstance* HS485Manager::GetInstance(const std::string& address)
 int HS485Manager::SearchDevices()
 {
 	unsigned int oldcount=dev_instances.size();
-    std::vector<unsigned long> addresses;
+    std::vector<uint32_t> addresses;
 	LOG(Logger::LOG_DEBUG, "Doing discovery");
 	HS485Controller::GetSingleton()->Discovery(&addresses);
 	MulticallCollectBegin();
@@ -373,8 +374,8 @@ bool HS485Manager::AddNewDevice(unsigned int address, HS485Frame* add_frame/*=NU
 			ReportNewDevice(dev_instance);
 			return true;
 		}else{
-			unsigned long type=0;
-			for(unsigned int j=0;j<desc.size();j++){
+			uint32_t type=0;
+			for(size_t j=0;j<desc.size();j++){
 				type<<=8;
 				type|=(unsigned char)desc[j];
 			}
@@ -405,12 +406,12 @@ std::string HS485Manager::BuildStringAddress(const std::string&  address, int ch
 	return address+buffer;
 }
 
-std::string HS485Manager::BuildStringAddress(unsigned long address, int channel/*=-1*/)
+std::string HS485Manager::BuildStringAddress(uint32_t address, int channel/*=-1*/)
 {
 	t_address_map::iterator it=address_map.find(address);
 	if(it==address_map.end()){
 		char buffer[12];
-		sprintf(buffer, "@%08lX", address);
+		snprintf(buffer, sizeof(buffer), "@%08" PRIu32, address);
 		return BuildStringAddress(buffer, channel);
 	}
 	return BuildStringAddress(it->second->GetSerial(), channel);
@@ -418,8 +419,8 @@ std::string HS485Manager::BuildStringAddress(unsigned long address, int channel/
 
 void HS485Manager::ProcessIncomingFrame(HS485Frame& frame)
 {
-	unsigned long receiver=frame.GetReceiverAddress();
-	unsigned long sender=frame.GetSenderAddress();
+	uint32_t receiver=frame.GetReceiverAddress();
+	uint32_t sender=frame.GetSenderAddress();
 	t_address_map::iterator it=address_map.find(sender);
 	if(it!=address_map.end()){
 		it->second->ProcessIncomingFrame(frame);
@@ -676,7 +677,7 @@ bool HS485Manager::ReportValueUsage(const std::string& address, const std::strin
 	return inst->ReportValueUsage(value, count);
 }
 
-HS485Device* HS485Manager::GetDeviceByAddress(unsigned long address)
+HS485Device* HS485Manager::GetDeviceByAddress(uint32_t address)
 {
 	t_address_map::iterator it=address_map.find(address);
 	if(it!=address_map.end()){

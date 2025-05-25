@@ -44,7 +44,7 @@ bool HS485TypeConversionAddressArray::LogicalToPhysical(LogicalInstance* inst, X
 			((int&)(*out)[0])=peer->GetDevice()->GetAddress();
 			((int&)(*out)[1])=peer->GetPhysicalIndex();
 		}else{
-			unsigned long address;
+			uint32_t address;
 			int channel;
 			if(!HS485Manager::GetSingleton()->ParseAddress((std::string&)in, &address, &channel)){
 				LOG(Logger::LOG_WARNING, "Unknown channel %s", ((std::string&)in).c_str());

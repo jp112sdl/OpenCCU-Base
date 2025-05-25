@@ -28,7 +28,7 @@ public:
 	virtual bool SetInternalValue(const std::string& name, XmlRpc::XmlRpcValue& val, bool fire_event=false);
 	virtual bool GetInternalValue(const std::string& name, XmlRpc::XmlRpcValue* val);
 
-	void ReportEvent(const std::string& id, XmlRpc::XmlRpcValue& val, unsigned long burst_suppression=0);
+	void ReportEvent(const std::string& id, XmlRpc::XmlRpcValue& val, uint32_t burst_suppression=0);
 	void ReportServiceMessage(const std::string& id, XmlRpc::XmlRpcValue& val);
 	void ProcessIncomingFrame(HS485Frame& frame, FrameDescription* fd);
 	void SetParent(HS485Device* parent, int index, HS485ChannelDescription* desc);

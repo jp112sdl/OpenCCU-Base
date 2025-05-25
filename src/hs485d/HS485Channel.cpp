@@ -104,7 +104,7 @@ void HS485Channel::ReportServiceMessage(const std::string& id, XmlRpc::XmlRpcVal
 	HS485Manager::GetSingleton()->ReportServiceMessage(GetSerial(), id, val);
 }
 
-void HS485Channel::ReportEvent(const std::string& id, XmlRpc::XmlRpcValue& val, unsigned long burst_suppression/*=0*/)
+void HS485Channel::ReportEvent(const std::string& id, XmlRpc::XmlRpcValue& val, uint32_t burst_suppression/*=0*/)
 {
 	std::string addr=HS485Manager::BuildStringAddress(parent_dev->GetSerial(), index);
 	HS485Manager::GetSingleton()->ReportEvent(addr, id, val);

@@ -48,7 +48,7 @@ HS485CommMessage* HS485ControllerCCU1::CreateNewMessage()
 	return (HS485CommMessage*)HS485ControllerCCU1::NewMessage();
 }
 
-int HS485ControllerCCU1::Discovery(std::vector<unsigned long>* devices)
+int HS485ControllerCCU1::Discovery(std::vector<uint32_t>* devices)
 {
 	int retval=-1;
 	BroadcastSleepMode(true);
@@ -88,7 +88,7 @@ int HS485ControllerCCU1::Discovery(std::vector<unsigned long>* devices)
 
 bool HS485ControllerCCU1::SendMessage(HS485CommMessage* msg)
 {
-	unsigned long address=msg->GetReceiverAddress();
+	uint32_t address=msg->GetReceiverAddress();
 	msg->SetSenderAddress(GetAddress());
 	if(address!=0xffffffff){
 		msg->SetTimeout(HS485_RESPONSE_TIMEOUT);//timeout 10ms
@@ -108,7 +108,7 @@ bool HS485ControllerCCU1::SendMessage(HS485CommMessage* msg)
 	return true;
 }
 
-bool HS485ControllerCCU1::SendMessage(unsigned long address, const std::string &msg, std::string *response)
+bool HS485ControllerCCU1::SendMessage(uint32_t address, const std::string &msg, std::string *response)
 {
 	bool retval=true;
     HS485Frame frame;
@@ -132,7 +132,7 @@ bool HS485ControllerCCU1::SendMessage(unsigned long address, const std::string &
 	return retval;
 }
 
-bool HS485ControllerCCU1::SendBootloaderMessage(unsigned long address, const std::string &msg, std::string *response)
+bool HS485ControllerCCU1::SendBootloaderMessage(uint32_t address, const std::string &msg, std::string *response)
 {
 	bool retval=true;
     HS485Frame frame;
@@ -165,18 +165,18 @@ bool HS485ControllerCCU1::SendBootloaderMessage(unsigned long address, const std
 	return retval;
 }
 
-void HS485ControllerCCU1::UpdateControlChar(unsigned long receiver, unsigned char* cc)
+void HS485ControllerCCU1::UpdateControlChar(uint32_t receiver, unsigned char* cc)
 {
 //	LOG(Logger::LOG_DEBUG, "UpdateControlChar %08lX", receiver);
 	HS485Controller::UpdateControlChar(receiver, cc);
 }
 
-bool HS485ControllerCCU1::CheckRxCounter(unsigned long sender, unsigned char cc)
+bool HS485ControllerCCU1::CheckRxCounter(uint32_t sender, unsigned char cc)
 {
 	return HS485Controller::CheckRxCounter(sender, cc);
 }
 
-std::string HS485ControllerCCU1::GetDeviceDescription(unsigned long address)
+std::string HS485ControllerCCU1::GetDeviceDescription(uint32_t address)
 {
 	return HS485Controller::GetDeviceDescription(address);
 }
@@ -193,7 +193,7 @@ bool HS485ControllerCCU1::CheckBeforeSend(CommMessage* msg)
 	switch(cmsg->GetCommand()){
 		case HS485CommMessage::CMD_SEND:
 		case HS485CommMessage::CMD_BOOT_SEND:
-			unsigned long address=cmsg->GetReceiverAddress();
+			uint32_t address=cmsg->GetReceiverAddress();
 			unsigned char cc=cmsg->GetCtrl();
 			UpdateControlChar(address, &cc);
 			cmsg->SetCtrl(cc);
@@ -221,7 +221,7 @@ bool HS485ControllerCCU1::CheckAfterReceive(CommMessage* msg)
 			}
 			int tx_cmd=cur_tx_message->GetCommand();
 			if(	( tx_cmd==HS485CommMessage::CMD_SEND ||	tx_cmd==HS485CommMessage::CMD_BOOT_SEND ) && cur_tx_message->GetID() == msg->GetID()){
-				unsigned long address=((HS485CommMessage*)cur_tx_message)->GetReceiverAddress();
+				uint32_t address=((HS485CommMessage*)cur_tx_message)->GetReceiverAddress();
 				pthread_mutex_unlock(&mutex_tx_state);
 				return CheckRxCounter(address, cmsg->GetCtrl());
 			}else{
@@ -231,8 +231,8 @@ bool HS485ControllerCCU1::CheckAfterReceive(CommMessage* msg)
 		}
 		case HS485CommMessage::CMD_EVENT:
 		{
-			unsigned long receiver=cmsg->GetReceiverAddress();
-			unsigned long sender=cmsg->GetSenderAddress();
+			uint32_t receiver=cmsg->GetReceiverAddress();
+			uint32_t sender=cmsg->GetSenderAddress();
 			unsigned char cc=cmsg->GetCtrl();
 			//don't process discovery frames any further
 			if((cc&0x07)==0x03)return false;
@@ -243,7 +243,7 @@ bool HS485ControllerCCU1::CheckAfterReceive(CommMessage* msg)
 	return false;
 }
 
-void HS485ControllerCCU1::ClearAddressInfo(unsigned long address/*=0xffffffff*/)
+void HS485ControllerCCU1::ClearAddressInfo(uint32_t address/*=0xffffffff*/)
 {
 	pthread_mutex_lock(&mutex_address_info);
 	if(address==0xffffffff){

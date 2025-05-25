@@ -29,10 +29,10 @@ public:
     ~HS485Frame(void);
     std::string GetPayload();
     void SetPayload(const std::string& s);
-    unsigned long GetSenderAddress();
-    unsigned long GetReceiverAddress();
-    void SetSenderAddress(unsigned long address);
-    void SetReceiverAddress(unsigned long address);
+    uint32_t GetSenderAddress();
+    uint32_t GetReceiverAddress();
+    void SetSenderAddress(uint32_t address);
+    void SetReceiverAddress(uint32_t address);
     void SetCtrl(int ctrl);
     int GetCtrl();
 };

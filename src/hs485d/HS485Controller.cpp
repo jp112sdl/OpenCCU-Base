@@ -67,7 +67,7 @@ void HS485Controller::ProcessReceivedMessage(CommMessage* msg)
 	#endif
 }
 
-std::string HS485Controller::GetDeviceDescription(unsigned long address)
+std::string HS485Controller::GetDeviceDescription(uint32_t address)
 {
 	std::string msg="h";
     std::string result;
@@ -93,22 +93,22 @@ bool HS485Controller::SendMessage(HS485CommMessage*)
 	return false;
 }
 
-bool HS485Controller::SendMessage(unsigned long , const std::string &, std::string *)
+bool HS485Controller::SendMessage(uint32_t, const std::string &, std::string *)
 {//DUmmy
 	return false;
 }
 
-bool HS485Controller::SendBootloaderMessage(unsigned long , const std::string &, std::string *)
+bool HS485Controller::SendBootloaderMessage(uint32_t, const std::string &, std::string *)
 {//Dummy
 	return false;
 }
 
-int HS485Controller::Discovery(std::vector<unsigned long>* )
+int HS485Controller::Discovery(std::vector<uint32_t>* )
 {//Dummy
 	return 0;
 }
 
-void HS485Controller::ClearAddressInfo(unsigned long address/*=0xffffffff*/)
+void HS485Controller::ClearAddressInfo(uint32_t address/*=0xffffffff*/)
 {
 	pthread_mutex_lock(&mutex_address_info);
 	if(address==0xffffffff){
@@ -155,7 +155,7 @@ unsigned int HS485Controller::handleEvent(unsigned int)
     return 1;
 }
 
-bool HS485Controller::CheckRxCounter(unsigned long sender, unsigned char cc)
+bool HS485Controller::CheckRxCounter(uint32_t sender, unsigned char cc)
 {
 	if(cc&0x01){
 		//this is no I-Frame
@@ -177,7 +177,7 @@ bool HS485Controller::CheckRxCounter(unsigned long sender, unsigned char cc)
 	return true;
 }
 
-void HS485Controller::UpdateControlChar(unsigned long receiver, unsigned char* cc)
+void HS485Controller::UpdateControlChar(uint32_t receiver, unsigned char* cc)
 {
 	if(receiver==0xffffffff){
 		*cc |= HS485Frame::CTRL_SYN;

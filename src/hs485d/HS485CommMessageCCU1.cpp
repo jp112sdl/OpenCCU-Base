@@ -47,7 +47,7 @@ int HS485CommMessageCCU1::MapIndex(int index)
 	return index;
 }
 
-bool HS485CommMessageCCU1::MatchType(unsigned long type)
+bool HS485CommMessageCCU1::MatchType(uint32_t type)
 {
 	if(!type)return true;
 	int index=MapIndex(9);
@@ -55,11 +55,11 @@ bool HS485CommMessageCCU1::MatchType(unsigned long type)
 	if(GetByteData(index) != (type&0xff))return false;
 	int subtype_field=(type>>8)&0xff;
 	if(!subtype_field)return true;
-	unsigned long subtype=GetByteData(MapIndex(subtype_field));
+	uint32_t subtype=GetByteData(MapIndex(subtype_field));
 	return subtype == type>>16;
 }
 
-void HS485CommMessageCCU1::SetType(unsigned long type)
+void HS485CommMessageCCU1::SetType(uint32_t type)
 {
 	int index=MapIndex(9);
     if(index<0)return;
@@ -71,7 +71,7 @@ void HS485CommMessageCCU1::SetType(unsigned long type)
 	}
 }
 
-unsigned long HS485CommMessageCCU1::GetType()
+uint32_t HS485CommMessageCCU1::GetType()
 {
 	int index=MapIndex(9);
     if(index<0)return 0;
@@ -114,7 +114,7 @@ void HS485CommMessageCCU1::SetCtrl(int flags)
 	if(index>=0)SetByteData(index, flags);
 };
 
-void HS485CommMessageCCU1::SetSenderAddress(unsigned long address)
+void HS485CommMessageCCU1::SetSenderAddress(uint32_t address)
 {
 //	LOG(Logger::LOG_DEBUG, "HS485CommMessage::SetSenderAddress()");
 	int index=MapIndex(5);
@@ -122,7 +122,7 @@ void HS485CommMessageCCU1::SetSenderAddress(unsigned long address)
 	SetIntValue(index, 0, 4, 0, address);
 };
 
-void HS485CommMessageCCU1::SetReceiverAddress(unsigned long address)
+void HS485CommMessageCCU1::SetReceiverAddress(uint32_t address)
 {
 //	LOG(Logger::LOG_DEBUG, "HS485CommMessage::SetReceiverAddress(0x%08lX)", address);
 	int index=MapIndex(0);

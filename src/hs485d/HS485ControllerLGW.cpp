@@ -160,7 +160,7 @@ bool HS485ControllerLGW::CheckBeforeSend(CommMessage* msg)
 		HS485CommMessageLGW* cmsg=(HS485CommMessageLGW*)msg;
 	//	LOG(Logger::LOG_DEBUG, "CheckBeforeSend() cmd=0x%02x", msg->GetCommand());
 		if(LGW_CMD_SEND == cmsg->GetHMWLGWCommand()){
-			unsigned long address=cmsg->GetReceiverAddress();
+			uint32_t address=cmsg->GetReceiverAddress();
 			unsigned char cc=cmsg->GetCtrl();
 			UpdateControlChar(address, &cc);
 			cmsg->SetCtrl(cc);
@@ -198,7 +198,7 @@ void HS485ControllerLGW::ProcessReceivedMessage(CommMessage* msg)
 	HS485Controller::ProcessReceivedMessage(msg);
 }
 
-std::string HS485ControllerLGW::GetDeviceDescription(unsigned long address)
+std::string HS485ControllerLGW::GetDeviceDescription(uint32_t address)
 {
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::GetDeviceDescription()");
 	return HS485Controller::GetDeviceDescription(address);
@@ -212,7 +212,7 @@ bool HS485ControllerLGW::SendMessage(HS485CommMessage* msg)
 	if(pMsg != NULL) {
 		for(unsigned int i = 0; i < maxRetries; i++) {
 			pMsg->SetHMWLGWCommand(LGW_CMD_SEND);
-			unsigned long address=pMsg->GetReceiverAddress();
+			uint32_t address=pMsg->GetReceiverAddress();
 			pMsg->SetSenderAddress(GetAddress());
 			if(address!=0xffffffff){
 				pMsg->SetTimeout(HS485_LGW_TIMEOUT);//timeout
@@ -246,7 +246,7 @@ bool HS485ControllerLGW::SendMessage(HS485CommMessage* msg)
 	return false;
 }
 
-bool HS485ControllerLGW::SendMessage(unsigned long receiver, const std::string& msg, std::string* response)
+bool HS485ControllerLGW::SendMessage(uint32_t receiver, const std::string& msg, std::string* response)
 {
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::SendMessage(receiver,msg,response)");
 
@@ -279,7 +279,7 @@ bool HS485ControllerLGW::SendMessage(unsigned long receiver, const std::string& 
 	return retval;
 }
 
-bool HS485ControllerLGW::SendBootloaderMessage(unsigned long receiver, const std::string& msg, std::string* response)
+bool HS485ControllerLGW::SendBootloaderMessage(uint32_t receiver, const std::string& msg, std::string* response)
 {
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::SendBootloaderMessage() Test implementation using normal send.");
 	bool retval=true;
@@ -311,7 +311,7 @@ bool HS485ControllerLGW::SendBootloaderMessage(unsigned long receiver, const std
 	return retval;
 }
 
-int HS485ControllerLGW::Discovery(std::vector<unsigned long>* devices)
+int HS485ControllerLGW::Discovery(std::vector<uint32_t>* devices)
 {
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::Discovery() Test implementation.");
 	BroadcastSleepMode(true);
@@ -376,7 +376,7 @@ int HS485ControllerLGW::Discovery(std::vector<unsigned long>* devices)
 	return done;
 }
 
-void HS485ControllerLGW::ClearAddressInfo(unsigned long address/*=0xffffffff*/)
+void HS485ControllerLGW::ClearAddressInfo(uint32_t address/*=0xffffffff*/)
 {
 	pthread_mutex_lock(&mutex_address_info);
 	if(address==0xffffffff){
@@ -393,13 +393,13 @@ unsigned int HS485ControllerLGW::handleEvent(unsigned int eventType)
 	return HS485Controller::handleEvent(eventType);
 }
 
-bool HS485ControllerLGW::CheckRxCounter(unsigned long receiver, unsigned char cc)
+bool HS485ControllerLGW::CheckRxCounter(uint32_t receiver, unsigned char cc)
 {
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::CheckRxCounter():");
 	return HS485Controller::CheckRxCounter(receiver, cc);
 }
 
-void HS485ControllerLGW::UpdateControlChar(unsigned long receiver, unsigned char* cc)
+void HS485ControllerLGW::UpdateControlChar(uint32_t receiver, unsigned char* cc)
 {
 	HS485Controller::UpdateControlChar(receiver, cc);
 //	LOG(Logger::LOG_ALL, "HS485ControllerLGW::UpdateControlChar(): Using parent impl.");

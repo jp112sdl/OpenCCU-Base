@@ -54,9 +54,9 @@ public:
 		return singleton;
 	}
 
-	std::string BuildStringAddress(unsigned long address, int channel=-1);
+	std::string BuildStringAddress(uint32_t address, int channel=-1);
 	static std::string BuildStringAddress(const std::string&  address, int channel=-1);
-	bool ParseAddress(const std::string& address, unsigned long * dev_address, int * channel);
+	bool ParseAddress(const std::string& address, uint32_t* dev_address, int * channel);
 	bool ParseAddress(const std::string& address, std::string * dev_address, int * channel);
 	void ReportNewDevice(HS485LogicalInstance* dev);
 	void ReportDeletedDevice(HS485Device* dev);
@@ -66,7 +66,7 @@ public:
 	HS485SystemDescription* GetSystemDescription(){return &system_description;};
 	HS485LogicalInstance* GetInstance(const std::string& address);
 	bool ReportValueUsage(const std::string& address, const std::string& value, int count);
-	HS485Device* GetDeviceByAddress(unsigned long address);
+	HS485Device* GetDeviceByAddress(uint32_t address);
 	HS485FirmwareManager* GetFirmwareManager(){return &fw_mgr;};
 	bool ClearConfigCache(const std::string& address);
 	bool ActivateLinkParamset(const std::string address, const std::string& peer, bool longpress);
@@ -100,7 +100,7 @@ protected:
 	HS485SystemDescription system_description;
 	typedef std::map<std::string, HS485Device*> t_dev_instances;
 	t_dev_instances dev_instances;
-	typedef std::map<unsigned long, HS485Device*> t_address_map;
+	typedef std::map<uint32_t, HS485Device*> t_address_map;
 	t_address_map address_map;
 	static HS485Manager* singleton;
 	HS485FirmwareManager fw_mgr;

@@ -76,7 +76,7 @@ bool HS485PhysicalDataInterfaceEEProm::GetData(LogicalInstance* inst, XmlRpc::Xm
 		return false;
 	}
 
-	unsigned long long val=0;
+	uint32_t val=0;
 	for(unsigned int i=0;i<count;i++){
 		val <<= 8;
 		val |= data[little_endian?count-1-i:i];
@@ -112,9 +112,9 @@ bool HS485PhysicalDataInterfaceEEProm::PutData(LogicalInstance* inst, XmlRpc::Xm
 	*buffer=0;
 	for(unsigned int i=0;i<count;i++)sprintf(buffer+3*i, "%02X ", (int)data[i]);
 	try{
-		unsigned long long val=(int&)param;
+		uint32_t val=(int&)param;
 		val <<= bi_pos;
-		unsigned long long mask=(0xffffffff>>(32-(by_size*8+bi_size)))<<bi_pos;
+		uint32_t mask=(0xffffffff>>(32-(by_size*8+bi_size)))<<bi_pos;
 
 		for(unsigned int i=0;i<count;i++){
 			int index=little_endian?i:count-1-i;

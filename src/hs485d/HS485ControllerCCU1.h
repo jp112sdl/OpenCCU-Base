@@ -44,7 +44,7 @@ protected:
 			return hw_address!=0xffffffff;
 		};
 		//! HS485-Adresse des Kommunikationspartners
-		unsigned long hw_address;
+		uint32_t hw_address;
 		//! Sendefolgezähler für die HS485-Kommunikation
 		unsigned char tx_counter;
 		//! Empfangsfolgezähler für die HS485-Kommunikation
@@ -61,7 +61,7 @@ public:
 	//! Gibt die Adresse der Zentrale am HS485-Bus zurück.
 	/*! Die Adresse der Zentrale am HS485-Bus ist immer 1
 	 */
-	inline unsigned long GetAddress(){return 1;};
+	inline uint32_t GetAddress(){return 1;};
 
 	//! Ermittelt für ein HS485-Gerät die Hardware-ID, Hardwareversion und Softwareversion
 	/*! \return Binärer String aus 4 Zeichen:
@@ -69,7 +69,7 @@ public:
 				- 1 Byte Hardware-Version
 				- 2 Byte Softwareversion
 	 */
-    std::string GetDeviceDescription(unsigned long address);
+    std::string GetDeviceDescription(uint32_t address);
 	//! Sendet eine Nachricht in Form eines Objekts der Klasse HS485CommMessage auf den RS485-Bus
 	/*! Bei Nachrichten, die eine Bestätigung erwarten, blockiert die Methode bis die Bestätigung empfangen wurde.
 	 *  Bei Nachrichten, die keine Bestätigung erwarten (also auch Broadcast-Nachrichten), kehrt die Methode
@@ -84,19 +84,19 @@ public:
 	 *  Eine Antwort wird aus der temporären Nachricht extrahiert und in \c response gespeichert.
 	 *  \return \c true bei erfolgreicher Sendung
 	 */
-    bool SendMessage(unsigned long receiver, const std::string &msg, std::string *response);
+    bool SendMessage(uint32_t receiver, const std::string &msg, std::string *response);
 	//! Sendet eine Bootloader-Nachricht in Form eines Strings auf den RS485-Bus
 	/*! Es wird aus \c receiver und \c msg ein temporäres Objekt der Klasse HS485ComMessage erzeugt,
 	 *  welches dann mittels der entsprechenden SendMessage()-Methode gesendet wird.
 	 *  Eine Antwort wird aus der temporären Nachricht extrahiert und in \c response gespeichert.
 	 *  \return \c true bei erfolgreicher Sendung
 	 */
-    bool SendBootloaderMessage(unsigned long receiver, const std::string &msg, std::string *response);
+    bool SendBootloaderMessage(uint32_t receiver, const std::string &msg, std::string *response);
 	//! Durchsucht den RS485-Bus nach Geräten
 	/*! \param devices Zeiger auf einen Vector, der die Adressen der gefundenen Geräte aufnimmt
 	 *  \return Anzahl der gefundenen Geräte. Im Fehlerfall \c -1
 	 */
-    int Discovery(std::vector<unsigned long>* devices);
+    int Discovery(std::vector<uint32_t>* devices);
 	//! Löscht die Statusinformationen für einen Kommunikationspartner
 	/*! Es wird die für den Kommunikationspartner mit der Adresse address die in HS485CommController
 	 *  gespeicherte Statusinformation gelöscht.
@@ -104,7 +104,7 @@ public:
 	 *  umgeschaltet wird.
 	 *  \param address Adresse der Kommunikationspartners oder \c 0xffffffff für alle Partner
 	 */
-	void ClearAddressInfo(unsigned long address=0xffffffff);
+	void ClearAddressInfo(uint32_t address=0xffffffff);
 //	//! Versetzt per Broadcast alle Geräte am Bus in den Schlafzustand
 //	/*! Im Schlafzustand führen die Geräte keine Aktionen aus und belegen insbesondere nicht den Bus.
 //	 *  Um Kollisionen zu vermeiden werden während eines Firmware-Updates auf dem Bus sowie während des
@@ -148,17 +148,17 @@ protected:
 	 *  \retval \c false wenn eine Nachricht mit dem empfangenen Empfangsfolgezähler bereits empfangen wurde
 	 *          \c true sonst.
 	 */
-	bool CheckRxCounter(unsigned long receiver, unsigned char cc);
+	bool CheckRxCounter(uint32_t receiver, unsigned char cc);
 	//! Setzt die beiden Folgezähler in einem Control-Character einer zu sendenden Nachricht
 	/*! Wird aus CheckBeforeSend() heraus aufgerufen.
 	 *  Übernimmt die beiden Folgezähler aus dem zur Zieladresse gehörenden AddressInfo in den
 	 *  HS485-Control-Character und inkrementiert den Sendefolgezähler im AddressInfo
 	 */
-	void UpdateControlChar(unsigned long receiver, unsigned char* cc);
+	void UpdateControlChar(uint32_t receiver, unsigned char* cc);
     //! Fügt eine empfangene Nachricht in die Empfangswarteschlange ein
    	void ProcessReceivedMessage(CommMessage* msg);
 	//! Typedef für Map zur Verwaltung der Folgezähler für alle am RS485-Bus angeschlossenen Geräte
-	typedef std::map<unsigned long, AddressInfo> t_map_address_info;
+	typedef std::map<uint32_t, AddressInfo> t_map_address_info;
 	//! Map zur Verwaltung der Folgezähler für alle am RS485-Bus angeschlossenen Geräte
 	t_map_address_info map_address_info;
 	//! Mutex für den Zugriff auf \c map_address_info

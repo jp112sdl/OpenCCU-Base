@@ -29,7 +29,7 @@ public:
 	virtual void SetTimeout(int to);
 	virtual bool TransformToSimulationMessage();
 
-	virtual bool MatchType(unsigned long type);
+	virtual bool MatchType(uint32_t type);
 	virtual uint32_t GetSenderAddress();
 	virtual uint32_t GetReceiverAddress();
 	virtual void SetSenderAddress(uint32_t address);
@@ -63,10 +63,10 @@ public:
 
 protected:
 	virtual int MapIndex(int index);
-    virtual unsigned long GetType();
+	virtual uint32_t GetType();
 	virtual bool ProcessResponse(CommMessage* m, t_state* new_state);
 	virtual bool ProcessEEPRomResponse(CommMessage* m, t_state* new_state);
-	virtual void SetType(unsigned long type);
+	virtual void SetType(uint32_t type);
 	friend class HS485CommMessageDecoder;
 
 };

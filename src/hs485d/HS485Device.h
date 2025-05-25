@@ -57,8 +57,8 @@ public:
 
 	bool AddChannel(int index, const std::string& type);
 	void SetDeviceDescription(HS485DeviceDescription* description, bool add_channels=true);
-	inline void SetAddress(unsigned long address){this->address=address;};
-	inline unsigned long GetAddress(){return this->address;};
+	inline void SetAddress(uint32_t address){this->address=address;};
+	inline uint32_t GetAddress(){return this->address;};
 	bool Describe(XmlRpc::XmlRpcValue* val);
 	bool SetEnforcedParameters();
 	HS485LogicalInstance* GetInstance(int channel_index);
@@ -118,7 +118,7 @@ protected:
     bool WriteEEProm(unsigned int address, const data_t& data);
 	bool GetEEPromUsage(unsigned int address, unsigned int block_size, unsigned int count, data_t* used_bits);
 	virtual inline HS485Channel* CreateChannel(){return new HS485Channel();};
-    unsigned long address;
+  uint32_t address;
 	std::string serial;
     HS485EEPromCache eep_cache;
 	HS485DeviceDescription* description;
@@ -126,7 +126,7 @@ protected:
 	channels_t channels;
 	std::string type;
 	bool last_config_pending;
-	unsigned long maintenance_flags;
+	uint32_t maintenance_flags;
 	std::string firmware_version;
 	std::string sysinfo;
 	std::string available_firmware;

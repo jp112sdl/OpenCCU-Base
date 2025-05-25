@@ -37,7 +37,7 @@ int HS485CommMessageLGW::MapIndex(int index)//protected - maybe not needed here
 	return 0;
 }
 
-bool HS485CommMessageLGW::MatchType(unsigned long type)
+bool HS485CommMessageLGW::MatchType(uint32_t type)
 {
 	LOG(Logger::LOG_ALL, "HS485CommMessageLGW::MatchType(): Not implemeted yet.");
 	return false;
@@ -47,12 +47,12 @@ HMWLGWCommandType HS485CommMessageLGW::GetHMWLGWCommand() {
 	return hmwlgwCommand.getCommandType();
 }
 
-void HS485CommMessageLGW::SetType(unsigned long type)//protected - maybe not needed here
+void HS485CommMessageLGW::SetType(uint32_t type)//protected - maybe not needed here
 {
 	LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetType(): Not implemeted yet.");
 }
 
-unsigned long HS485CommMessageLGW::GetType()//protected - maybe not needed here
+uint32_t HS485CommMessageLGW::GetType()//protected - maybe not needed here
 {
 	LOG(Logger::LOG_ALL, "HS485CommMessageLGW::GetType(): Not implemeted yet.");
 	return 0;

@@ -61,7 +61,7 @@ bool HS485PhysicalDataInterfaceCentralCommand::PutData(LogicalInstance* inst, Xm
 			if(!ch->GetLinkPeers(&peers))return false;
 			for(unsigned int i=0;i<peers.size();i++){
 //				LOG(Logger::LOG_DEBUG, "peer=%s", peers[i].c_str());
-				unsigned long peer_address;
+				uint32_t peer_address;
 				int peer_channel;
 				if(!HS485Manager::GetSingleton()->ParseAddress(peers[i], &peer_address, &peer_channel)){
 					retval=false;

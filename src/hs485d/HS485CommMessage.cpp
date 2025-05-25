@@ -48,7 +48,7 @@ int HS485CommMessage::MapIndex(int index)
 	return index;
 }
 
-bool HS485CommMessage::MatchType(unsigned long type)
+bool HS485CommMessage::MatchType(uint32_t type)
 {
 	if(!type)return true;
 	int index=MapIndex(9);
@@ -56,11 +56,11 @@ bool HS485CommMessage::MatchType(unsigned long type)
 	if(GetByteData(index) != (type&0xff))return false;
 	int subtype_field=(type>>8)&0xff;
 	if(!subtype_field)return true;
-	unsigned long subtype=GetByteData(MapIndex(subtype_field));
+	uint32_t subtype=GetByteData(MapIndex(subtype_field));
 	return subtype == type>>16;
 }
 
-void HS485CommMessage::SetType(unsigned long type)
+void HS485CommMessage::SetType(uint32_t type)
 {
 	int index=MapIndex(9);
     if(index<0)return;
@@ -72,7 +72,7 @@ void HS485CommMessage::SetType(unsigned long type)
 	}
 }
 
-unsigned long HS485CommMessage::GetType()
+uint32_t HS485CommMessage::GetType()
 {
 	int index=MapIndex(9);
     if(index<0)return 0;

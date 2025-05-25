@@ -22,22 +22,22 @@ void HS485Frame::SetPayload(const std::string& s)
     for(unsigned int i=0;i<s.size();i++)SetByteData(i+9, s[i]);
 }
 
-unsigned long HS485Frame::GetSenderAddress()
+uint32_t HS485Frame::GetSenderAddress()
 {
     return GetIntValue(FIELD_SENDER);
 }
 
-unsigned long HS485Frame::GetReceiverAddress()
+uint32_t HS485Frame::GetReceiverAddress()
 {
     return GetIntValue(FIELD_RECEIVER);
 }
 
-void HS485Frame::SetSenderAddress(unsigned long address)
+void HS485Frame::SetSenderAddress(uint32_t address)
 {
     SetIntValue(FIELD_SENDER, address);
 }
 
-void HS485Frame::SetReceiverAddress(unsigned long address)
+void HS485Frame::SetReceiverAddress(uint32_t address)
 {
     SetIntValue(FIELD_RECEIVER, address);
 }

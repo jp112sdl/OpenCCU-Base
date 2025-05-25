@@ -33,19 +33,19 @@ public:
 	virtual bool TransformToSimulationMessage();
 	HS485CommMessageCCU1(void);
 	virtual ~HS485CommMessageCCU1(void);
-	bool MatchType(unsigned long type);
+	bool MatchType(uint32_t type);
 	uint32_t GetSenderAddress();
 	uint32_t GetReceiverAddress();
-	void SetSenderAddress(unsigned long address);
-	void SetReceiverAddress(unsigned long address);
+	void SetSenderAddress(uint32_t address);
+	void SetReceiverAddress(uint32_t address);
 	void SetCtrl(int flags);
 	int GetCtrl();
 protected:
 	int MapIndex(int index);
-    unsigned long GetType();
+  uint32_t GetType();
 	virtual bool ProcessResponse(CommMessage* m, t_state* new_state);
 	virtual bool ProcessEEPRomResponse(CommMessage* m, t_state* new_state);
-	void SetType(unsigned long type);
+	void SetType(uint32_t type);
 	friend class HS485CommMessageDecoder;
 };
 #endif //_HS485_COMM_MESSAGE_H_

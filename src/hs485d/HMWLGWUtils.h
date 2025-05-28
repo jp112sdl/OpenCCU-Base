@@ -44,7 +44,7 @@ static inline std::string toDebugHexStr(const unsigned int ui)
 	std::string hexStr;
 	char* buffer = new char[9];
 	memset(buffer, 0, 9);
-	sprintf(buffer, "%02X", ui);
+	snprintf(buffer, 9, "%02X", ui);
 	hexStr.append(buffer);
 	hexStr.append(" (hex)");
 	delete[] buffer;
@@ -57,7 +57,7 @@ static inline std::string toDebugHexStr(const std::string& str)
 	char* buffer = new char[9];
 	for(unsigned int i = 0; i < str.size(); i++) {
 		memset(buffer, 0, 9);
-		sprintf(buffer, "%02X", (((unsigned int)str.at(i)) & 0x000000FF));
+		snprintf(buffer, 9, "%02X", (((unsigned int)str.at(i)) & 0x000000FF));
 		hexStr.append(buffer);
 		hexStr.append(" ");
 	}

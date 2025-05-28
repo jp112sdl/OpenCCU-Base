@@ -322,9 +322,9 @@ bool HS485Channel::UnpeerCentral()
 bool HS485Channel::SaveToXml(XMLNode* node)
 {
 	char buffer[16];
-	sprintf(buffer, "%d", GetIndex());
+	snprintf(buffer, sizeof(buffer), "%d", GetIndex());
 	node->addAttributeConst("index", buffer);
-	sprintf(buffer, "%d", behaviour);
+	snprintf(buffer, sizeof(buffer), "%d", behaviour);
 	node->addAttributeConst("behaviour", buffer);
 	node->addAttributeConst("type", GetDescription()->GetType().c_str());
 	XMLNode values_node=node->addChildConst("values");
@@ -333,7 +333,7 @@ bool HS485Channel::SaveToXml(XMLNode* node)
 	for(t_value_usage_map::iterator it=value_usage_map.begin();it!=value_usage_map.end();it++){
 		XMLNode usage_node=node->addChildConst("value_usage");
 		usage_node.addAttributeConst("id", it->first.c_str());
-		sprintf(buffer, "%d", it->second);
+		snprintf(buffer, sizeof(buffer), "%d", it->second);
 		usage_node.addAttributeConst("refcount", buffer);
 	}
 

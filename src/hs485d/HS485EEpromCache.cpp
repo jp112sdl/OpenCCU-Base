@@ -49,7 +49,7 @@ bool HS485EEPromCache::GetData(unsigned int address, unsigned int count, data_t 
 	char buffer[4];
 	std::string data_string;
 	for(unsigned int i=0;i<data->size();i++){
-		sprintf(buffer, "%02X ", (int)(*data)[i]);
+		snprintf(buffer, sizeof(buffer), "%02X ", (int)(*data)[i]);
 		data_string+=buffer;
 	}
 	LOG(Logger::LOG_DEBUG, "GetData() dev=%08lX, eep_addr=0x%X, data=%s", dev->address, address-count, data_string.c_str());
@@ -79,7 +79,7 @@ bool HS485EEPromCache::GetShadowData(unsigned int address, unsigned int count, d
 	char buffer[4];
 	std::string data_string;
 	for(unsigned int i=0;i<data->size();i++){
-		sprintf(buffer, "%02X ", (int)(*data)[i]);
+		snprintf(buffer, sizeof(buffer), "%02X ", (int)(*data)[i]);
 		data_string+=buffer;
 	}
 	LOG(Logger::LOG_DEBUG, "GetData() dev=%08lX, eep_addr=0x%X, data=%s", dev->address, address-count, data_string.c_str());
@@ -93,7 +93,7 @@ bool HS485EEPromCache::PutData(unsigned int address, const data_t& data)
 	char buffer[4];
 	std::string data_string;
 	for(unsigned int i=0;i<data.size();i++){
-		sprintf(buffer, "%02X ", (int)data[i]);
+		snprintf(buffer, sizeof(buffer), "%02X ", (int)data[i]);
 		data_string+=buffer;
 	}
 	LOG(Logger::LOG_DEBUG, "PutData() dev=%08lX, eep_addr=0x%X, data=%s", dev->address, address, data_string.c_str());
@@ -193,7 +193,7 @@ bool HS485EEPromCache::Chunk::SaveToXml(XMLNode* node)
 {
 	char buffer[CHUNK_SIZE*2+1];
 
-	sprintf(buffer, "%d", (int)state);
+	snprintf(buffer, sizeof(buffer), "%d", (int)state);
 	node->addAttributeConst("state", buffer);
 
 	bool empty=true;
@@ -230,7 +230,7 @@ bool HS485EEPromCache::SaveToXml(XMLNode* node)
 	char buffer[8];
 	for(unsigned int i=0;i<chunks.size();i++){
 		XMLNode chunk_node=node->addChildConst("chunk");
-		sprintf(buffer, "%d", i);
+		snprintf(buffer, sizeof(buffer), "%d", i);
 		chunk_node.addAttributeConst("index", buffer);
 		if(!chunks[i].SaveToXml(&chunk_node))return false;
 	}

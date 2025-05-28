@@ -673,7 +673,7 @@ void HS485Device::SetSysinfo(const std::string& si)
 	sysinfo=si;
 	if(si.size()<3)return;
 	char buffer[16];
-	sprintf(buffer, "%d.%02d", si[2], si[3]);
+	snprintf(buffer, sizeof(buffer), "%d.%02d", si[2], si[3]);
 	firmware_version=buffer;
 }
 

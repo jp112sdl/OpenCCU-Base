@@ -50,7 +50,7 @@ bool HS485MaintenanceChannel::CheckCreationTag(const char *tag)
 bool HS485MaintenanceChannel::SaveToXml(XMLNode* node)
 {
 	char buffer[16];
-	sprintf(buffer, "%d", GetIndex());
+	snprintf(buffer, sizeof(buffer), "%d", GetIndex());
 	node->addAttributeConst("index", buffer);
 	node->addAttributeConst("type", GetDescription()->GetType().c_str());
 	return true;

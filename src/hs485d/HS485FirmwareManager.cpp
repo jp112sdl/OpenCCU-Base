@@ -65,7 +65,7 @@ std::string HS485FirmwareManager::GetFirmwareVersion(const std::string& type)
 		i_version=buffer[firmwarePos]|(buffer[firmwarePos+1]<<8);
 	}
 	char buffer[16];
-	sprintf(buffer, "%d.%02d", i_version>>8, i_version&0xff);
+	snprintf(buffer, sizeof(buffer), "%d.%02d", i_version>>8, i_version&0xff);
 	return buffer;
 }
 

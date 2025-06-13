@@ -65,7 +65,7 @@ void printUsage() {
 
 void removeLeadingPathseperators(std::string& filename)
 {
-	int index = filename.find_last_of('/');
+	std::string::size_type index = filename.find_last_of('/');
 	if(index != std::string::npos) {
 		filename.assign(filename.substr(index+1));
 	}

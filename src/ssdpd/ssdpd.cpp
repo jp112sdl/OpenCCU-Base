@@ -331,8 +331,8 @@ static std::string getSerialNum() {
 		fclose(serialFile);
 		free(data);
 	}
-	int pos = serialContetn.find('\n');
-	if(pos != -1)
+	std::string::size_type pos = serialContetn.find('\n');
+	if(pos != std::string::npos)
 		serialContetn.erase(pos,1);
 	return serialContetn;
 

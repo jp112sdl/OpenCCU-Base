@@ -81,6 +81,12 @@ jQuery.extend(true, langJSON, {
     "stringTableWaterVolume" : "Total water volume",
     "stringTableWaterVolumeSinceOpen" : "Water volume since opening",
 
+    "stringTableWaterFlowStatus" : "Status currend flow",
+    "stringTableWaterFlowOverflowFalse" : "Counter overflow: No",
+    "stringTableWaterFlowOverflowTrue" : "Counter overflow: Yes",
+    "stringTableWaterVolumeSinceOpenOverflowFalse" : "Counter overflow since opening: no",
+    "stringTableWaterVolumeSinceOpenOverflowTrue" : "Counter overflow since opening: yes",
+
     "msgResetWaterCounter" : "Use this option to reset the total water volume counter to 0.00 L",
 
     "lblValve" : "Valve",

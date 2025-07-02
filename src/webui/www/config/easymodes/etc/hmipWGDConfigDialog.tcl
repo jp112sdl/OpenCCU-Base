@@ -15,6 +15,8 @@ proc getMaintenance {chn p descr} {
 
   set prn 0
   set devType $dev_descr(TYPE)
+  set isWGD_PL 0 ; # default = no _PL
+  if {$devType == "HmIP-WGD-PL"} {set isWGD_PL 1}
 
   set cyclicInfo false
 
@@ -80,8 +82,8 @@ proc getMaintenance {chn p descr} {
 
   append html "[getHorizontalLine]"
 
-  # Check how many screens are available (5 or 10)
-  set availableScreens 5 ; # default 6
+  # Check how many screens are available (WGD 6 or WGD-PL 11)
+  set availableScreens 6 ; # default 6
 
   set param SCREEN_LAYOUT_PAGE_NUMBER_11
   if { [info exists ps($param)] == 1  } {
@@ -115,16 +117,18 @@ proc getMaintenance {chn p descr} {
           append html "<th colspan='2'>< Screen 2 ></th>"
           append html "<th colspan='2'>< Screen 3 ></th>"
           append html "<th colspan='2'>< Screen 4 ></th>"
-          append html "<th colspan='2'>< Screen 5 ></th>"
-
+          if {$isWGD_PL == 0 } {
+            append html "<th colspan='2'>< Screen 5 ></th>"
+          }
         append html "<tr>"
-          for {set loopx 0} {$loopx <= 5} {incr loopx} {
+          if {$isWGD_PL == 0 } {set loopxMax 5} else {set loopxMax 4}
+          for {set loopx 0} {$loopx <= $loopxMax} {incr loopx} {
             set loop [expr $loopx + 1]
             incr prn
             append html "<td>"
               append html "<select type='text' id='separate_CHANNEL_$chn\_$prn' name='SCREEN_LAYOUT_LEFT_NEIGHBOUR_$loop' value='$ps(SCREEN_LAYOUT_LEFT_NEIGHBOUR_$loop)'>"
               if {$availableScreens == 11} {set maxOption 10} else {set maxOption 5}
-              append html "<option value='16'>16</option>"
+              append html "<option value='15'>15</option>"
               for {set option 0} {$option <= $maxOption} {incr option} {
                 if {$option == $ps(SCREEN_LAYOUT_LEFT_NEIGHBOUR_$loop)} {set selected "selected='selected'"} else {set selected ""}
                 append html "<option value='$option' $selected>$option</option>"
@@ -153,7 +157,8 @@ proc getMaintenance {chn p descr} {
     append html "<td>Page Number</td>"
       append html "<td>"
         append html "<table><tr>"
-          for {set loop 1} {$loop <= 5} {incr loop} {
+          if {$isWGD_PL == 0 } {set loopMax 6} else {set loopMax 5}
+          for {set loop 1} {$loop <= $loopMax} {incr loop} {
             incr prn
             append html "<td>"
               append html "<select id='separate_CHANNEL_$chn\_$prn' name='SCREEN_LAYOUT_PAGE_NUMBER_$loop' value='$ps(SCREEN_LAYOUT_PAGE_NUMBER_$loop)'>"
@@ -191,7 +196,7 @@ proc getMaintenance {chn p descr} {
           append html "</tr>"
 
           append html "<tr>"
-            for {set loopx 6} {$loopx <= 10} {incr loopx} {
+            for {set loopx 5} {$loopx <= 10} {incr loopx} {
               set loop [expr $loopx + 1]
               incr prn
               append html "<td>"
@@ -226,7 +231,8 @@ proc getMaintenance {chn p descr} {
         append html "<td>Page Number</td>"
           append html "<td>"
             append html "<table><tr>"
-              for {set loop 7} {$loop <= 11} {incr loop} {
+
+              for {set loop 6} {$loop <= 11} {incr loop} {
                 incr prn
                 append html "<td>"
                   append html "<select id='separate_CHANNEL_$chn\_$prn' name='SCREEN_LAYOUT_PAGE_NUMBER_$loop' value='$ps(SCREEN_LAYOUT_PAGE_NUMBER_$loop)'>"
@@ -310,13 +316,15 @@ proc getMaintenance {chn p descr} {
     append html "<td>\${lblLayoutScreenTile}</td>"
     append html "<td><table>"
     append html "<tr>"
-      for {set loop 1} {$loop <= 6} {incr loop} {
+      if {$isWGD_PL == 0 } {set loopMax 6} else {set loopMax 5}
+      for {set loop 1} {$loop <= $loopMax} {incr loop} {
         append html "<th>Screen $loop</th>"
       }
     append html "</tr>"
 
     append html "<tr>"
-      for {set loop 1} {$loop <= 6} {incr loop} {
+      if {$isWGD_PL == 0 } {set loopMax 6} else {set loopMax 5}
+      for {set loop 1} {$loop <= $loopMax} {incr loop} {
         set param SCREEN_LAYOUT_TILE_LAYOUT_$loop
         incr prn
         array_clear options
@@ -336,18 +344,20 @@ proc getMaintenance {chn p descr} {
     append html "<td>\${lblLayoutScreenClimateTile}</td>"
     append html "<td><table>"
     append html "<tr>"
-      for {set loop 5} {$loop <= 11} {incr loop} {
+      for {set loop 6} {$loop <= 11} {incr loop} {
         append html "<th>Screen $loop</th>"
       }
     append html "</tr>"
 
     append html "<tr>"
-      for {set loop 5} {$loop <= 11} {incr loop} {
+      for {set loop 6} {$loop <= 11} {incr loop} {
         set param SCREEN_LAYOUT_TILE_LAYOUT_$loop
         incr prn
         array_clear options
         set options(0) "\${option1Tile}"
-        set options(1) "\${option2Tiles}"
+        if {$loop < 11} {
+          set options(1) "\${option2Tiles}"
+        }
         append html "<td>"
           append html "[get_ComboBox options $param separate_$special_input_id\_$prn ps $param]"
         append html "</td>"

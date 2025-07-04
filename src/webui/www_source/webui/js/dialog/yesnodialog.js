@@ -10,7 +10,7 @@
  **/
 YesNoDialog = Class.create({
  
-  initialize: function(title, content, callback, contentType)
+  initialize: function(title, content, callback, contentType, extraParam)
   {
     var _this_ = this;
 
@@ -22,6 +22,7 @@ YesNoDialog = Class.create({
     this.m_layer = document.createElement("div");
     this.m_layer.className = "YesNoDialogLayer";
     this.content = content;
+    this.extraParam = extraParam;
 
     var dialog = document.createElement("div");
     dialog.className = "YesNoDialog";

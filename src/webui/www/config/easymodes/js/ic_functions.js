@@ -1941,12 +1941,11 @@ selectWGDIcon = function(chn, elmId, activeIcon, category) {
       jQuery("#" + elmId).val(this.getSelectedIconNo());
       jQuery("#image_" + chn ).attr("src", this.getSelectedIcon());
     }
-  }, "html");
+  }, "html", category);
   dlg.btnTextNo(translateKey("btnCancel"));
   dlg.btnTextYes(translateKey("btnOk"));
   dlg.chn = chn;
   dlg.activeIcon = parseInt(activeIcon);
-  dlg.category = category;
 };
 
 

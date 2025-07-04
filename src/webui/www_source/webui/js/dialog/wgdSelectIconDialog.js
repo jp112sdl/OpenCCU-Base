@@ -5,7 +5,7 @@ var
     if (typeof  category == "undefined") {
       path = "/ise/img/icons_hmipw_wgd/";
     } else if (category == "weather") {
-      path = path = "/ise/img/icons_hmipw_wgd/weather";
+      path = path = "/ise/img/icons_hmipw_wgd/weather/";
     }
 
     return path;
@@ -27,7 +27,7 @@ var
 
   getWGDImageCollection = function(category) {
   var image;
-  if (typeof  category == "undefined") {
+  if (typeof  category == "undefined" || category == "--") {
     image = {
       0: ["_0000_fallback.png", 0],
       1: ["_000_000_lightbulb0.png", 1],
@@ -53,10 +53,12 @@ WGDSelectIconDialog = Class.create(YesNoDialog,{
 
   run: function () {
     var self = this;
+    this.category = this.extraParam;
     this.selectedIconNo = 0;
     this.selectedIcon = "";
     this.activeIcon = 0;
-    this.imagePath = getWGDImagePath();
+    this.imagePath = getWGDImagePath(this.category);
+
 
     jQuery(".YesNoDialogContentWrapper").css("background-color", "grey");
 
@@ -91,7 +93,7 @@ WGDSelectIconDialog = Class.create(YesNoDialog,{
     //console.log(image[1][0]); // prints the name of the first image
     result += "<table style='width:100%'>";
       result += "<tr>";
-        jQuery.each(getWGDImageCollection(), function(index, val) {
+        jQuery.each(getWGDImageCollection(this.category), function(index, val) {
           if ((radioBoxSelected == "") && (self.activeIcon == val[1])) {
               radioBoxSelected = "checked";
               setSelectedIcon(self.imagePath + val[0]);

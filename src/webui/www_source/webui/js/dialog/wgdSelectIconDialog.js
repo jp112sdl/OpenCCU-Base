@@ -17,10 +17,44 @@ var
   getWGDImageCollectionWeather = function() {
     var image = {
       0: ["_0000_fallback.png",0],
-      1: ["_921_00_attention.png",1],
-      2: ["_921_01_cloud sun rain.png",2],
-      3: ["_921_02_cloud.png",3],
-      4: ["_921_03_cloud-lightning.png",4]
+      1: ["_921_00_attention.png",189],
+      2: ["_921_01_cloud sun rain.png",190],
+      3: ["_921_02_cloud.png",1912],
+      4: ["_921_03_cloud-lightning.png",192],
+      5: ["_921_04_cloud-moon.png",193],
+      6: ["_921_05_cloud-sun.png",194],
+      7: ["_921_07_fine-dust.png",195],
+      8: ["_921_08_fog.png",196],
+      9: ["_921_09_hail",197],
+
+      10: ["_921_10_Humidity.png",198],
+      11: ["_921_11_medium-rain.png",199],
+      12: ["_921_12_moon.png",200],
+      13: ["_921_13_rain water 1.png",201],
+      14: ["_921_14_rain water 2.png",202],
+      15: ["_921_15_rain.png",203],
+      16: ["_921_16_rain-status-no.png",204],
+      17: ["_921_17_rain-status-yes.png",205],
+      18: ["_921_20_snow.png",206],
+      19: ["_921_21_snowflake.png",207],
+
+      20: ["_921_22_solar-cell.png",208],
+      21: ["_921_23_sun duration.png",209],
+      22: ["_921_24_brightness.png",210],
+      23: ["_921_25_sun.png",211],
+      24: ["_921_26_sun-course.png",212],
+      25: ["_921_27_Sunrise.png",213],
+      26: ["_921_28_sunset.png",214],
+      27: ["_921_29_temperature.png",215],
+      28: ["_921_30_thunderstorm.png",216],
+      29: ["_921_31_unknown-weather.png",217],
+
+      30: ["_921_32_uv-radiation.png",218],
+      31: ["_921_33_Wind direction.png",219],
+      32: ["_921_35_windvane.png",220],
+      33: ["_921_36_windy.png",221],
+
+
     };
     return image;
   };

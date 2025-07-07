@@ -30,8 +30,8 @@
   string hmip_smi55 = "HmIP-SMI55";
   string hmip_smi55_a = "HmIP-SMI55-A";
   string hmip_smi55_2 = "HmIP-SMI55-2";
-  string hmip_wgd = "HmIPW-WGD";
-  string hmip_wgd_pl = "HmIPW-WGD-PL";
+  string wgd = "-WGD";
+  string wgd_pl = "-WGD-PL";
   string hmip_wgs = "HmIP-WGS";
 
   string heatingClimateControlTransceiver =  "HEATING_CLIMATECONTROL_TRANSCEIVER";
@@ -780,11 +780,11 @@
               }
 
               ! SPHM-767
-              if (((oCH.Label().Find(hmipwID) != -1) || (oCH.Label().Find(wrc6) != -1) || (oCH.Label().Find(hmip_drg_dali) != -1) || (oCH.Label().Find(hmip_bsl) != -1) || (oCH.Label().Find(hmip_wgs) != -1) ) && (i_maintenance != -1) && (oDP.HSSID().Find("COMBINED_PARAMETER") != -1)) {
+              if (((oCH.Label().Find(hmipwID) != -1) || (oCH.Label().Find(wrc6) != -1) || (oCH.Label().Find(hmip_drg_dali) != -1) || (oCH.Label().Find(hmip_bsl) != -1) || (oCH.Label().Find(hmip_wgs) != -1) || (oCH.Label().Find(wgd) != -1) || (oCH.Label().Find(wgd_pl) != -1)) && (i_maintenance != -1) && (oDP.HSSID().Find("COMBINED_PARAMETER") != -1)) {
                 ! IMTL(Level) 0 = OFF - 1 = ON
                 ! Some devices doesn't habe a display (e. g. HmIPW-WRC6). Therefore we check for a key visual (IMKV)
                 if (iV.Find("IMKV=") == -1) {
-                  if (((oCH.Label().Find(wrc6) == -1)) && (oCH.Label().Find(hmip_wgd) == -1) && (oCH.Label().Find(hmip_wgd_pl) == -1) && (oCH.Label().Find(hmip_wgs) == -1)) {
+                  if (((oCH.Label().Find(wrc6) == -1)) && (oCH.Label().Find(wgd) == -1) && (oCH.Label().Find(wgd_pl) == -1) && (oCH.Label().Find(hmip_wgs) == -1)) {
                     iV = "IMLB=true,IMKV=true,IMTL=1,IMDU=60";
                   } else {
                     iV = "IMKV=true,IMTL=1,IMDU=60";

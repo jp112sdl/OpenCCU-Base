@@ -124,8 +124,6 @@ jQuery.extend(true, langJSON, {
     "stringTableValveStateAdjTooSmallFalse" : "Ventilstellbereich zu klein: Nein",
     "stringTableValveStateAdjTooSmallTrue" : "Ventilstellbereich zu klein: Ja",
 
-
-    "comment" : "Release B/2025 - not yet translated",
     "stringTableSoilMoistureTransmitterFilterSize" : "Filtergr%F6%DFe",
     "stringTableMeasurementInterval" : "Messintervall",
     "stringTableMeasurementIntervalUnit" : "Einheit Messintervall",
@@ -138,6 +136,9 @@ jQuery.extend(true, langJSON, {
     "stringTableSoilTemperature" : "Bodentemperatur",
 
     "hintAutomaticDeviceUpdate" : "Das Update wird automatisch im Hintergrund durchgef%FChrt.",
+
+    "comment" : "Release C/2025 not yet translated",
+    "stringTableWeatherReceiverDataId" : "Bild ID",
 
     "noMoreKeys" : ""
   }

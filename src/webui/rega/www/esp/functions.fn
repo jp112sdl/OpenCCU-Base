@@ -761,7 +761,7 @@ function ::conditionIsParameterVisible() {
     }
 
     !HmIP-WGD(-PL) - Glass Display
-    if ((oCC.Label() == "HmIPW-WGD") || (oCC.Label() == "HmIPW-WGD-PL")) {
+    if (oCC.Label().Find("-WGD") != -1) {
       ! Hide the parameter DISPLAY_UPDATE_REQUEST_X (X = 1-39)
       if ( oCC.HssType().Find("MAINTENANCE") != -1) {
         if ( oDP.HSSID().Find("DISPLAY_UPDATE_REQUEST") != -1 ) {
@@ -949,7 +949,7 @@ function ::destinationIsParameterVisible() {
   }
 
   !Hide some parameter which are handled with the COMBINED_PARAMETER
-  if ((oCH.Label() == "HmIPW-WGD") || (oCH.Label() == "HmIPW-WGD-PL") || ("HmIP-DRG-DALI")) {
+  if ((oCH.Label().Find("-WGD") != -1) || ("HmIP-DRG-DALI")) {
     if ( oCH.HssType().Find("MAINTENANCE") != -1) {
       ! Hide the following parameters. We do this with the COMBINED_PARAMETER
       if (

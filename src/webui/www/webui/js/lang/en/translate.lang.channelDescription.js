@@ -174,6 +174,7 @@ jQuery.extend(true,langJSON, {
     "chType_WATER_SWITCH_TRANSMITTER" : "Status report<br/>Irrigation actor",
     "chType_WATER_SWITCH_VIRTUAL_RECEIVER" : "Irrigation actor",
     "chType_WATER_SWITCH_WEEK_PROFILE" : "Weekly program",
+    "chType_WEATHER_DISPLAY_RECEIVER" : "Weather channel",
     "chType_WEATHER_RECEIVER" : "Connection partner<br/>temperature sensor",
     "chType_WEATHER_TRANSMIT" : "Status report<br/>Weather data",
     "chType_WEEK_PROGRAM" : "Connection partner week program",

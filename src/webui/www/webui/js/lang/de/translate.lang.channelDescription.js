@@ -178,6 +178,7 @@ jQuery.extend(true,langJSON, {
     "chType_WATER_SWITCH_TRANSMITTER" : "Statusmitteilung<br/>Bew%E4sserungsaktor",
     "chType_WATER_SWITCH_VIRTUAL_RECEIVER" : "Bew%E4sserungsaktor",
     "chType_WATER_SWITCH_WEEK_PROFILE" : "Wochenprogramm",
+    "chType_WEATHER_DISPLAY_RECEIVER" : "Wetterkanal",
     "chType_WEATHER_RECEIVER" : "Verkn%FCpfungspartner<br/>Temperatursensor",
     "chType_WEATHER_TRANSMIT" : "Statusmitteilung<br/>Wetterdaten",
     "chType_WEEK_PROGRAM" : "Verkn%FCpfungspartner Wochenprogramm",

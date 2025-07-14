@@ -449,8 +449,6 @@ proc getDisplayInputTransmitter {chn p descr} {
   set specialID "[getSpecialID $special_input_id]"
   set html ""
 
-  set isWired [string first "HmIPW-" $devType]
-
   set param _ABORT_EVENT_SENDING_CHANNELS
   if { [info exists ps($param)] == 1  } {
     incr prn
@@ -509,28 +507,22 @@ proc getDisplayInputTransmitter {chn p descr} {
       append html "<td>\${lblControlRepresentation}</td>"
       array_clear options
 
-      if {$isWired != -1} {
-        set options(0) "\${optionNone}"
-        set options(1) "\${optionDimmActor}"
-        set options(2) "\${optionShutterBlind}"
-        set options(3) "\${optionSwitchActor}"
-      } else {
-        set options(0) "\${optionNone}"
-        set options(1) "\${optionDimmActor}"
-        set options(2) "\${optionShutter}"
-        set options(3) "\${optionSwitchActor}"
-        set options(4) "\${optionBlind}"
-        set options(5) "\${optionShutterBlind}"
-        set options(6) "\${optionHSV}"
-        set options(7) "\${optionTW}"
-        set options(8) "\${optionHSVTW}"
-        set options(9) "\${optionAccessLockUnlock}"
-        set options(10) "\${optionAccessDayNight}"
-        set options(11) "\${optionAccessOpen}"
-      }
+      set options(0) "\${optionNone}"
+      set options(1) "\${optionDimmActor}"
+      set options(2) "\${optionShutter}"
+      set options(3) "\${optionSwitchActor}"
+      set options(4) "\${optionBlind}"
+      set options(5) "\${optionShutterBlind}"
+      set options(6) "\${optionHSV}"
+      set options(7) "\${optionTW}"
+      set options(8) "\${optionHSVTW}"
+      set options(9) "\${optionAccessLockUnlock}"
+      set options(10) "\${optionAccessDayNight}"
+      set options(11) "\${optionAccessOpen}"
 
 
-      append html  "<td>[getOptionBox '$param' options $ps($param) $chn $prn]&nbsp;[getHelpIcon $param 550 200]</td>"
+
+      append html  "<td>[getOptionBox '$param' options $ps($param) $chn $prn]&nbsp;[getHelpIcon $param 550 400]</td>"
     append html "</tr>"
   }
 
@@ -674,8 +666,6 @@ proc getWeatherDisplayReceiver {chn p descr} {
   set devType $dev_descr(TYPE)
   set specialID "[getSpecialID $special_input_id]"
   set html ""
-
-  set isWired [string first "HmIPW-" $devType]
 
   set param BASE_IMAGE
   if { [info exists ps($param)] == 1 } {

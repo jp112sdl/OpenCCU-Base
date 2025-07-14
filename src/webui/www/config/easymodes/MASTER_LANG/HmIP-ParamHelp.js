@@ -413,7 +413,16 @@ jQuery.extend(true,langJSON, {
       "<b>Keine</b>: Zus%E4tzliche Levelansteuerung deaktiviert.<br/><br/>" +
       "<b>Dimmer</b>: %DCber die Tasten Plus und Minus kann ein Ziellevel eingestellt werden.<br/><br/>" +
       "<b>Rolladen/Jalousie</b>: %DCber Tasten Rauf und Runter kann ein Ziellevel eingestellt werden.<br/><br/>" +
-      "<b>Schaltaktor</b>: %DCber die Tasten f%FCr Ein und Aus kann der Ziellevel 100% bzw 0% eingestellt werden.<br/><br/>",
+      "<b>Schaltaktor</b>: %DCber die Tasten f%FCr Ein und Aus kann der Ziellevel 100% bzw 0% eingestellt werden.<br/><br/>" +
+
+      "<b>Jalousie</b>: <span class='attention'>Help</span> Jalousie<br/><br/>" +
+      "<b>Rollladen/Jalousie</b>: <span class='attention'>Help</span> Rollladen/Jalousie<br/><br/>" +
+      "<b>optionHSV</b>: <span class='attention'>Help</span> optionHSV<br/><br/>" +
+      "<b>optionTW</b>: <span class='attention'>Help</span> optionTW<br/><br/>" +
+      "<b>optionHSVTW</b>: <span class='attention'>Help</span> optionHSVTW<br/><br/>" +
+      "<b>optionAccessLockUnlock</b>: <span class='attention'>Help</span> optionAccessLockUnlock<br/><br/>" +
+      "<b>optionAccessDayNight</b>: <span class='attention'>Help</span> optionAccessDayNight<br/><br/>" +
+      "<b>optionAccessOpen</b>: <span class='attention'>Help</span> optionAccessOpen<br/><br/>",
 
     "DALI_GROUP" :
       "Hier%FCber kann das DALI-Ger%E4t bis zu 16 DALI-Gruppen zugeordnet werden. " +
@@ -928,7 +937,16 @@ jQuery.extend(true,langJSON, {
       " With the representation, another channel for direct control of a target level can be activated for the tile via two additional keys on the tile.<br/><br/>" +
       "<b>Dimmer</b>: Via the keys Plus and Minus a target level can be set.<br/><br/>" +
       "<b>Shutter/blind</b>: A target level can be set via the Up and Down keys.<br/><br/>" +
-      "<b>Switch actuator</b>: The target level 100% and 0% can be set via the keys for On and Off.<br/><br/>",
+      "<b>Switch actuator</b>: The target level 100% and 0% can be set via the keys for On and Off.<br/><br/>" +
+
+      "<b>Jalousie</b>: <span class='attention'>Help</span> Jalousie<br/><br/>" +
+      "<b>Rollladen/Jalousie</b>: <span class='attention'>Help</span> Rollladen/Jalousie<br/><br/>" +
+      "<b>optionHSV</b>: <span class='attention'>Help</span> optionHSV<br/><br/>" +
+      "<b>optionTW</b>: <span class='attention'>Help</span> optionTW<br/><br/>" +
+      "<b>optionHSVTW</b>: <span class='attention'>Help</span> optionHSVTW<br/><br/>" +
+      "<b>optionAccessLockUnlock</b>: <span class='attention'>Help</span> optionAccessLockUnlock<br/><br/>" +
+      "<b>optionAccessDayNight</b>: <span class='attention'>Help</span> optionAccessDayNight<br/><br/>" +
+      "<b>optionAccessOpen</b>: <span class='attention'>Help</span> optionAccessOpen<br/><br/>",
 
     "DALI_GROUP" :
       "Here, the DALI device can be assigned to up to 16 groups. " +

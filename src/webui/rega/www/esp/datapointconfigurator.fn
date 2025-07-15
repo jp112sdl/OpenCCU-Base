@@ -702,7 +702,7 @@ function ::dcCreate()
               WriteLine( "<script>conInfo('Control CN_HMIP_BUTTON found.');</script>" );
               isKnownControl = true;
               sLastControlName = CN_HMIP_BUTTON;
-            if ((ch.HssType() != "MULTI_MODE_INPUT_TRANSMITTER") || (ch.Label() == "ELV-SH-BM-S")) {
+            if ((ch.HssType() != "MULTI_MODE_INPUT_TRANSMITTER") || (ch.Label() == "ELV-SH-BM-S") || (ch.Label() == "ELV-SH-FSI")) {
                if (ch.Label().Substr(5,7) != "MOD-RC8") {
                 if ((ch.Label() == "ELV-SH-BM-S")) {
                   WriteLine( "<script>conInfo('ELV-SH-BM-S found');</script>" );

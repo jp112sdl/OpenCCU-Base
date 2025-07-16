@@ -81,6 +81,8 @@ webui/js/dialog/wgdSelectIconDialog.js
 webui/js/dialog/universalLightReceiverDialog.js
 webui/js/dialog/hmipRGBWControllerDialog.js
 webui/js/dialog/rgbwTunableWhiteControllerDialog.js
+webui/js/dialog/wgdWeatherCombinedParamDialog.js
+
 
 # KopfzeileHauptmen�
 webui/js/headerbar.js

@@ -2184,7 +2184,7 @@ proc getDimmerTransmitter {chn p descr} {
       set option(0) "\${optionAutoDetection}"
       set option(1) "\${optionTrailingEdge}"
       set option(2) "\${optionLeadingEdge}"
-      append html  "<td>[getOptionBox '$param' option $ps($param) $chn $prn]</td>"
+      append html  "<td>[getOptionBox '$param' option $ps($param) $chn $prn]&nbsp;[getHelpIcon $param]</td>"
     append html "</tr>"
   }
 

@@ -135,6 +135,10 @@ jQuery.extend(true, langJSON, {
     "stringTableWeatherReceiverDataId" : "Picture ID",
     "optionPictureID" : "ID&nbsp;",
 
+    "optionAutoDetection" : "en* Automatische Erkennung",
+    "optionTrailingEdge" : "en* Phasenabschnitt",
+    "optionLeadingEdge" : "en* Phasenanschnitt",
+
     "noMoreKeys" : ""
   }
 });

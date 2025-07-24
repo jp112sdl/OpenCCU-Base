@@ -429,6 +429,7 @@ set comment {
       && ([string first "HmIP-BROLL" $devType] == -1)
       && ([string first "HmIP-BDT" $devType] == -1)
       && ([string first "HmIP-eTRV-F" $devType] == -1)
+      && ([string first "HmIP-UDI-PB2" $devType] == -1)
       } {
       append html "<tr>"
         append html "<td>\${lblMountingOrientation}</td>"
@@ -2171,6 +2172,19 @@ proc getDimmerTransmitter {chn p descr} {
     append html "<tr>"
       append html "<td>\${lblDimmerOnMinLevel}</td>"
       append html "<td class='j_onMinLevel_$chn'>[getTextField $param $ps($param) $chn $prn onchange=setDimmerLevelLowest(this.value)]&nbsp;%&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_RGBW 450 75]</td>"
+    append html "</tr>"
+  }
+
+  set param UDI_DIMMING_MODE
+  if { [info exists ps($param)] == 1  } {
+    incr prn
+    append html "<tr>"
+      append html "<td>\${lblMode}</td>"
+      array_clear option
+      set option(0) "\${optionAutoDetection}"
+      set option(1) "\${optionTrailingEdge}"
+      set option(2) "\${optionLeadingEdge}"
+      append html  "<td>[getOptionBox '$param' option $ps($param) $chn $prn]</td>"
     append html "</tr>"
   }
 

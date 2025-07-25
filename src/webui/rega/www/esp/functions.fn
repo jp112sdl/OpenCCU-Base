@@ -412,6 +412,8 @@ function ::showHideHmIPChannel() {
         || ((oDevHssType == "HmIP-BSL") && (devFwMajor >= 2))
         || (oDevHssType == "HmIP-WGD")
         || (oDevHssType == "HmIP-WGD-PL")
+        || (oDevHssType == "HmIP-UDI-PB2")
+        || (oDevHssType == "HmIP-UDI-PB2-A")
         ) {
 
         object chnParam;

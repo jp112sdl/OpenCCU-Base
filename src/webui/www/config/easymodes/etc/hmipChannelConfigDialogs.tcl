@@ -430,6 +430,7 @@ set comment {
       && ([string first "HmIP-BDT" $devType] == -1)
       && ([string first "HmIP-eTRV-F" $devType] == -1)
       && ([string first "HmIP-UDI-PB2" $devType] == -1)
+      && ([string first "HmIP-UDI-SMI55" $devType] == -1)
       } {
       append html "<tr>"
         append html "<td>\${lblMountingOrientation}</td>"

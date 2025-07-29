@@ -414,6 +414,8 @@ function ::showHideHmIPChannel() {
         || (oDevHssType == "HmIP-WGD-PL")
         || (oDevHssType == "HmIP-UDI-PB2")
         || (oDevHssType == "HmIP-UDI-PB2-A")
+        || (oDevHssType == "HmIP-UDI-SMI55")
+        || (oDevHssType == "HmIP-UDI-SMI55-A")
         ) {
 
         object chnParam;
@@ -916,9 +918,7 @@ function ::destinationIsParameterVisible() {
   }
 
   if ( oCH.HssType().Find("DIMMER_VIRTUAL_RECEIVER") != -1) {
-
-    !HmIP-WUA (UNIVERSAL-ACTOR (0 - 10 V)
-    if ((oCH.Label() == "HmIP-WUA") || (oCH.Label() == "ELV-SH-WUA") ) {
+    if ((oCH.Label().Find("-WUA") != -1) || (oCH.Label().Find("-UDI-SMI55") != -1)) {
       if ( oDP.HSSID().Find("COMBINED_PARAMETER") != -1 ) {
         showChannelParam = true;
       } else {

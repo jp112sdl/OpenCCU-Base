@@ -1462,7 +1462,7 @@ RF_existsLink = function(deviceType, ch, ch_type, internalLinkOnly) {
 
   switch(ch_type) {
     case "MULTI_MODE_INPUT_TRANSMITTER":
-      arDevMultiModeException = ["HmIP-FSI16", "HmIP-FSI16-2", "HmIP-DRDI3", "HmIP-BDT-I", "HmIP-UDI-PB2", "HmIP-UDI-PB2-A"];
+      arDevMultiModeException = ["HmIP-FSI16", "HmIP-FSI16-2", "HmIP-DRDI3", "HmIP-BDT-I", "HmIP-UDI-PB2", "HmIP-UDI-PB2-A", "HmIP-UDI-SMI55", "HmIP-UDI-SMI55-A"];
       if ((arDevMultiModeException.indexOf(deviceType) == -1) || (internalLinkOnly == 0)) {
         showHintPrgLink(ch, false);
       } else {

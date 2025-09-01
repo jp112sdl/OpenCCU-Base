@@ -334,39 +334,72 @@ function ::CreateDoorLockTranseiver() {
   object oLockTargetLevel = cObj.DPByControl("DOOR_LOCK_TRANSCEIVER.LOCK_TARGET_LEVEL");
   object oLockTeachInState = cObj.DPByControl("DOOR_LOCK_TRANSCEIVER.LOCK_TEACH_IN_STATE");
 
+  ! Determine the name of the interface
+  integer iFaceID = cObj.Interface();
+  object oIface = dom.GetObject(iFaceID);
+  string sInterface = oIface.Name();
+
+  object oChannel = dom.GetObject(chnId);
+  string chAddress = oChannel.Address();
+  string chType = oChannel.ChannelType();
 
   ! oLockTargetLevel is writeable, all other parameters are only readable
 
   if (oLockState) {
 
-      string stateTxt = "${stringTableKeyMaticStateUncertainTrue}";
-      string statePic = "dialog-questionmark_80px.png";
+    string stateTxt = "${stringTableKeyMaticStateUncertainTrue}";
+    string statePic = "dialog-questionmark_80px.png";
 
-      if (oLockState.Value() == 1) {
-       stateTxt = "${stringTableKeyMaticStateFalse}";
-       statePic = "lock/closed.png";
-      }
-      if (oLockState.Value() == 2) {
-       stateTxt = "${stringTableKeyMaticStateTrue}";
-       statePic = "lock/open.png";
+    if (oLockState.Value() == 1) {
+     stateTxt = "${stringTableKeyMaticStateFalse}";
+     statePic = "lock/closed.png";
+    }
+    if (oLockState.Value() == 2) {
+     stateTxt = "${stringTableKeyMaticStateTrue}";
+     statePic = "lock/open.png";
+    }
+
+    WriteLine("<td>");
+      WriteLine("<table>");
+        WriteLine("<tr>");
+          WriteLine("<td>");
+            WriteLine("<table id='"#oLockState.ID()#"' class='ControlBtnOff CLASS02511'>");
+            WriteLine("<tr>");
+              WriteLine("<td  class='CLASS02513'>");
+                WriteLine("<div align='center'>");
+                  WriteLine("<img src='/ise/img/"#statePic#"' width='80' height='70' />");
+                WriteLine("</div>");
+              WriteLine("</td>");
+            WriteLine("</tr>");
+            WriteLine("<tr><td>"#stateTxt#"</td></tr>");
+            WriteLine("</table>");
+          WriteLine("</td>");
+        WriteLine("</tr>");
+
+        WriteLine("<tr><td colspan='2'><hr></td></tr>");
+
+        if (oLockTargetLevel) {
+          string tmp;
+          string options = "LOCKED,UNLOCKED,OPEN,RESET_TEACH_IN,SET_NEUTRAL_LOCKED,SET_NEUTRAL_UNLOCKED,TESTRUN_SAVE_LOCK_UNLOCK,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_UNLOCKED,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_VERTICAL,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_HORIZONTAL,LOAD_CALIBRATION_CLOSED_DOOR,LOAD_CALIBRATION_OPEN_DOOR";
+
+        WriteLine("<tr>");
+
+          WriteLine("<td>");
+            WriteLine("<div id='"#chnId#"lockTargetLevel' class='ControlBtnOff' style='line-height:50px; cursor:pointer;'>Set Target Level</div>");
+          WriteLine("</td>");
+
+        WriteLine("</tr>");
+
+          WriteLine("<script type='text/javascript'>");
+            WriteLine("var opts = {};");
+            WriteLine("opts.iface = '"#sInterface#"';");
+            WriteLine("opts.chAddress = '"#chAddress#"';");
+            WriteLine("opts.options = '"#options#"';");
+
+            WriteLine("ipm"#chnId#" = new iseDoorLockTransceiver("#chnId#",opts);");
+          WriteLine("</script>");
       }
 
-      WriteLine("<td>");
-        WriteLine("<table>");
-          WriteLine("<tr>");
-            WriteLine("<td>");
-              WriteLine("<table id='"#oLockState.ID()#"' class='ControlBtnOff CLASS02511'>");
-              WriteLine("<tr>");
-                WriteLine("<td  class='CLASS02513'>");
-                  WriteLine("<div align='center'>");
-                    WriteLine("<img src='/ise/img/"#statePic#"' width='80' height='70' />");
-                  WriteLine("</div>");
-                WriteLine("</td>");
-              WriteLine("</tr>");
-              WriteLine("<tr><td>"#stateTxt#"</td></tr>");
-              WriteLine("</table>");
-            WriteLine("</td>");
-          WriteLine("</tr>");
         WriteLine("</table");
       WriteLine("</td>");
   }
@@ -413,7 +446,6 @@ function ::CreateAutoRelockTransceiver() {
         WriteLine("JControlBtn.on(jQuery(elm));");
         WriteLine("setDpState("#oAutoRelockState.ID()#", mode);");
       WriteLine("}");
-
     WriteLine("</script>");
   }
 }

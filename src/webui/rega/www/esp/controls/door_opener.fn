@@ -416,6 +416,17 @@ function ::CreateDoorLockTranseiver() {
         WriteLine("<tr><td colspan='3'><hr></td></tr>");
       }
 
+
+      if (errorMsg) {
+        WriteLine("<tr><td colspan='3'><hr></td></tr>");
+
+        if ((oErrorJammed) && (oErrorJammed.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorJammed}</div></td></tr>");}
+        if ((oErrorLoadTooLow) && (oErrorLoadTooLow.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorLoadTooLow}</div></td></tr>");}
+        if ((oErrorNoEndStopLock) && (oErrorNoEndStopLock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorNoEndStopLock}</div></td></tr>");}
+        if ((oErrorNoEndStopUnlock) && (oErrorNoEndStopUnlock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorNoEndStopUnlock}</div></td></tr>");}
+
+      }
+
     WriteLine("</table>");
   WriteLine("</td>");
 }

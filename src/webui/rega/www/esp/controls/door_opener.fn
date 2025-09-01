@@ -394,6 +394,7 @@ function ::CreateDoorLockTranseiver() {
             WriteLine("var opts = {};");
             WriteLine("opts.iface = '"#sInterface#"';");
             WriteLine("opts.chAddress = '"#chAddress#"';");
+            WriteLine("opts.paramID = '"#oLockTargetLevel.ID()#"';");
             WriteLine("opts.options = '"#options#"';");
 
             WriteLine("ipm"#chnId#" = new iseDoorLockTransceiver("#chnId#",opts);");

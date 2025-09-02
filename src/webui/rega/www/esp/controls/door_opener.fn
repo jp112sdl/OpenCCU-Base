@@ -418,15 +418,18 @@ function ::CreateDoorLockTranseiver() {
       WriteLine("<tr><td><table>");
         WriteLine("<tr><td colspan='2'><hr></td></tr>");
         if (oLockState || oLockStateReason) {
+          string widthInfoField = "width:175px;";
           WriteLine("<tr>");
             if (oLockState) {
+              integer lockState = oLockState.Value();
               WriteLine("<td>");
-                WriteLine("<div class='ControlBtnInfo'>${LOCK_STATE}: "#oLockState.Value()#"</div>");
+                WriteLine("<div class='ControlBtnInfo' style='"#widthInfoField#"'>${dlp_LOCK_STATE}: ${dlpLockState_"#lockState#"}</div>");
               WriteLine("</td>");
             }
             if (oLockStateReason) {
+              integer lockStateReason = oLockStateReason.Value();
               WriteLine("<td>");
-                WriteLine("<div class='ControlBtnInfo'>${LOCK_STATE_REASON}: "#oLockStateReason.Value()#"</div>");
+                WriteLine("<div class='ControlBtnInfo' style='"#widthInfoField#"'>${dlp_LOCK_STATE_REASON}: ${dlpLockStateReason_"#lockStateReason#"}</div>");
               WriteLine("</td>");
             }
           WriteLine("</tr>");
@@ -435,13 +438,15 @@ function ::CreateDoorLockTranseiver() {
         if (oLockTeachInState || oLastLockDriveLoad) {
           WriteLine("<tr>");
             if (oLockTeachInState) {
+              integer lockTeachInState = oLockTeachInState.Value();
               WriteLine("<td>");
-                WriteLine("<div class='ControlBtnInfo'>${LOCK_TEACH_IN_STATE}: "#oLockTeachInState.Value()#"</div>");
+                WriteLine("<div class='ControlBtnInfo' style='"#widthInfoField#"'>${dlp_LOCK_TEACH_IN_STATE}: ${dlpLockTeachInState_"#lockTeachInState#"}</div>");
               WriteLine("</td>");
             }
             if (oLastLockDriveLoad) {
+              integer lastLockDriveLoad = oLastLockDriveLoad.Value();
               WriteLine("<td>");
-                WriteLine("<div class='ControlBtnInfo'>${LAST_LOCK_DRIVE_LOAD}: "#oLastLockDriveLoad.Value()#"</div>");
+                WriteLine("<div class='ControlBtnInfo' style='"#widthInfoField#"'>${dlp_LAST_LOCK_DRIVE_LOAD}: "#lastLockDriveLoad#"</div>");
               WriteLine("</td>");
             }
           WriteLine("</tr>");

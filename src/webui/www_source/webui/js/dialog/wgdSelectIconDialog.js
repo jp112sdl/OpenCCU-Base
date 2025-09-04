@@ -68,11 +68,9 @@ var
       2: ["_001_000_tablelamp0.png", 12],
       3: ["_002_000_spotoff.png", 23],
       4: ["_010_000_socket_off.png", 25],
-      5: ["_020_000_shutter0.png", 27]
-      /*  Not desired according to discussion with PM and Developer.
-      5 : ["_050_20_windows_closed.png",43],
-      6 : ["_050_64_window_closed.png",52]
-       */
+      5: ["_020_000_shutter0.png", 27],
+      6 :["_930_00_automations_64.png", 259],
+      7 :["_930_01_Notificationbell_64.png",260]
     };
   }
 

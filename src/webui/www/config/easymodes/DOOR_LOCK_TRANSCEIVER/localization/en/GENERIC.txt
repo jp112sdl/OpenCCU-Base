@@ -1,0 +1,6 @@
+"toggle" : "en* Toggle",
+"toggleOpen" : "en* %D6ffnen / Schlie%DFen",
+"switch_open" : "en* T%FCr %F6ffnen",
+"switch_unlock" : "en* T%FCrschloss entriegeln",
+"switch_lock" : "en* T%FCrschloss verriegeln",
+"not_active" : "en* nicht aktiv",

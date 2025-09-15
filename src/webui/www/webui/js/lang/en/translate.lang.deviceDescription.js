@@ -32,6 +32,7 @@ jQuery.extend(true,langJSON, {
     "ELV-SH-CTV" : "ELV Smart Home<br/>Tilt and Vibration Sensor<br/>Compact",
     "ELV-SH-KRC" : "ELV smart home key ring remote control",
     "ELV-SH-KRCO" : "ELV smart home key ring remote control outdoor",
+    "ELV-SH-PTI2" : "ELV Smart Home Temperature Sensor with external probes - 2 channels",
     "ELV-SH-SB8" : "ELV Smart Home<br/>Status Board",
     "ELV-SH-SMS2" : "ELV Smart Home<br/>Surface mounted switch<br/>2 channels",
     "ELV-SH-SMSI" : "ELV Smart Home<br/>Soil moisture sensor",

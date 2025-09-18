@@ -376,24 +376,50 @@ function ::CreateDoorLockTranseiver() {
                statePic = "lock/open.png";
               }
 
-              WriteLine("<td>");
-                WriteLine("<table id='"#oLockState.ID()#"' class='ControlBtnOff CLASS02511' width='100%' cellspacing='4'>");
-                  WriteLine("<tr>");
-                    WriteLine("<td  class='CLASS02513'>");
-                      WriteLine("<div align='center'>");
-                        WriteLine("<img src='/ise/img/"#statePic#"' width='80' height='70' />");
-                      WriteLine("</div>");
-                    WriteLine("</td>");
-                  WriteLine("</tr>");
-                  WriteLine("<tr><td>"#stateTxt#"</td></tr>");
-                WriteLine("</table>");
-              WriteLine("</td>");
-              WriteLine("<td style='width:115px;'></td>");
-            }
+          !    WriteLine("<td>");
+          !      WriteLine("<table id='"#oLockState.ID()#"' class='ControlBtnOff CLASS02511' width='100%' cellspacing='4'>");
+          !        WriteLine("<tr>");
+          !          WriteLine("<td  class='CLASS02513'>");
+          !            WriteLine("<div align='center'>");
+          !              WriteLine("<img src='/ise/img/"#statePic#"' width='80' height='70' />");
+          !            WriteLine("</div>");
+          !          WriteLine("</td>");
+          !        WriteLine("</tr>");
+          !        WriteLine("<tr><td>"#stateTxt#"</td></tr>");
+          !      WriteLine("</table>");
+          !    WriteLine("</td>");
+          !    WriteLine("<td style='width:115px;'></td>");
+          !  }
 
             if (oLockTargetLevel) {
               string tmp;
               string options = "LOCKED,UNLOCKED,OPEN,RESET_TEACH_IN,SET_NEUTRAL_LOCKED,SET_NEUTRAL_UNLOCKED,TESTRUN_SAVE_LOCK_UNLOCK,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_UNLOCKED,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_VERTICAL,TEACH_IN_DRIVE_OPEN_DOOR_NEUTRAL_HORIZONTAL,LOAD_CALIBRATION_CLOSED_DOOR,LOAD_CALIBRATION_OPEN_DOOR";
+
+
+
+              WriteLine("<td class='CLASS02518'>");
+                WriteLine("<div id='lockTargetLevelOFF_"#chnId#"' class='CLASS02550 ControlBtnOff' align='center' style='margin-bottom:3px;' onclick=\"setBtnPress(this.id);setDpState("#oLockTargetLevel.ID()#", 0);\">${lblLock}</div>");
+                WriteLine("<div id='lockTargetLevelON_"#chnId#"' class='CLASS02550 ControlBtnOff' align='center' style='margin-bottom:3px;' onclick=\"setBtnPress(this.id);setDpState("#oLockTargetLevel.ID()#", 1);\">${lblUnlock}</div>");
+                WriteLine("<div id='lockTargetLevelOpen"#chnId#"' class='CLASS02550 ControlBtnOff' align='center' onclick=\"setBtnPress(this.id);setDpState("#oLockTargetLevel.ID()#", 2);\">${lblOpen}</div>");
+              WriteLine("</td>");
+              WriteLine("<td style='width:50px;'></td>");
+
+              WriteLine("<td>");
+                WriteLine("<table id='"#oLockState.ID()#"' class='ControlBtnOff CLASS02511'>");
+                WriteLine("<tr>");
+                  WriteLine("<td  class='CLASS02513'>");
+                    WriteLine("<div align='center'>");
+                      WriteLine("<img src='/ise/img/"#statePic#"' width='80' height='70' />");
+                    WriteLine("</div>");
+                  WriteLine("</td>");
+                WriteLine("</tr>");
+                WriteLine("<tr><td>"#stateTxt#"</td></tr>");
+                WriteLine("</table>");
+              WriteLine("</td>");
+
+              WriteLine("<td style='width:50px;'></td>");
+
+
 
               WriteLine("<td>");
                 WriteLine("<table>");
@@ -468,10 +494,10 @@ function ::CreateDoorLockTranseiver() {
       if (errorMsg) {
         WriteLine("<tr><td colspan='3'><hr></td></tr>");
 
-        if ((oErrorJammed) && (oErrorJammed.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorJammed}</div></td></tr>");}
-        if ((oErrorLoadTooLow) && (oErrorLoadTooLow.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorLoadTooLow}</div></td></tr>");}
-        if ((oErrorNoEndStopLock) && (oErrorNoEndStopLock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorNoEndStopLock}</div></td></tr>");}
-        if ((oErrorNoEndStopUnlock) && (oErrorNoEndStopUnlock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'>${errorNoEndStopUnlock}</div></td></tr>");}
+        if ((oErrorJammed) && (oErrorJammed.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'><span class='attention'>${errorJammed}</span></div></td></tr>");}
+        if ((oErrorLoadTooLow) && (oErrorLoadTooLow.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'><span class='attention'>${errorLoadTooLow}</span></div></td></tr>");}
+        if ((oErrorNoEndStopLock) && (oErrorNoEndStopLock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'><span class='attention'>${errorNoEndStopLock}</span></div></td></tr>");}
+        if ((oErrorNoEndStopUnlock) && (oErrorNoEndStopUnlock.Value() == true)) {WriteLine("<tr><td><div class='ControlBtnOff' style='line-height:50px;'><span class='attention'>${errorNoEndStopUnlock}</span></div></td></tr>");}
       }
     WriteLine("</table>");
   WriteLine("</td>");

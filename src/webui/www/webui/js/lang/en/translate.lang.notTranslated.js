@@ -167,8 +167,8 @@ jQuery.extend(true, langJSON, {
 
     "stringTableLockState" : "en* Zustand",
     "stringTableLockStateReason" : "en* Ausgel%F6st durch:",
-    "stringTableLockTeachInState" : "en* LOCK_TEACH_IN_STATE",
-    "stringTableLastLockDriveLoad" : "en* LAST_LOCK_DRIVE_LOAD",
+    "stringTableLockTeachInState" : "en* Status der T%FCrschloss-Anlern-Prozedur",
+    "stringTableLastLockDriveLoad" : "en* Schlosslast der letzten Schlie%DFfahrt",
 
     "dlpLockState_0" : "en* ubekannt",
     "dlpLockState_1" : "en* verriegelt",
@@ -215,14 +215,15 @@ jQuery.extend(true, langJSON, {
     "stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralLocked" : "en* Vormerken als Neutralstellung Verriegelt",
     "stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralUnlocked" : "en* Vormerken als Neutralstellung Entriegelt",
     "stringTableDoorLockStateTransceiverLockTargetLevelTestrunSaveLockUnlock" : "en* Endanschl%E4ge pr%FCfen (Fahrt: lock, open) und als Konfiguration speichern",
-    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralUnlocked" : "en* Anlernfahrt (inkl. Schlosslast) starten bei ge%F6ffneter T%FCr\n" +
-      "und Schloss in Neutralstellung Entriegelt und als Konfiguration speichern",
-    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralVertical" : "en* Anlernfahrt (inkl. Schlosslast) starten bei ge%F6ffneter T%FCr (entriegelt)\n" +
-      "bei Schloss mit Neutralstellung vertical und als Konfiguration speichern",
-    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralHorizontal" : "en* Anlernfahrt (inkl. Schlosslast)starten bei ge%F6ffneter T%FCr (entriegelt)\n" +
-      "bei Schloss mit Neutralstellung horizontal und als Konfiguration speichern",
-    "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor" : "en* Anlernen der Schlosslast bei geschlossener T%FCr (Fahrt: lock, unlock)",
-    "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor" : "en* Anlernen der Schlosslast bei ge%F6ffneter T%FCr (Fahrt: lock, unlock)",
+
+    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralUnlocked" : "en* Anlernfahrt starten bei ge%F6ffneter T%FCr (entriegelt)\n" +
+      "und Schloss aktuell in Neutralstellung",
+    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralVertical" : "en* Anlernfahrt  starten bei ge%F6ffneter T%FCr (entriegelt)\n" +
+      "und Schloss mit Neutralstellung vertikal",
+    "stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralHorizontal" : "en* Anlernfahrt starten bei ge%F6ffneter T%FCr (entriegelt)\n" +
+      "und Schloss mit Neutralstellung horizontal",
+    "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor" : "en* Anlernen der Schlosslast bei geschlossener T%FCr (entriegelt)",
+    "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor" : "en* Anlernen der Schlosslast bei ge%F6ffneter T%FCr (entriegelt)",
 
     "stringTableAutoRelockState" : "en* Auto-Relock aktiv: ",
 
@@ -233,24 +234,33 @@ jQuery.extend(true, langJSON, {
     "optionLocked" : "en* Verriegelt",
     "optionUnlocked" : "en* Entriegelt",
 
+    "lblDoorClosed" : "en* T%FCr zu",
+    "lblDoorOpen" : "en* T%FCr offen",
+
+    "btnTeachInDoorLock" : "en* T%FCrschloss anlernen",
+    "btnInfo" : "en* Info",
+
     "noMoreKeys" : ""
   }
 });
 
-langJSON.en.helpLockTargetLevel_A = "A = " + langJSON.en.lblLock + "<br/>";
-langJSON.en.helpLockTargetLevel_B = "B = " + langJSON.en.lblUnlock + "<br/>";
-langJSON.en.helpLockTargetLevel_C = "C = " + langJSON.en.lblOpen + "<br/>";
-langJSON.en.helpLockTargetLevel_D = "D = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelResetTeachIn + "<br/>";
-langJSON.en.helpLockTargetLevel_E = "E = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralLocked + "<br/>";
-langJSON.en.helpLockTargetLevel_F = "F = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralUnlocked + "<br/>";
-langJSON.en.helpLockTargetLevel_G = "G = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTestrunSaveLockUnlock + "<br/>";
-langJSON.en.helpLockTargetLevel_H = "H = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralUnlocked + "<br/>";
-langJSON.en.helpLockTargetLevel_I = "I = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralVertical + "<br/>";
-langJSON.en.helpLockTargetLevel_J = "J = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralHorizontal + "<br/>";
-langJSON.en.helpLockTargetLevel_K = "K = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor + "<br/>";
-langJSON.en.helpLockTargetLevel_L = "L = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor;
+/*
+  langJSON.en.helpLockTargetLevel_A = "A = " + langJSON.en.lblLock + "<br/>";
+  langJSON.en.helpLockTargetLevel_B = "B = " + langJSON.en.lblUnlock + "<br/>";
+  langJSON.en.helpLockTargetLevel_C = "C = " + langJSON.en.lblOpen + "<br/>";
+  langJSON.en.helpLockTargetLevel_D = "D = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelResetTeachIn + "<br/>";
+  langJSON.en.helpLockTargetLevel_E = "E = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralLocked + "<br/>";
+  langJSON.en.helpLockTargetLevel_F = "F = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelSetNeutralUnlocked + "<br/>";
+  langJSON.en.helpLockTargetLevel_G = "G = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTestrunSaveLockUnlock + "<br/>";
+*/
+langJSON.en.helpLockTargetLevel_H = "A = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralUnlocked + "<br/>";
+langJSON.en.helpLockTargetLevel_I = "B = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralVertical + "<br/>";
+langJSON.en.helpLockTargetLevel_J = "C = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralHorizontal + "<br/>";
+langJSON.en.helpLockTargetLevel_K = "D = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor + "<br/>";
+langJSON.en.helpLockTargetLevel_L = "E = " + langJSON.en.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor;
 
 langJSON.en.helpLockTargetLevel =
+  /*
   langJSON.en.helpLockTargetLevel_A +
   langJSON.en.helpLockTargetLevel_B +
   langJSON.en.helpLockTargetLevel_C +
@@ -258,6 +268,7 @@ langJSON.en.helpLockTargetLevel =
   langJSON.en.helpLockTargetLevel_E +
   langJSON.en.helpLockTargetLevel_F +
   langJSON.en.helpLockTargetLevel_G +
+  */
   langJSON.en.helpLockTargetLevel_H +
   langJSON.en.helpLockTargetLevel_I +
   langJSON.en.helpLockTargetLevel_J +

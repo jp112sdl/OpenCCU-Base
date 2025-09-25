@@ -42,7 +42,7 @@ iseDoorLockTransceiver.prototype = {
 
     dlg.btnTextNo(translateKey("dialogBack"));
     dlg.btnTextYes(translateKey("btnOk"));
-    dlg.setWidth(900);
+    dlg.setWidth(600);
 
   },
 
@@ -66,7 +66,7 @@ iseDoorLockTransceiver.prototype = {
         html += "<td>";
           html += "<span>Option: </span> <select id='"+this.id+"selOptionElem'>";
           jQuery.each(this.arOptions, function(index, opt) {
-            html += "<option value='"+index+"'>"+opt+"</option>";
+            html += "<option value='"+(index + 7)+"'>"+opt+"</option>";
           });
           html += "</select>";
         html += "</td>";

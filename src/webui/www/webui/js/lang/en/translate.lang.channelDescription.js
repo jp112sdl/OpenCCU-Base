@@ -71,7 +71,7 @@ jQuery.extend(true,langJSON, {
     "chType_DISPLAY_CLIMATE" : "<br/>Room climate",
     "chType_DISPLAY_UNKNOWN" : "<br/>Quick Motion",
     "chType_DOOR_LOCK_STATE_TRANSMITTER" : "Door lock drive ",
-    "chType_DOOR_LOCK_TRANSCEIVER" : "Door lock channel",
+    "chType_DOOR_LOCK_TRANSCEIVER" : "Door lock drive",
     "chType_DOOR_RECEIVER_MOD_HO" : "Door drive",
     "chType_DOOR_RECEIVER_MOD_TM" : "Door drive",
     "chType_DOOR_STATE_TRANSCEIVER" : "Door status sensor",

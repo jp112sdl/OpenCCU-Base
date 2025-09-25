@@ -165,8 +165,8 @@ jQuery.extend(true, langJSON, {
     "stringTableNoEndStopLock" : "en* NoEndStopLock",
     "stringTableNoEndStopUnLock" : "en* NoEndStopUnLock",
 
-    "stringTableLockState" : "en* Zustand",
-    "stringTableLockStateReason" : "en* Ausgel%F6st durch:",
+    "stringTableLockState" : "Schlosszustand",
+    "stringTableLockStateReason" : "en* Ausl%F6ser",
     "stringTableLockTeachInState" : "en* Status der T%FCrschloss-Anlern-Prozedur",
     "stringTableLastLockDriveLoad" : "en* Schlosslast der letzten Schlie%DFfahrt",
 

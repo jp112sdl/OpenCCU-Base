@@ -1435,7 +1435,10 @@ proc getClimateReceiver {chn p descr} {
   upvar prn prn
   upvar special_input_id special_input_id
 
+  set specialID "[getSpecialID $special_input_id]"
   set CHANNEL $special_input_id
+
+  set chn [getChannel $special_input_id]
 
   set html ""
 
@@ -1452,6 +1455,29 @@ proc getClimateReceiver {chn p descr} {
       append html "<td>[get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]&nbsp;[getHelpIcon $param]</td>"
     append html "</tr>"
   }
+
+  set param TX_MINDELAY_UNIT
+  if { [info exists ps($param)] == 1  } {
+    incr prn
+    append html "<tr>"
+    append html "<td>\${stringTableTxMinDelay}</td>"
+    append html [getComboBox $chn $prn "$specialID" "txMinDelay"]
+    append html "</tr>"
+
+    append html [getTimeUnitComboBoxShort $param $ps($param) $chn $prn $special_input_id]
+
+    incr prn
+    set param TX_MINDELAY_VALUE
+    append html "<tr id=\"timeFactor_$chn\_$prn\" class=\"hidden\">"
+    append html "<td>\${stringTableTxMinDelayValue}</td>"
+
+    append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getMinMaxValueDescr $param]</td>"
+
+    append html "</tr>"
+    append html "<tr id=\"space_$chn\_$prn\" class=\"hidden\"><td><br/></td></tr>"
+    append html "<script type=\"text/javascript\">setTimeout(function() {setCurrentDelayShortOptionPanelA($chn, [expr $prn - 1], '$specialID');}, 100)</script>"
+  }
+
   return $html
 }
 

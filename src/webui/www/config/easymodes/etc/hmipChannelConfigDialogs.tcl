@@ -1430,6 +1430,7 @@ proc getSwitchTransceiver {chn p descr} {
 
 
 proc getClimateReceiver {chn p descr} {
+  global dev_descr
   upvar $p ps
   upvar $descr psDescr
   upvar prn prn
@@ -1437,23 +1438,32 @@ proc getClimateReceiver {chn p descr} {
 
   set specialID "[getSpecialID $special_input_id]"
   set CHANNEL $special_input_id
-
+  set devType $dev_descr(TYPE)
   set chn [getChannel $special_input_id]
 
   set html ""
 
   puts "<script type=\"text/javascript\">load_JSFunc('/config/easymodes/MASTER_LANG/HEATINGTHERMOSTATE_2ND_GEN_HELP.js');</script>"
 
+
   set param TEMPERATURE_OFFSET
   if { [info exists ps($param)] == 1  } {
-    append html "<tr>"
-      array_clear options
-      for {set val -3.5} {$val <= 3.5} {set val [expr $val + 0.5]} {
-        set options($val) "$val &#176;C"
-      }
-      append html "<td>\${stringTableTemperatureOffset}</td>"
-      append html "<td>[get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]&nbsp;[getHelpIcon $param]</td>"
-    append html "</tr>"
+    if {[string first "ELV-SH-PTI2" $devType ] == -1} {
+      append html "<tr>"
+        array_clear options
+        for {set val -3.5} {$val <= 3.5} {set val [expr $val + 0.5]} {
+          set options($val) "$val &#176;C"
+        }
+        append html "<td>\${stringTableTemperatureOffset}</td>"
+        append html "<td>[get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]&nbsp;[getHelpIcon $param]</td>"
+      append html "</tr>"
+    } else {
+      append html "<tr>"
+        append html "<td>\${stringTableTemperatureOffset}</td>"
+        append html  "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getUnit $param]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_STE2]</td>"
+      append html "</tr>"
+    }
+
   }
 
   set param TX_MINDELAY_UNIT

@@ -981,7 +981,10 @@ function ::destinationIsParameterVisible() {
   if ((oCH.HssType().Find("SWITCH_VIRTUAL_RECEIVER") != -1)
     && ((oCH.Label().Find("ELV-SH-FS") != -1)
     || (oCH.Label().Find("ELV-SH-FSI") != -1)
-    || (oCH.Label().Find("ELV-SH-SMS2") != -1))) {
+    || (oCH.Label().Find("ELV-SH-SMS2") != -1)
+    || (oCH.Label().Find("HmIP-FS6") != -1)
+    || (oCH.Label().Find("HmIP-FSI6") != -1)
+    )) {
     if ( (oDP.HSSID().Find("COMBINED_PARAMETER") == -1)) {
       showChannelParam = false;
     }

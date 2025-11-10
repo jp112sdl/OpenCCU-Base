@@ -139,6 +139,8 @@ jQuery.extend(true, langJSON, {
     "optionTrailingEdge" : "en* Phasenabschnitt",
     "optionLeadingEdge" : "en* Phasenanschnitt",
 
+    "comment" : "Release A/2026 not yet translated",
+
     "lblDoorLockDirection" : "en* Drehrichtung zum Verschlie%DFen",
     "lblDoorEndStopOffsetLocked" : "en* Winkel von neutral unverschlossen nach geschlossen",
     "lblDoorEndStopOffsetOpen" : "en* Winkel von neutral unverschlossen nach offen",
@@ -159,7 +161,7 @@ jQuery.extend(true, langJSON, {
     "btnAutoRelockOff" : "en* Auto-Relock Aus",
     "btnAutoRelockOn" : "en* Auto-Relock Ein",
 
-    "dialogSetDLPTargetLevelTitle" : "en* Lock Target Level",
+    "dialogSetDLPTargetLevelTitle" : "en* T%FCrschloss anlernen",
 
     "stringTableLoadTooLow" : "en* LoadTooLow",
     "stringTableNoEndStopLock" : "en* NoEndStopLock",
@@ -167,10 +169,25 @@ jQuery.extend(true, langJSON, {
 
     "stringTableLockState" : "Schlosszustand",
     "stringTableLockStateReason" : "en* Ausl%F6ser",
+
     "stringTableLockTeachInState" : "en* Status der T%FCrschloss-Anlern-Prozedur",
+
+    "neutralPositionLockedSet" : "en* Neutralstellung Verriegelt vorgemerkt",
+    "neutralPositionUnlockedSet" : "en* Neutralstellung Entriegelt vorgemerkt",
+    "neutralPositionBothSet" : "en* beide Neutralstellungen vorgemerkt, bereit f%FCr Anlernfahrt",
+    "teachInDriveRunning" : "en* Anlernfahrt l%E4uft",
+    "teachInSuccessful" : "en* T%FCrschloss-Anlern-Prozedur erfolgreich abgeschlossen",
+    "errorNeutralPositionIncomplete" : "en* Neutralstellungen Fehler: keine ganzzahligen Umdrehungen zwischen Ver- und Entriegelt",
+    "errorNeutralPositionLessOneTurn" : "en* Neutralstellungen Fehler: weniger als 1 Umdrehung zwischen Ver- und Entriegelt",
+    "errorEndStopDriveLockBeforeNeutralPosition" : "en* Anlernfahrt Fehler: Endanschlag lock vor Neutralstellung Verriegelt",
+    "errorEndStopDriveUnlockBeforeNeutralPosition" : "en* Anlernfahrt Fehler: Endanschlag open vor Neutralstellung Entriegelt",
+    "errorTeachInDriveCanceled" : "en* Abbruch durch anderes Kommando / Ereignis",
+    "errorTeachInDriveBatteryLow" : "en* Batterien zu schwach",
+    "teachInError" : "en* T%FCrschloss-Anlern-Prozedur Fehler: sonstige",
+
     "stringTableLastLockDriveLoad" : "en* Schlosslast der letzten Schlie%DFfahrt",
 
-    "dlpLockState_0" : "en* ubekannt",
+    "dlpLockState_0" : "en* unbekannt",
     "dlpLockState_1" : "en* verriegelt",
     "dlpLockState_2" : "en* entriegelt",
     "dlpLockState_3" : "en* ung%FCltig",
@@ -225,7 +242,7 @@ jQuery.extend(true, langJSON, {
     "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor" : "en* Anlernen der Schlosslast bei geschlossener T%FCr (entriegelt)",
     "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor" : "en* Anlernen der Schlosslast bei ge%F6ffneter T%FCr (entriegelt)",
 
-    "stringTableAutoRelockState" : "en* Auto-Relock aktiv: ",
+    "stringTableAutoRelockState" : "en* Auto-Relock aktiv",
 
     "optionPermission" : "en* Berechtigung",
     "optionDoorLock" : "en* T%FCrschloss",

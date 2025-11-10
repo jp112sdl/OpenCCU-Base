@@ -145,6 +145,9 @@ jQuery.extend(true, langJSON, {
     "optionTrailingEdge" : "Phasenabschnitt",
     "optionLeadingEdge" : "Phasenanschnitt",
 
+
+    "comment" : "Release A/2026 not yet translated",
+
     "lblDoorLockDirection" : "Drehrichtung zum Verschlie%DFen",
     "lblDoorEndStopOffsetLocked" : "Winkel von neutral unverschlossen nach geschlossen",
     "lblDoorEndStopOffsetOpen" : "Winkel von neutral unverschlossen nach offen",
@@ -165,7 +168,7 @@ jQuery.extend(true, langJSON, {
     "btnAutoRelockOff" : "Auto-Relock Aus",
     "btnAutoRelockOn" : "Auto-Relock Ein",
 
-    "dialogSetDLPTargetLevelTitle" : "Lock Target Level",
+    "dialogSetDLPTargetLevelTitle" : "T%FCrschloss anlernen",
 
     "stringTableLoadTooLow" : "LoadTooLow",
     "stringTableNoEndStopLock" : "NoEndStopLock",
@@ -173,10 +176,25 @@ jQuery.extend(true, langJSON, {
 
     "stringTableLockState" : "Schlosszustand",
     "stringTableLockStateReason" : "Ausl%F6ser",
+
     "stringTableLockTeachInState" : "Status der T%FCrschloss-Anlern-Prozedur",
+
+    "neutralPositionLockedSet" : "Neutralstellung Verriegelt vorgemerkt",
+    "neutralPositionUnlockedSet" : "Neutralstellung Entriegelt vorgemerkt",
+    "neutralPositionBothSet" : "beide Neutralstellungen vorgemerkt, bereit f%FCr Anlernfahrt",
+    "teachInDriveRunning" : "Anlernfahrt l%E4uft",
+    "teachInSuccessful" : "T%FCrschloss-Anlern-Prozedur erfolgreich abgeschlossen",
+    "errorNeutralPositionIncomplete" : "Neutralstellungen Fehler: keine ganzzahligen Umdrehungen zwischen Ver- und Entriegelt",
+    "errorNeutralPositionLessOneTurn" : "Neutralstellungen Fehler: weniger als 1 Umdrehung zwischen Ver- und Entriegelt",
+    "errorEndStopDriveLockBeforeNeutralPosition" : "Anlernfahrt Fehler: Endanschlag lock vor Neutralstellung Verriegelt",
+    "errorEndStopDriveUnlockBeforeNeutralPosition" : "Anlernfahrt Fehler: Endanschlag open vor Neutralstellung Entriegelt",
+    "errorTeachInDriveCanceled" : "Abbruch durch anderes Kommando / Ereignis",
+    "errorTeachInDriveBatteryLow" : "Batterien zu schwach",
+    "teachInError" : "T%FCrschloss-Anlern-Prozedur Fehler: sonstige",
+
     "stringTableLastLockDriveLoad" : "Schlosslast der letzten Schlie%DFfahrt",
 
-    "dlpLockState_0" : "ubekannt",
+    "dlpLockState_0" : "unbekannt",
     "dlpLockState_1" : "verriegelt",
     "dlpLockState_2" : "entriegelt",
     "dlpLockState_3" : "ung%FCltig",
@@ -231,7 +249,7 @@ jQuery.extend(true, langJSON, {
     "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor" : "Anlernen der Schlosslast bei geschlossener T%FCr (entriegelt)",
     "stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor" : "Anlernen der Schlosslast bei ge%F6ffneter T%FCr (entriegelt)",
 
-    "stringTableAutoRelockState" : "Auto-Relock aktiv: ",
+    "stringTableAutoRelockState" : "Auto-Relock aktiv",
 
     "optionPermission" : "Berechtigung",
     "optionDoorLock" : "T%FCrschloss",
@@ -257,7 +275,7 @@ jQuery.extend(true, langJSON, {
     "lblEventFilterPeriodB2" : "Ersch%FCtterungen innerhalb ",
 
     "optionPositionControl" : "Lage-%DCberwachung",
-    "optionVibrationControl" : "Ersch%tterungs-%DCberwachung",
+    "optionVibrationControl" : "ErschFC%tterungs-%DCberwachung",
     "optionPositionVibrationControl" : "Lage- und Ersch%FCtterungs-%DCberwachung",
     "lblDeviceSensorSensibility_DLP" : "Ersch%FCtterungs-Empfindlichkeit",
     "triggerAngleDLP" : "Lagetoleranz",
@@ -268,10 +286,9 @@ jQuery.extend(true, langJSON, {
     "lblSensorSensibility_A" : "Schlosslast-Empfindlichkeit",
 
     "optionAutoCalibration" : "Automatische Kalibrierung",
-    "optionDriftCompensationOn" : "Driftkompensation aktiv",
-    "optionDriftCompensationAndCalibrationOn" : "Driftkompensation und Kalibrierung nach Schlosslasterkennung aktiv",
+    "optionDriftCompensationOn" : "Aktiv mit Driftkompensation",
+    "optionDriftCompensationAndCalibrationOn" : "Aktiv mit Driftkompensation und Kalibrierung nach Schlosslast-Erkennung",
     "lblTableDeviceMagnetSensibility" : "Magnetfeld-Empfindlichkeit",
-
     "noMoreKeys" : ""
   }
 });

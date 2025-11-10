@@ -422,8 +422,8 @@ proc getMaintenance {chn p descr} {
   return $html
 }
 
-proc getDisplayInputTransmitter {chn p descr} {
-
+proc getDisplayInputTransmitterWired {chn p descr} {
+  puts "WIRED<br/>"
   global dev_descr env
 
   upvar $p ps

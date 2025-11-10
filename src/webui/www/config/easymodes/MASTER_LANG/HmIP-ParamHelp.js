@@ -432,7 +432,7 @@ jQuery.extend(true,langJSON, {
       "<b>TW/RGB</b>: %DCber die +/--Tasten kann Ziellevel eingestellt werden. " +
       "Bei langem Tastendruck auf das Icon wird der zwischen RGB und Farbtemperatur umschaltbare Picker aufgerufen.<br/><br/>" +
       "<b>Ver-/Entriegeln</b>: %DCber die Schloss - Tasten erh%E4lt ein T%FCrschlossantrieb den Befehl zum Ver- bzw. Entriegeln.<br/><br/>" +
-      "<b>Tag/Nacht</b>: %DCber die Tag-Nacht-Tasten kann zwischen Tag und Nachtbetrieb der Zutrittsl%F6sung umgeschaltet werden.\n<br/><br/>" +
+      "<b>Tag/Nacht</b>: %DCber die Tag-Nacht-Tasten kann zwischen Tag und Nachtbetrieb der Zutrittsl%F6sung umgeschaltet werden.<br/><br/>" +
       "<b>%D6ffnen</b>: %DCber Bet%E4tigung des T%FCr-Auf-Icons erh%E4lt ein T%FCrschlossantrieb den Befehl \"Falle ziehen\" um die T%FCr zu %F6ffnen.<br/><br/>",
 
 
@@ -962,14 +962,14 @@ jQuery.extend(true,langJSON, {
       "en* <b>Rollladen/Jalousie</b>: %DCber die Tasten Rauf und Runter kann die Behangh%F6he oder der Lamelenwinkel eingestellt werden. " +
       "%DCber die Funktionstaste kann zwischen Behangh%F6he und Lamellenwinkel umgeschaltet werden (nicht bei der 1x1 Kachel).<br/><br/>" +
       "en* <b>HSV</b>: %DCber die +/--Tasten kann Ziellevel eingestellt werden. " +
-      " Bei langem Tastendruck auf das Icon wird der Picker zur RGB-Farbauswahl aufgerufen.<br/><br/>" +
+      "Bei langem Tastendruck auf das Icon wird der Picker zur RGB-Farbauswahl aufgerufen.<br/><br/>" +
       "en* <b>TW</b>: %DCber die +/--Tasten kann Ziellevel eingestellt werden. " +
       "Bei langem Tastendruck auf das Icon wird der Picker zur Farbtemperatur aufgerufen.<br/><br/>" +
       "en* <b>TW/RGB</b>: %DCber die +/--Tasten kann Ziellevel eingestellt werden. " +
       "Bei langem Tastendruck auf das Icon wird der zwischen RGB und Farbtemperatur umschaltbare Picker aufgerufen.<br/><br/>" +
-      "en* <b>Lock/Unlock</b>: %DCber die Schloss - Tasten erh%E4lt ein T%FCrschlossantrieb den Befehl zum Ver- bzw. Entriegeln.<br/><br/>" +
-      "en* <b>Day/Night</b>: %DCber die Tag-Nacht-Tasten kann zwischen Tag und Nachtbetrieb der Zutrittsl%F6sung umgeschaltet werden.\n<br/><br/>" +
-      "en* <b>Open</b>: %DCber Bet%E4tigung des T%FCr-Auf-Icons erh%E4lt ein T%FCrschlossantrieb den Befehl \"Falle ziehen\" um die T%FCr zu %F6ffnen.<br/><br/>",
+      "en* <b>Ver-/Entriegeln</b>: %DCber die Schloss - Tasten erh%E4lt ein T%FCrschlossantrieb den Befehl zum Ver- bzw. Entriegeln.<br/><br/>" +
+      "en* <b>Tag/Nacht</b>: %DCber die Tag-Nacht-Tasten kann zwischen Tag und Nachtbetrieb der Zutrittsl%F6sung umgeschaltet werden.<br/><br/>" +
+      "en* <b>%D6ffnen</b>: %DCber Bet%E4tigung des T%FCr-Auf-Icons erh%E4lt ein T%FCrschlossantrieb den Befehl \"Falle ziehen\" um die T%FCr zu %F6ffnen.<br/><br/>",
 
 
 

@@ -5,8 +5,6 @@ source [file join $env(DOCUMENT_ROOT) config/easymodes/etc/options.tcl]
 
 proc getMaintenance {chn p descr} {
 
-  puts "WIRED - VARIANT"
-
   global dev_descr ch_descr env iface
 
   upvar $p ps
@@ -423,7 +421,6 @@ proc getMaintenance {chn p descr} {
 }
 
 proc getDisplayInputTransmitterWired {chn p descr} {
-  puts "WIRED<br/>"
   global dev_descr env
 
   upvar $p ps

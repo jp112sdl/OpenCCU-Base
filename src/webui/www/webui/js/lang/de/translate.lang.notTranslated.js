@@ -303,6 +303,8 @@ jQuery.extend(true, langJSON, {
     "optionSensoSelectAverage" : "Durchschnittswert",
     "optionSensoSelectAverageWoExtrema" : "Durchschnittswert ohne Extreme",
     "lblSensorReferenceHeight" : "Referenzh%F6he",
+    "lblHeight" : "H%F6he",
+    "lblDistance" : "Distanz",
 
     "noMoreKeys" : ""
   }

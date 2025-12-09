@@ -293,6 +293,16 @@ jQuery.extend(true, langJSON, {
     "optionDriftCompensationAndCalibrationOn" : "Aktiv mit Driftkompensation und Kalibrierung nach Schlosslast-Erkennung",
     "lblTableDeviceMagnetSensibility" : "Magnetfeld-Empfindlichkeit",
 
+    "lblSensorVoltage" : "Betriebsspannung",
+    "optionSensorVoltage_3_3" : "3.3V",
+    "optionSensorVoltage_5" : "5.0V",
+    "lblFilterSelect" : "Filter",
+    "optionFilterSelectCurrent" : "Momentanwert",
+    "optionSensoSelectMin" : "Minimaler Wert",
+    "optionSensoSelectMax" : "Maximaler Wert",
+    "optionSensoSelectAverage" : "Durchschnittswert",
+    "optionSensoSelectAverageWoExtrema" : "Durchschnittswert ohne Extreme",
+    "lblSensorReferenceHeight" : "Referenzh%F6he",
 
     "noMoreKeys" : ""
   }

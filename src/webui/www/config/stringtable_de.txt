@@ -692,6 +692,8 @@ DISPLAY_UPDATE_REQUEST_21=TRUE	${stringTableDisplayUpdateRequest} 21: ${lblYes}
 DISPLAY_UPDATE_REQUEST_23=FALSE	${stringTableDisplayUpdateRequest} 23: ${lblNo}
 DISPLAY_UPDATE_REQUEST_23=TRUE	${stringTableDisplayUpdateRequest} 23: ${lblYes}
 
+DISTANCE	${lblDistance}
+
 DOOR_COMMAND=CLOSE	${stringTableDoorCommandClose}
 DOOR_COMMAND=NOP	${stringTableDoorCommandNOP}
 DOOR_COMMAND=OPEN	${stringTableDoorCommandOpen}
@@ -982,6 +984,9 @@ HEATING_KEY_RECEIVER	${stringTableHeatingKeyReceiverTitle}
 HEATING_ROOM_TH_RECEIVER	${stringTableHeatingRoomTHReceiverTitle}
 HEATING_ROOM_TH_TRANSCEIVER	${stringTableHeatingRoomTHTransceiverTitle}
 HEATING_SHUTTER_CONTACT_RECEIVER	${stringTableHeatingShutterContactReceiverTitle}
+
+HEIGHT	${lblHeight}
+
 HIGHEST_ILLUMINATION	${stringTableHighestIllumination}
 HIGHEST_ILLUMINATION_STATUS=NORMAL	${lblValue} ${stringTableHighestIllumination}: ${lblNormal}
 HIGHEST_ILLUMINATION_STATUS=0	${lblValue} ${stringTableHighestIllumination}: ${lblNormal}

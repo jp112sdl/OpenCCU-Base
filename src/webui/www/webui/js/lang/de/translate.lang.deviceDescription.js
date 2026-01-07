@@ -31,6 +31,8 @@ jQuery.extend(true,langJSON, {
     "ELV-SH-CTH" : "ELV Smart Home<br/>Temperatur- und Luftfeuchtigkeitssensor<br/>Kompakt",
     "ELV-SH-CTV" : "ELV Smart Home<br/>Neigungs- und Ersch%FCtterungssensor<br/>Kompakt",
 
+    "ELV-SH-CWD" : "ELV-SH-CWD",
+
     "ELV-SH-DUSI" : "ELV-SH-DUSI",
 
     "ELV-SH-KRC" : "ELV Smart Home Schl%FCsselbundfernbedienung",

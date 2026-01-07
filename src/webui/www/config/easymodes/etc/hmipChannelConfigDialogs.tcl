@@ -5562,6 +5562,8 @@ proc getStateResetReceiver {chn p descr} {
 }
 
 proc getWaterDetectionTransmitter {chn p descr} {
+  global dev_descr
+
   upvar $p ps
   upvar $descr psDescr
   upvar prn prn
@@ -5569,6 +5571,8 @@ proc getWaterDetectionTransmitter {chn p descr} {
 
   set specialID "[getSpecialID $special_input_id]"
   set CHANNEL $special_input_id
+
+  set devType $dev_descr(TYPE)
 
   set hlpBoxWidth 450
   set hlpBoxHeight 160
@@ -5732,8 +5736,34 @@ proc getWaterDetectionTransmitter {chn p descr} {
         append html [get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]
       append html "</td></tr>"
     }
-
   }
+
+    if {[string equal $devType "ELV-SH-CWD"] == 1} {
+      set param MSG_FOR_POS_A ;# A = Waterlevel
+      if { [info exists ps($param)] == 1  } {
+        incr prn
+          array_clear options
+          set options(0) "\${stringTableKeyMsgPosA1}"
+          set options(1) "\${stringTableMsg_Dry}"
+          set options(2) "\${stringTableMsg_Water}"
+          append html "<tr><td>\${lblWaterDetectorMsg_Water}</td><td>"
+          append html [get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]
+        append html "</td></tr>"
+      }
+
+      set param MSG_FOR_POS_B ;# B = Dry
+      if { [info exists ps($param)] == 1  } {
+        incr prn
+          array_clear options
+          set options(0) "\${stringTableKeyMsgPosA1}"
+          set options(1) "\${stringTableMsg_Dry}"
+          set options(2) "\${stringTableMsg_Water}"
+          append html "<tr><td>\${lblWaterDetectorMsg_Dry}</td><td>"
+          append html [get_ComboBox options $param separate_$CHANNEL\_$prn ps $param]
+        append html "</td></tr>"
+      }
+
+    }
 
   # append html "[getAlarmPanel ps]"
 
@@ -7283,8 +7313,6 @@ proc getDoorStateTranseiver {chn p descr} {
     append html "<tr>"
       append html "<td>\${lblAutoCalibration}</td>"
       array_clear options
-      set options(0) "\${optionDisable}"
-
       set options(0) "\${optionDisable}"
       set options(1) "\${optionDriftCompensationOn}"
       set options(2) "\${optionDriftCompensationAndCalibrationOn}"

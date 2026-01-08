@@ -66,7 +66,7 @@ iseDoorLockTransceiver.prototype = {
         html += "<td>";
           html += "<span>Option: </span> <select id='"+this.id+"selOptionElem'>";
           jQuery.each(this.arOptions, function(index, opt) {
-            html += "<option value='"+(index + 7)+"'>"+opt+"</option>";
+            html += "<option value='"+(index + 3)+"'>"+opt+"</option>";
           });
           html += "</select>";
         html += "</td>";

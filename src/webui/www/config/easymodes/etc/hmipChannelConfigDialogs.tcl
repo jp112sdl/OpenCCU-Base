@@ -5824,6 +5824,7 @@ proc getDoorReceiver {chn p descr} {
     append html "<tr id=\"space_$chn\_$prn\" class=\"hidden\"><td><br/></td></tr>"
     append html "<script type=\"text/javascript\">setTimeout(function() {setCurrentDelayShortOptionPanelA($chn, [expr $prn - 1], '$specialID');}, 100)</script>"
   }
+  return $html
 }
 
 proc getSimpleSwitchReceiver {chn p descr} {
@@ -5880,6 +5881,7 @@ proc getSimpleSwitchReceiver {chn p descr} {
     append html "<tr id=\"space_$chn\_$prn\" class=\"hidden\"><td><br/></td></tr>"
     append html "<script type=\"text/javascript\">setTimeout(function() {setCurrentDelayShortOptionPanelA($chn, [expr $prn - 1], '$specialID');}, 100)</script>"
   }
+  return $html
 }
 
 proc getAcousticSignalTransmitter {chn p descr} {
@@ -5936,6 +5938,7 @@ proc getAcousticSignalTransmitter {chn p descr} {
     append html "<tr id=\"space_$chn\_$prn\" class=\"hidden\"><td><br/></td></tr>"
     append html "<script type=\"text/javascript\">setTimeout(function() {setCurrentDelayShortOptionPanelA($chn, [expr $prn - 1], '$specialID');}, 100)</script>"
   }
+  return $html
 }
 
 proc getAcousticSignalVirtualReceiver {chn p descr} {
@@ -6921,7 +6924,7 @@ proc getWindowDriveReceiver {chn p descr} {
     append html "[getHorizontalLine]"
     append html [getPowerUpSelector $chn ps $special_input_id]
   }
-
+  return $html
 }
 
 proc getGenericMeasuringTransmitter {chn p descr address} {
@@ -7291,8 +7294,6 @@ proc getSoilMoistureTransmitter {chn p descr} {
       append html  "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_SOIL_MOISTURE 320 170]</td>"
     append html "</tr>"
   }
-
-
   return $html
 }
 
@@ -7306,7 +7307,6 @@ proc getDoorStateTranseiver {chn p descr} {
 
   set html ""
   set prn 0
-
   set param CHANNEL_OPERATION_MODE
   if { [info exists ps($param)] == 1 } {
     incr prn
@@ -7337,6 +7337,7 @@ proc getDoorStateTranseiver {chn p descr} {
     append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_door_state]</td>"
     append html "</tr>"
   }
+  return $html
 }
 
 proc getDoorLockTranseiver {chn p descr} {
@@ -7564,7 +7565,7 @@ proc getDoorLockTranseiver {chn p descr} {
       append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_door_lock]</td>"
     append html "</tr>"
   }
-
+  return $html
 }
 
 proc getDistanceTransmitter {chn p descr} {
@@ -7652,7 +7653,7 @@ proc getDistanceTransmitter {chn p descr} {
       append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getUnit $param]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param]</td>"
     append html "</tr>"
   }
-
+  return $html
 }
 
 proc getNoParametersToSet {} {

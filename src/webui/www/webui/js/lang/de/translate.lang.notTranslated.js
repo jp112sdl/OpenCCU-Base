@@ -204,30 +204,30 @@ jQuery.extend(true, langJSON, {
 
     "dlpLockStateReason_0" : "unbekannt",
     "dlpLockStateReason_1" : "Motorisch",
-    "dlpLockStateReason_2" : "Motorisch, durch interne Taste",
-    "dlpLockStateReason_3" : "Motorisch, durch Wochenprogramm",
-    "dlpLockStateReason_4" : "Motorisch, durch Auto-Relock nach Timeout",
-    "dlpLockStateReason_5" : "Motorisch, durch Auto-Relock nach T%FCrzustands%E4nderung",
-    "dlpLockStateReason_6" : "Motorisch, nach Open, ACKed (kein neues Open-Ereignis)",
-    "dlpLockStateReason_7" : "Motorisch nach Open",
-    "dlpLockStateReason_8" : "Motorisch nach Open durch interne Taste",
-    "dlpLockStateReason_9" : "Manuell, von au%DFen",
-    "dlpLockStateReason_10" : "Manuell, von innen",
-    "dlpLockStateReason_11" : "Manuell",
+//        "dlpLockStateReason_2" : "Motorisch, durch interne Taste",
+//        "dlpLockStateReason_3" : "Motorisch, durch Wochenprogramm",
+//        "dlpLockStateReason_4" : "Motorisch, durch Auto-Relock nach Timeout",
+//        "dlpLockStateReason_5" : "Motorisch, durch Auto-Relock nach T%FCrzustands%E4nderung",
+    "dlpLockStateReason_2" : "Motorisch, nach Open, ACKed (kein neues Open-Ereignis)",
+    "dlpLockStateReason_3" : "Motorisch nach Open",
+//        "dlpLockStateReason_8" : "Motorisch nach Open durch interne Taste",
+    "dlpLockStateReason_4" : "Manuell, von au%DFen",
+    "dlpLockStateReason_5" : "Manuell, von innen",
+    "dlpLockStateReason_6" : "Manuell",
 
     "dlpLockTeachInState_0" : "T%FCrschloss-Anlern-Prozedur nicht (mehr) aktiv",
-    "dlpLockTeachInState_1" : "Neutralstellung Verriegelt vorgemerkt",
-    "dlpLockTeachInState_2" : "Neutralstellung Entriegelt vorgemerkt",
-    "dlpLockTeachInState_3" : "beide Neutralstellungen vorgemerkt, bereit f%FCr Endanschlagsfahrt",
-    "dlpLockTeachInState_4" : "Anlernfahrt l%E4uft",
-    "dlpLockTeachInState_5" : "T%FCrschloss-Anlern-Prozedur erfolgreich abgeschlossen (keine Aussage %FCber Parameter-%DCbertragung)",
-    "dlpLockTeachInState_6" : "Neutralstellungen Fehler: ganzzahliges Vielfaches von 360° zwischen Ver- und Entriegelt",
-    "dlpLockTeachInState_7" : "Neutralstellungen Fehler: weniger als 1 Umdrehung zwischen Ver- und Entriegelt",
-    "dlpLockTeachInState_8" : "Endanschlagsfahrt Fehler: Endanschlag lock vor Neutralstellung Verriegelt",
-    "dlpLockTeachInState_9" : "Endanschlagsfahrt Fehler: Endanschlag open vor Neutralstellung Entriegelt",
-    "dlpLockTeachInState_10" : "Anlernfahrt Fehler: Abbruch durch anderes Kommando / Ereignis",
-    "dlpLockTeachInState_11" : "Anlernfahrt Fehler: Batterien zu schwach",
-    "dlpLockTeachInState_12" : "T%FCrschloss-Anlern-Prozedur Fehler: sonstige",
+    //  "dlpLockTeachInState_1" : "Neutralstellung Verriegelt vorgemerkt",
+    //  "dlpLockTeachInState_2" : "Neutralstellung Entriegelt vorgemerkt",
+    //  "dlpLockTeachInState_3" : "beide Neutralstellungen vorgemerkt, bereit f%FCr Endanschlagsfahrt",
+    "dlpLockTeachInState_1" : "Anlernfahrt l%E4uft",
+    "dlpLockTeachInState_2" : "T%FCrschloss-Anlern-Prozedur erfolgreich abgeschlossen (keine Aussage %FCber Parameter-%DCbertragung)",
+    //  "dlpLockTeachInState_6" : "Neutralstellungen Fehler: ganzzahliges Vielfaches von 360° zwischen Ver- und Entriegelt",
+    "dlpLockTeachInState_3" : "Neutralstellungen Fehler: weniger als 1 Umdrehung zwischen Ver- und Entriegelt",
+    //  "dlpLockTeachInState_8" : "Endanschlagsfahrt Fehler: Endanschlag lock vor Neutralstellung Verriegelt",
+    //  "dlpLockTeachInState_9" : "Endanschlagsfahrt Fehler: Endanschlag open vor Neutralstellung Entriegelt",
+    "dlpLockTeachInState_4" : "Anlernfahrt Fehler: Abbruch durch anderes Kommando / Ereignis",
+    "dlpLockTeachInState_5" : "Anlernfahrt Fehler: Batterien zu schwach",
+    "dlpLockTeachInState_6" : "T%FCrschloss-Anlern-Prozedur Fehler: sonstige",
 
     "stringTableErrorDoorLockedWhileOpen" : "Verschlossen bei offener T%FCr",
     "stringTableErrorDoorOpenedWhileLocked" : "T%FCr im verschlossenem Zustand ge%F6ffnet",
@@ -322,8 +322,8 @@ langJSON.de.helpLockTargetLevel_G = "G = " + langJSON.de.stringTableDoorLockStat
 langJSON.de.helpLockTargetLevel_H = "A = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralUnlocked + "<br/>";
 langJSON.de.helpLockTargetLevel_I = "B = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralVertical + "<br/>";
 langJSON.de.helpLockTargetLevel_J = "C = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelTeachInDriveOpenDoorNeutralHorizontal + "<br/>";
-langJSON.de.helpLockTargetLevel_K = "D = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor + "<br/>";
-langJSON.de.helpLockTargetLevel_L = "E = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor;
+//langJSON.de.helpLockTargetLevel_K = "D = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationClosedDoor + "<br/>";
+langJSON.de.helpLockTargetLevel_L = "D = " + langJSON.de.stringTableDoorLockStateTransceiverLockTargetLevelLoadCalibrationOpenDoor;
 
 langJSON.de.helpLockTargetLevel =
   /*
@@ -338,7 +338,7 @@ langJSON.de.helpLockTargetLevel =
   langJSON.de.helpLockTargetLevel_H +
   langJSON.de.helpLockTargetLevel_I +
   langJSON.de.helpLockTargetLevel_J +
-  langJSON.de.helpLockTargetLevel_K +
+//  langJSON.de.helpLockTargetLevel_K;
   langJSON.de.helpLockTargetLevel_L;
 
 

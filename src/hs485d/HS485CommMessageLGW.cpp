@@ -70,24 +70,26 @@ uint32_t HS485CommMessageLGW::GetReceiverAddress()
 
 int HS485CommMessageLGW::GetCtrl()
 {
+	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::GetCtrl(): %X", hmwlgwCommand.getCtrlByte());
 	return (int)hmwlgwCommand.getCtrlByte();
 };
 
 
 void HS485CommMessageLGW::SetCtrl(int flags)
 {
+	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetCtrl(): %X", flags);
 	hmwlgwCommand.setCtrlByte((unsigned char)flags);
 }
 
 void HS485CommMessageLGW::SetSenderAddress(uint32_t address)
 {
-	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetSenderAddress()");
+	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetSenderAddress(): %X", address);
 	hmwlgwCommand.setSenderAddress(address);
 }
 
 void HS485CommMessageLGW::SetReceiverAddress(uint32_t address)
 {
-	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetReceiverAddress(): Not implemeted yet.");
+	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetReceiverAddress(): %X", address);
 	hmwlgwCommand.setReceiverAddress(address);
 };
 
@@ -118,7 +120,7 @@ HS485Frame HS485CommMessageLGW::ExtractFrame()
 
 void HS485CommMessageLGW::SetTimeout(int to)
 {
-	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetTimeout(): Not implemeted yet.");
+	//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::SetTimeout()");
 	hmwlgwCommand.setTimeout(to);
 	//if(GetCommand()==CMD_SEND || GetCommand()==CMD_BOOT_SEND)SetByteData(0, to);
 }
@@ -130,9 +132,9 @@ bool HS485CommMessageLGW::ProcessResponse(CommMessage *m, t_state* new_state)//p
 		return ProcessEEPRomResponse(m, new_state);
 	}
 	else {
-//		LOG(Logger::LOG_ALL, "HS485CommMessageLGW::ProcessResponse()");
 		HS485CommMessageLGW* pResponseMsg = (HS485CommMessageLGW*)m;
 		bool retVal = true;
+		//LOG(Logger::LOG_ALL, "HS485CommMessageLGW::ProcessResponse(): %X", pResponseMsg->hmwlgwCommand.getCommandType());
 		switch(pResponseMsg->hmwlgwCommand.getCommandType())//... ????
 		{
 			case LGW_RPL_RESPONSE:
@@ -162,7 +164,7 @@ bool HS485CommMessageLGW::ProcessResponse(CommMessage *m, t_state* new_state)//p
 					switch(pResponseMsg->getCommandData().at(0))
 					{
 						case 0:
-							//LOG(Logger::LOG_ALL, "LGW_RPL_ANSWER OK");
+							//LOG(Logger::LOG_ALL, "LGW_RPL_ANSWER OK - request was %X", (unsigned int)hmwlgwCommand.getCommandType());
 							*new_state = ACKED;//RECEIVED;//should be RECEIVED, could be ACKED :-)
 							break;
 						default:

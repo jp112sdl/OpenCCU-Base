@@ -7,6 +7,7 @@
 #include <HMWLGWCommand.h>
 #include <HMWLGWUtils.h>
 #include <LGWPortWrapper.h>
+//#include <HS485CommMessageDecoder.h>
 
 #define HS485_RESPONSE_TIMEOUT 700
 #define HS485_LGW_TIMEOUT 200
@@ -158,7 +159,7 @@ bool HS485ControllerLGW::CheckBeforeSend(CommMessage* msg)
 	//LOG(Logger::LOG_ALL, "HS485ControllerLGW::CheckBeforeSend() ");
 	if(msg != NULL) {
 		HS485CommMessageLGW* cmsg=(HS485CommMessageLGW*)msg;
-	//	LOG(Logger::LOG_DEBUG, "CheckBeforeSend() cmd=0x%02x", msg->GetCommand());
+		//LOG(Logger::LOG_DEBUG, "CheckBeforeSend() cmd=0x%02x", msg->GetCommand());
 		if(LGW_CMD_SEND == cmsg->GetHMWLGWCommand()){
 			uint32_t address=cmsg->GetReceiverAddress();
 			unsigned char cc=cmsg->GetCtrl();
@@ -215,9 +216,11 @@ bool HS485ControllerLGW::SendMessage(HS485CommMessage* msg)
 			uint32_t address=pMsg->GetReceiverAddress();
 			pMsg->SetSenderAddress(GetAddress());
 			if(address!=0xffffffff){
+				//LOG(Logger::LOG_ALL, "HS485ControllerLGW::SendMessage(msg): SetTimeouts %X", address);
 				pMsg->SetTimeout(HS485_LGW_TIMEOUT);//timeout
 				pMsg->SetResponseTimeout(HS485_RESPONSE_TIMEOUT);//when nothing set default is 500ms
 			}else{
+				//LOG(Logger::LOG_ALL, "HS485ControllerLGW::SendMessage(msg): SetTimeouts(0) %X", address);
 				pMsg->SetTimeout(0);//no response expected
 				pMsg->SetResponseTimeout(0);
 			}
@@ -228,13 +231,13 @@ bool HS485ControllerLGW::SendMessage(HS485CommMessage* msg)
 					//LOG(Logger::LOG_DEBUG, "SendMessage(%08lX, %s) failed", address, HS485CommMessageDecoder::ToString(msg).c_str());
 					LOG(Logger::LOG_DEBUG, "HS485ControllerLGW::SendMessage(msg): Failed");
 					if(i < maxRetries) { 
-						LOG(Logger::LOG_DEBUG, "HS485ControllerLGW::SendMessage(msg): Send failed...retrying");
+						LOG(Logger::LOG_DEBUG, "HS485ControllerLGW::SendMessage(msg): Send failed...retrying (%d/%d)", i, maxRetries);
 						continue; 
 					}
 					LOG(Logger::LOG_ERROR, "HS485ControllerLGW::SendMessage(msg): Send finally failed.");
 					return false;
 				}
-		//		LOG(Logger::LOG_DEBUG, "SendMessage(%08lX, %s) OK", address, msg->DumpToString().c_str());
+				//LOG(Logger::LOG_DEBUG, "SendMessage(%08lX, %s) OK", address, msg->ToString().c_str());
 			}
 			return true;
 		}//retries
@@ -408,7 +411,7 @@ void HS485ControllerLGW::UpdateControlChar(uint32_t receiver, unsigned char* cc)
 bool HS485ControllerLGW::ProcessReceivedData(std::string* s)
 {
 	if(s != NULL) {
-//		LOG(Logger::LOG_ALL, "HS485ControllerLGW::ProcessReceivedData");
+		//LOG(Logger::LOG_ALL, "HS485ControllerLGW::ProcessReceivedData");
 		//LOG(Logger::LOG_ALL, "Incoming data: %s", toDebugHexStr(*s).c_str());
 		if(incomingHMWLGWData.pHMWLGWTransportFrame == NULL) {
 			incomingHMWLGWData.pHMWLGWTransportFrame = new HMWLGWTransportFrame();
@@ -465,13 +468,13 @@ bool HS485ControllerLGW::handleReceivedFrame(HMWLGWTransportFrame* pIncomingTran
 {
 	if(pIncomingTransportFrame != NULL) {
 		//Create CommMessage from transport frame.
-//		LOG(Logger::LOG_ALL, "HS485ControllerLGW::handleReceivedFrame()");
+		//LOG(Logger::LOG_ALL, "HS485ControllerLGW::handleReceivedFrame()");
 		HS485CommMessageLGW*  pCommMessage = new HS485CommMessageLGW(*pIncomingTransportFrame);
 		pthread_mutex_lock(&mutex_tx_state);
 		bool handled=false;
 		if(cur_tx_message){
 			handled=((HS485CommMessageLGW*)cur_tx_message)->ProcessResponse(pCommMessage, &tx_state);
-//			LOG(Logger::LOG_ALL, "HS485ControllerLGW::handleReceivedFrame(): Response processed. handled=%s.", (handled ? "true" : "false"));
+			//LOG(Logger::LOG_ALL, "HS485ControllerLGW::handleReceivedFrame(): Response processed. handled=%s.", (handled ? "true" : "false"));
 		}
 		if(handled){
 			pthread_cond_signal(&cond_tx_state);

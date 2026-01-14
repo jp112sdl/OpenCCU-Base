@@ -1841,8 +1841,9 @@ HmIPWeeklyProgram.prototype = {
       // val = 0 > Switch Actor channels, val = 1 > Permission channels
       var nr = self._addLeadingZero(no),
         lblStateElm = jQuery("#lblState_" + nr),
-        onOffElm = jQuery("[name='"+nr+"_WP_LEVEL']"),
-        valOnOffElm = parseInt(onOffElm.val()),
+        //onOffElm = jQuery("[name='"+nr+"_WP_LEVEL']"), doesn't work because the dirty flag will not be recognized
+        onOffElm = document.getElementsByName(nr+"_WP_LEVEL")[0],
+        valOnOffElm = onOffElm.value,
         WPTargetChannelsElm = jQuery("[name='"+nr+"_WP_TARGET_CHANNELS']"),
         arTargetChn = jQuery("[name='targetChannel"+self.chn+"_"+nr+"']"),
         val2Send = 0,
@@ -1853,21 +1854,28 @@ HmIPWeeklyProgram.prototype = {
         optLocked = translateKey("optionLocked"),
         optUnLocked = translateKey("optionUnlocked");
 
+
       switch (val) {
         case 0:
           self.metaSelectedMode[no] = "PERMISSION";
-          onOffElm.empty().append(new Option(optOff,"0")).append(new Option(optOn,"1"));
+          //onOffElm.empty().append(new Option(optOff,"0")).append(new Option(optOn,"1")); // doesn't work properly because of the dirty flag
+          onOffElm.options[0].textContent = optOff;
+          onOffElm.options[1].textContent = optOn;
           break;
         case 1:
           self.metaSelectedMode[no] = "DOOR_LOCK";
-          onOffElm.empty().append(new Option(optLocked,"0")).append(new Option(optUnLocked,"1"));
+          //onOffElm.empty().append(new Option(optLocked,"0")).append(new Option(optUnLocked,"1")); // doesn't work because of the dirty flag
+          onOffElm.options[0].textContent = optLocked;
+          onOffElm.options[1].textContent = optUnLocked;
           break;
         case 2:
           self.metaSelectedMode[no] = "AUTO_RELOCK";
-          onOffElm.empty().append(new Option(optOff,"0")).append(new Option(optOn,"1"));
+          //onOffElm.empty().append(new Option(optOff,"0")).append(new Option(optOn,"1")); // doesn't work because of the dirty flag
+          onOffElm.options[0].textContent = optOff;
+          onOffElm.options[1].textContent = optOn;
           break;
       }
-      onOffElm.val(valOnOffElm);
+      onOffElm.value = valOnOffElm;
 
       // At first unset all target channels
       arTargetChn.prop('checked', false);
@@ -1897,15 +1905,20 @@ HmIPWeeklyProgram.prototype = {
             jChn.parent().hide();
           }
         }
+      });
 
-        window.setTimeout(function () {
-          if (chn.checked) {
+      window.setTimeout(function () {
+        jQuery.each(jQuery("[name='targetChannel"+self.chn+"_"+nr+"']"), function(i, chn) {
+          if (jQuery(chn).prop("checked")) {
             val2Send += parseInt(chn.value);
           }
-          WPTargetChannelsElm.val(val2Send);
-        },50);
-      });
+        });
+        WPTargetChannelsElm.val(val2Send);
+      },150);
     };
+
+
+
     if ((this.activeEntries[number] == true)) {
       selectedMode = homematic("Interface.getMetadata", {"objectId": self.device.id, "dataId": "wpMode_" + number});
 
@@ -2687,6 +2700,11 @@ HmIPWeeklyProgram.prototype = {
     var paramID = number + "_WP_TARGET_CHANNELS";
     var val = (this.activeEntries[number] == true) ? parseInt(this.ps[paramID]) : 0;
 
+    //console.log(this.activeEntries[number], number);
+    //console.log("_getTargetChannels val: " + val);
+    //console.log("parseInt(this.ps[paramID])",parseInt(this.ps[paramID]));
+
+
     var valCheckBox,
       tmpVal;
 
@@ -2792,6 +2810,7 @@ HmIPWeeklyProgram.prototype = {
         elmLblWPColorSoundSelector.hide();
       }
     };
+
 
     result += "<table><tbody><tr>";
 
@@ -2945,7 +2964,6 @@ HmIPWeeklyProgram.prototype = {
           result += "});";
         }
       }
-
       if (this.isWired && this.activeEntries[number]) {
         // This should make LEVEL_2 invisible when no active target channel of the type BLIND available.
         result += "var arActiveChkBox = jQuery(\"[name='targetChannel" + self.chn + "_" + number + "']:checked\");";
@@ -3009,7 +3027,6 @@ HmIPWeeklyProgram.prototype = {
     result += "},100);";
 
     result += "</script>";
-
     return result;
   },
 
@@ -3286,7 +3303,7 @@ HmIPWeeklyProgram.prototype = {
   },
 
   _getMaxEntries: function() {
-    //return 69; // Set the value for testing reasons to a low level - remove this after testing
+    return 2; // Set the value for testing reasons to a low level - remove this after testing
 
     if (
       (this._isDeviceType("HmIP-MP3P"))
@@ -3294,8 +3311,6 @@ HmIPWeeklyProgram.prototype = {
       || (this._isDeviceType("HmIPW-WRC6-A"))
       || (this.isWRC6230)
       || ((this._isDeviceType("HmIP-BSL")) && (this._getFwMajor() == 2)) // BSL with Fw. 2.x.x
-      || (this.isDLP)
-
     ) {return 69;}
 
     switch (this.chnType) {

@@ -3303,7 +3303,7 @@ HmIPWeeklyProgram.prototype = {
   },
 
   _getMaxEntries: function() {
-    return 2; // Set the value for testing reasons to a low level - remove this after testing
+    //return 2; // Set the value for testing reasons to a low level - remove this after testing
 
     if (
       (this._isDeviceType("HmIP-MP3P"))

@@ -7,8 +7,10 @@ TARGET = crypttool
 LIBELVUTILSPATH = $(realpath ../elvutils)
 LIBELVUTILS = elvutils
 
-OPENSSL=-L ../openssl
-#OPENSSL=""
+#OPENSSL=-L ../openssl
+OPENSSL=""
+#OPENSSLINC=-I../openssl/include
+OPENSSLINC=""
 
 TARGETOBJS = $(TARGET).o \
 		crypttoolconfig.o
@@ -16,7 +18,7 @@ TARGETOBJS = $(TARGET).o \
 CC = $(CROSS)g++
 CXX = $(CROSS)g++
 LD = $(CROSS)g++
-CXX_FLAGS += -std=c++11 -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -O2 -g -I../openssl/include -I$(LIBELVUTILSPATH) -Wall
+CXX_FLAGS += -std=c++11 -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64 -O2 -g $(OPENSSLINC) -I$(LIBELVUTILSPATH) -Wall
 LD_FLAGS += -L$(LIBELVUTILSPATH) -l$(LIBELVUTILS) -L./ $(OPENSSL) -lcrypto -lpthread
 STRIP = $(CROSS)strip
 

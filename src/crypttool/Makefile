@@ -8,9 +8,9 @@ LIBELVUTILSPATH = $(realpath ../elvutils)
 LIBELVUTILS = elvutils
 
 #OPENSSL=-L ../openssl
-OPENSSL=""
+OPENSSL=
 #OPENSSLINC=-I../openssl/include
-OPENSSLINC=""
+OPENSSLINC=
 
 TARGETOBJS = $(TARGET).o \
 		crypttoolconfig.o

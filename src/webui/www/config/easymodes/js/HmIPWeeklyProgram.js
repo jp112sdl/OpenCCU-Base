@@ -282,6 +282,9 @@ HmIPWeeklyProgram.prototype = {
     this.isWGTC = (this.device.deviceType.id.includes("HmIP-WGTC"))? true : false;
     this.isDLP = (this.device.deviceType.id.includes("HmIP-DLP"))? true : false;
 
+    // The device says the type of this channel is BLIND_WEEK_PROFILE but it's a SHUTTER device
+    this.isShutter = (this.device.deviceType.id.includes("HmIP-M-TD15"))? true : false;
+
     this.isHmIPLSS = false;
 
     if (this._isDeviceType("HmIP-LSC")) {
@@ -731,7 +734,7 @@ HmIPWeeklyProgram.prototype = {
     }
 
     // SLAT LEVEL for Blinds
-    if (this.chnType == this.BLIND && this.devHasVirtualBlindReceiver) {
+    if ((this.chnType == this.BLIND) && (this.devHasVirtualBlindReceiver) && (! this.isShutter)) {
       programEntry += "<td name='elmSlatPos_" + number + "'>" + translateKey('lblWPSlatLevel') + "</td>";
       programEntry += "<td name='elmSlatPos_" + number + "'>" + this._getSlatLevel(number);
       if (this.isWired) {

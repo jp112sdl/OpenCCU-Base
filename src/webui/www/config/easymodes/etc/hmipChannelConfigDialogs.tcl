@@ -1806,6 +1806,17 @@ proc getShutterTransmitter {chn p descr address} {
   set fwMinor [lindex $Fw 1]
   set fwPatch [lindex $Fw 2]
 
+  set devType $dev_descr(TYPE)
+
+  set isMTD15 0
+  if {
+    ([string equal $dev_descr(TYPE) "HmIP-M-TD15"] == 1) ||
+    ([string equal $dev_descr(TYPE) "RM-110-45"] == 1)  ||
+    ([string equal $dev_descr(TYPE) "RM-110-15"] == 1)
+  } {
+    set isMTD15 1
+  }
+
   puts "<script type=\"text/javascript\">load_JSFunc('/config/easymodes/MASTER_LANG/HmIP-ParamHelp.js');load_JSFunc('/config/easymodes/js/BlindAutoCalibration.js')</script>"
 
   puts "<div id=\"page_$parent\" class=\"hidden\">$parent</div>"
@@ -1815,7 +1826,7 @@ proc getShutterTransmitter {chn p descr address} {
   set html ""
 
   set param OUTPUT_SWAP
-  if { [info exists ps($param)] == 1  } {
+  if {(! $isMTD15) && ([info exists ps($param)] == 1)  } {
     incr prn
     array_clear options
     set options(0) "\${optionOutputNotSwapped}"
@@ -1981,7 +1992,7 @@ proc getShutterTransmitter {chn p descr address} {
   }
 
   set param DELAY_COMPENSATION
-  if { [info exists ps($param)] == 1 } {
+  if {((! $isMTD15)) && ([info exists ps($param)] == 1)} {
 
     append html "[getHorizontalLine]"
 

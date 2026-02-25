@@ -317,6 +317,29 @@ jQuery.extend(true, langJSON, {
     "lblSpeedSeclect_1" : "Geschwindigkeit f%FCr fremdausgel%F6ste Fahrten",
     "lblSpeedSeclect_2" : "Geschwindigkeit f%FCr selbstausgel%F6ste Fahrten",
 
+    "comment" : "Release B/2026",
+    "btnSelfCalibration" : "Kalibrierung der Endlagen",
+
+    "btnChangeMotorDir" : "Drehrichtung des Motors wechseln",
+
+    "btnClearPosition" : "Endlagen l%F6schen",
+
+    "actionStatusControlUp100" : "Auf 100 ms",
+    "actionStatusControlDown100" : "Ab 100 ms",
+
+    "actionStatusControlUp400" : "Auf 400 ms",
+    "actionStatusControlDown400" : "Ab 400 ms",
+
+    "btnSavePosTop" : "Obere Endlage speichern",
+    "btnSavePosBottom" : "Untere Endlage speichern",
+
+    "btnSTOP" : "S T O P",
+
+    "hintEndPositionSaved" :
+      "Die Endlagen wurden gespeichert.<br><br>" +
+      "Der Rollladenaktor kann nun genutzt werden.<br/><br/>",
+
+
     "noMoreKeys" : ""
   }
 });

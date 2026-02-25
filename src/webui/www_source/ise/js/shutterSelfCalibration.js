@@ -32,7 +32,7 @@ shutterSelfCalibration.prototype = {
     this.bottomSet = homematic("Interface.getValue", {'interface': this.iface, 'address' : this.chMaintenance, 'valueKey': 'MANUAL_SELF_CALIBRATION_BOTTOM_POS_SET'});
 
 
-    var title = "Kalibrierung der Endlagen";
+    var title = translateKey("btnSelfCalibration");
 
     this.dlg = new YesNoDialog(title, this.getHtml(), function(result) {
       if (result == YesNoDialog.RESULT_NO) {
@@ -94,7 +94,7 @@ shutterSelfCalibration.prototype = {
         // Change Motor Direction
         html += "<tr>";
         html += "<td colspan='4'>";
-        html += "<div id='btnChangeMotorDir' class='CLASS02550c ControlBtnOff'>Change Motor Dir</div>";
+        html += "<div id='btnChangeMotorDir' class='CLASS02550c ControlBtnOff'>"+translateKey('btnChangeMotorDir')+"</div>";
         html += "</td>";
         html += "</tr>";
       }
@@ -102,7 +102,7 @@ shutterSelfCalibration.prototype = {
       // Clear all positions
       html += "<tr class='j_finish'>";
         html += "<td colspan='4'>";
-          html += "<div id='btnClearPos' class='CLASS02550c ControlBtnOff'>Clear Position</div>";
+          html += "<div id='btnClearPos' class='CLASS02550c ControlBtnOff'>"+translateKey('btnClearPosition')+"</div>";
         html += "</td>";
       html += "</tr>";
 
@@ -118,11 +118,11 @@ shutterSelfCalibration.prototype = {
           html += "<span> Seconds</span>";
         html += "</td>";
         html += "<td>";
-          html += "<div id='btnShutterUp' class='CLASS02550 ControlBtnOff j_TopElm'>Up</div>";
+          html += "<div id='btnShutterUp' class='CLASS02550 ControlBtnOff j_TopElm'>"+translateKey('actionStatusControlUp')+"</div>";
         html += "</td>";
 
         html += "<td>";
-          html += "<div id='btnShutterDown' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>Down</div>";
+          html += "<div id='btnShutterDown' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>"+translateKey('actionStatusControlDown')+"</div>";
         html += "</td>";
       html += "</tr>";
 
@@ -131,11 +131,11 @@ shutterSelfCalibration.prototype = {
         html += "<td>";
         html += "</td>";
         html += "<td>";
-          html += "<div id='btnShutterUp100' class='CLASS02550 ControlBtnOff j_TopElm'>Up 100</div>";
+          html += "<div id='btnShutterUp100' class='CLASS02550 ControlBtnOff j_TopElm'>"+translateKey('actionStatusControlUp100')+"</div>";
         html += "</td>";
 
         html += "<td>";
-          html += "<div id='btnShutterDown100' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>Down 100</div>";
+          html += "<div id='btnShutterDown100' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>"+translateKey('actionStatusControlDown100')+"</div>";
         html += "</td>";
       html += "</tr>";
 
@@ -144,11 +144,11 @@ shutterSelfCalibration.prototype = {
         html += "<td>";
           html += "</td>";
         html += "<td>";
-          html += "<div id='btnShutterUp400' class='CLASS02550 ControlBtnOff j_TopElm'>Up 400</div>";
+          html += "<div id='btnShutterUp400' class='CLASS02550 ControlBtnOff j_TopElm'>"+translateKey('actionStatusControlUp400')+"</div>";
         html += "</td>";
 
         html += "<td>";
-          html += "<div id='btnShutterDown400' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>Down 400</div>";
+          html += "<div id='btnShutterDown400' class='CLASS02550 ControlBtnOff j_BottomElm _hidden'>"+translateKey('actionStatusControlDown400')+"</div>";
         html += "</td>";
       html += "</tr>";
 
@@ -156,7 +156,7 @@ shutterSelfCalibration.prototype = {
         html += "<td></td>";
         // Save Up Position
         html += "<td colspan='2'>";
-          html += "<div id='btnSaveUp' class='CLASS02550 ControlBtnOff j_TopElm' style='width:auto;'>Save Up</div>";
+          html += "<div id='btnSaveUp' class='CLASS02550 ControlBtnOff j_TopElm' style='width:auto;'>"+translateKey('btnSavePosTop')+"</div>";
         html += "</td>";
       html += "</tr>";
 
@@ -164,16 +164,16 @@ shutterSelfCalibration.prototype = {
       // Save Down Position
         html += "<td></td>";
         html += "<td colspan='2'>";
-          html += "<div id='btnSaveDown' class='CLASS02550 ControlBtnOff j_BottomElm hidden' style='width:auto;'>Save Down</div>";
+          html += "<div id='btnSaveDown' class='CLASS02550 ControlBtnOff j_BottomElm hidden' style='width:auto;'>"+translateKey('btnSavePosBottom')+"</div>";
         html += "</td>";
       html += "</tr>";
 
       html += "<tr class='j_finish'><td colspan='4'><hr></td></tr>";
 
-      html += "<tr class='j_finish'><td colspan='4'><div id='btnStopMotion' class='CLASS02550c ControlBtnOff' style='cursor:default;'>S T O P</div></td></tr>";
+      html += "<tr class='j_finish'><td colspan='4'><div id='btnStopMotion' class='CLASS02550c ControlBtnOff' style='cursor:default;'>"+translateKey('btnSTOP')+"</div></td></tr>";
 
       html += "<tr class='j_ready hidden'><td>";
-        html += "All cloar<br/><br/>I am ready!";
+        html += translateKey('hintEndPositionSaved');
       html += "</td></tr>";
 
 

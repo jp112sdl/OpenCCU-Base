@@ -307,7 +307,7 @@ function ::CreateDoorStateTranseiver() {
       WriteLine("<table width='100%' _height='100%' cellspacing='4'>");
         WriteLine("<tr>");
           WriteLine("<td>");
-            WriteLine("<div class='ControlBtnOff CLASS02550' style='width:125px; line-height:35px' id='"#chnId#"calibrate' onclick='calibrate(this);' >${stringTableDigitalAnalogInputCalibration}</div>");
+            WriteLine("<div class='ControlBtnOff CLASS02550' style='width:200px; line-height:35px' id='"#chnId#"calibrate' onclick='calibrate(this);' >${stringTableDLPCalibration}</div>");
           WriteLine("</td>");
         WriteLine("</tr>");
       WriteLine("</table>");

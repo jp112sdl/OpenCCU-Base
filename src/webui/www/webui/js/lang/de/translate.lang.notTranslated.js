@@ -341,7 +341,7 @@ jQuery.extend(true, langJSON, {
 
     "hintEndPositionSaved" :
       "Die Endlagen wurden gespeichert.<br><br>" +
-      "Der Rollladenaktor kann nun genutzt werden.<br/><br/>",
+      "Der Rohrmotor kann nun genutzt werden.<br/><br/>",
 
 
     "noMoreKeys" : ""

@@ -3685,6 +3685,18 @@ getExtendedDescription = function(oChannelDescr)  {
     }
   }
 
+  if (chType == "SHUTTER_TRANSMITTER") {
+    if (deviceType.toLowerCase().includes("hmip-m-td")) {
+      result = translateKey("chType_SHUTTER_TRANSMITTER_TUBULAR_MOTOR");
+    }
+  }
+
+  if (chType == "SHUTTER_VIRTUAL_RECEIVER") {
+    if (deviceType.toLowerCase().includes("hmip-m-td")) {
+      result = translateKey("chType_SHUTTER_VIRTUAL_RECEIVER_TUBULAR_MOTOR");
+    }
+  }
+
   /* Uncomment this to hide the channel description of a particular channel type
   if (chType == "KEY") {
     result = noDescrNecessary;

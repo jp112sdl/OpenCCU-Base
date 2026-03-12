@@ -43,7 +43,7 @@ shutterSelfCalibration.prototype = {
     this.dlg.btnTextNo(translateKey("btnCancel"));
     this.dlg.btnTextYes(translateKey("btnReady"));
     this.dlg.btnYesHide();
-    this.dlg.setWidth(295);
+    this.dlg.setWidth(310);
 
     this.topElems = jQuery(".j_TopElm");
     this.bottomElems = jQuery(".j_BottomElm");
@@ -115,7 +115,7 @@ shutterSelfCalibration.prototype = {
       html += "<tr  class='j_finish'>";
         html += "<td>";
           html += "<input id='inputDuration' type='text' class='CLASS02542' style='text-align:center;' size='3' value='0'>";
-          html += "<span> Seconds</span>";
+          html += "<span style='margin-right:5px;'> "+translateKey('optionUnitS')+"</span>";
         html += "</td>";
         html += "<td>";
           html += "<div id='btnShutterUp' class='CLASS02550 ControlBtnOff j_TopElm'>"+translateKey('actionStatusControlUp')+"</div>";

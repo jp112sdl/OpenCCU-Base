@@ -3313,7 +3313,8 @@ proc getHeatingClimateControlTransceiver {chn p descr address {extraparam ""}} {
   return $html
 }
 
-proc getSwitchVirtualReceiver {chn p descr} {
+proc getSwitchVirtualReceiver {chn p descr {url ""} {address ""}} {
+  global dev_descr
 
   upvar $p ps
   upvar $descr psDescr
@@ -3323,10 +3324,101 @@ proc getSwitchVirtualReceiver {chn p descr} {
   puts "<script type=\"text/javascript\">getLangInfo_Special('VIRTUAL_HELP.txt');</script>"
 
   set specialID "[getSpecialID $special_input_id]"
+  set devType $dev_descr(TYPE)
 
   set html ""
   set prn 0
   set hr 0
+
+  if { ([string first "HmIP-WSM" $devType] != -1) || ([string first "ELV-SH-WSM" $devType] != -1) } {
+    # create water switch duration (is a Value parameter)
+    set hasOutputBehaviour 0
+
+    catch {
+    # check if VALUE parameter OUTPUT_BEHAVIOUR is available
+      array set receiverPSDescr [xmlrpc $url getParamsetDescription $address VALUES]
+      foreach val [array names receiverPSDescr] {
+        if {$val == "OUTPUT_BEHAVIOUR"} {
+          set hasOutputBehaviour 1
+          break;
+        }
+      }
+    } e
+
+    if {$hasOutputBehaviour} {
+      set durationValue 0
+      catch {set durationValue [xmlrpc $url getValue [list string $address] DURATION_VALUE]}
+
+      set durationUnit 0
+      catch {set durationUnit [xmlrpc $url getValue [list string $address] DURATION_UNIT]}
+
+      set outputBehaviour 0
+      catch {set outputBehaviour [xmlrpc $url getValue [list string $address] OUTPUT_BEHAVIOUR]}
+
+      # flow control active/not active
+      append html "<tr>"
+        append html "<td>\${lblFlowControl}</td>"
+        append html "<td>"
+          append html "<select id='flowControl_$chn' onchange='setWSMVisibilityFlowControl(jQuery(this))'>"
+           append html "<option value='0'>\${optionDisable}</option>"
+           append html "<option value='1'>\${optionEnable}</option>"
+          append html "</select>"
+        append html "</td>"
+      append html "</tr>"
+
+      # time
+      append html "<tr name='trFlowControl_$chn'>"
+        append html "<td style='text-align:left;'>\${stringTableDuration}</td>"
+
+        # here we store the value of the parameter DURATION to be send
+        append html "<td>"
+          append html "<input type='text' id='durationValue_$chn' size=4 onblur=\"ProofAndSetValue(this.id, this.id, '0', '31', 1);setWSMOutputBehaviour('$chn');\">"
+          append html "<span> x </span>"
+          append html "<select id='durationUnit_$chn' onchange=\"setWSMOutputBehaviour('$chn');\">"
+            append html "<option value='0'>\${optionUnit1S}</option>"
+            append html "<option value='1'>\${optionUnit1M}</option>"
+            append html "<option value='2'>\${optionUnit1H}</option>"
+          append html "</select>"
+        append html "</td>"
+
+      append html "</tr>"
+
+      # flow in liters
+      append html "<tr name='trFlowControl_$chn'>"
+        append html "<td>\${powerMeasurementA}</td>"
+
+        # here we store the value of the parameter OUTPUT_BEHAVIOUR to be send
+        append html "<td>"
+          append html "<input type='text' id='outputFlowValue_$chn' size=4 onblur=\"ProofAndSetValue(this.id, this.id, '0', '31', 1);setWSMOutputBehaviour('$chn');\">"
+          append html "<span> x </span>"
+          append html "<select id='outputFlowUnit_$chn' onchange=\"setWSMOutputBehaviour('$chn');\">"
+            append html "<option value='0'>--</option>"
+            append html "<option value='32'>\${optionUnit1Ltr}</option>"
+            append html "<option value='64'>\${optionUnit10Ltr}</option>"
+            append html "<option value='128'>\${optionUnit100Ltr}</option>"
+            append html "<option value='192'>\${optionUnit1000Ltr}</option>"
+          append html "</select>"
+        append html "</td>"
+
+        #value of the parameter OUTPUT_BEHAVIOUR to send
+        append html "<td><input id='outputBehaviour_$chn' type='text' class='_hidden'</td>"
+      append html "</tr>"
+
+      append html "<script type=\"text/javascript\">"
+        append html "setWSMFlowControlState(jQuery('\#flowControl_$chn'), '$durationValue', '$durationUnit', '$outputBehaviour');"
+
+        # Extend the footer buttons
+        append html " window.setTimeout(function() { "
+         append html " var elm = jQuery('#footerButtonOK, #footerButtonTake'); "
+         append html " elm.off('click').click(function() {storeWSMOutputBehaviour('$address');});"
+        append html " },10); "
+
+      append html "</script>"
+
+      append html "[getHorizontalLine]"
+    }
+  }
+
 
   if {[session_is_expert]} {
     set param "LOGIC_COMBINATION"

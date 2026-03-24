@@ -46,7 +46,7 @@ iseButtonsSwitch.prototype = {
       this.clickOn = this.onClickOn.bindAsEventListener(this);
       Event.observe(this.divOn, 'mousedown', this.clickOn);
 
-      if (this.chnLabel.indexOf("HmIP-WSM") != -1) {
+/*      if (this.chnLabel.indexOf("HmIP-WSM") != -1) {
         this.defaultDurationUnit = 5; // 5 minutes
         this.durationSelect = jQuery("#" + this.id +"durationSelect");
         this.durationValueElm = jQuery("#" + this.id + "durationValue");
@@ -55,7 +55,7 @@ iseButtonsSwitch.prototype = {
 
         this.initDurationValue();
         this.initEventFlowDuration();
-      }
+      }*/
 
     }
   },
@@ -111,7 +111,7 @@ iseButtonsSwitch.prototype = {
   },
 
   // Water
-  initDurationValue: function() {
+/*  initDurationValue: function() {
     this.durationElm.val(parseInt(this.durationSelect.val()) * this.defaultDurationUnit); // here we set the value which will be transmitted
   },
 
@@ -120,7 +120,7 @@ iseButtonsSwitch.prototype = {
     this.durationSelect.on("change", function() {
       self.durationElm.val(parseInt(this.value) * self.defaultDurationUnit); // set the value which will be transmitted
     });
-  }
+  }*/
 
 };
 

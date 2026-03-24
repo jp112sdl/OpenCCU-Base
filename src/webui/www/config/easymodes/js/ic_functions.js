@@ -2372,8 +2372,8 @@ setWSMFlowControlState = function(elm, durationValue, durationUnit, outputBehavi
   durationUnitElm.val(durationUnit);
 
   // output behaviour
-  outputFlowValueElm.val(outputBehaviour & 0b11111);
-  outputFlowUnitElm.val(outputBehaviour & 0b11100000);
+  outputFlowValueElm.val(outputBehaviour & 31); // 31 = 0b11111 - jslint is complaining about this
+  outputFlowUnitElm.val(outputBehaviour & 224); // 224 = 0b11100000 - jslint is complaining about this
   outputBehaviourElm.val(parseInt(outputFlowValueElm.val()) +  parseInt(outputFlowUnitElm.val()));
 
 };

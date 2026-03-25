@@ -1814,7 +1814,7 @@ function ::CreatePowermeterESIIndControl_1() {
 
 ! HmIP-ESI-IND chn 2
 function ::CreatePowermeterESIIndControl_2() {
-  string arDeviceState = "${lblOK},${lblUnknown},${},${lblOverflow},${lblUnderflow}";
+  string arDeviceState = "${lblOK},${lblUnknown},${lblOverflow}}";
   object oChannel = dom.GetObject(chnId);
   string chAddress = oChannel.Address();
 
@@ -1837,6 +1837,7 @@ function ::CreatePowermeterESIIndControl_2() {
   string totalConsumption = "--";
   integer totalConsumptionStatus = "${lblUnknown}";
   string energyCounter = "--";
+    string ctrHidden = "hidden";
 
   object oEnergy = cObj.DPByControl("POWERMETER_PSM.GAS_VOLUME");
   object oEnergyStatus = cObj.DPByControl("POWERMETER_PSM.GAS_VOLUME_STATUS");
@@ -1853,7 +1854,9 @@ function ::CreatePowermeterESIIndControl_2() {
     energyCounter = (sysVarEnergyCounter.Value() / divider).ToString(decimalPlace)#" "#unit;
 
     if ((oEnergyStatus) && (oEnergyStatus.Value() > 0)) {
-      energyCounter = totalConsumptionStatus;
+      curStatus = arDeviceState.StrValueByIndex(',',oEnergyStatus.Value());
+      ! energyCounter = totalConsumptionStatus;
+      ctrHidden = "visible";
       unit = "";
     }
   }
@@ -1865,9 +1868,6 @@ function ::CreatePowermeterESIIndControl_2() {
     real energyMonth = (oChannel.MetaData("energy30").ToFloat() / divider).ToString(decimalPlace);
   }
 
-  WriteLine("<script>console.log('energyToday: "#energyToday#"', 'energyYesterday: "#energyYesterday#"' );</script>");
-
-  ! html
   ! EnergyCounter CCU - We display this CCU value instead of the raw device counter value because we can set a start value for this counter as config parameter
     WriteLine("<td>");
       WriteLine("<table>");
@@ -1893,12 +1893,13 @@ function ::CreatePowermeterESIIndControl_2() {
                     WriteLine("</table>");
                   WriteLine("</td>");
 
-                  !STATUS
-                  WriteLine("<td class='hidden'>");
-                    WriteLine("<table class='ControlBtnInfo' style='min-width: 240px;'>");
-                      if (oEnergy) {
-                        WriteLine("<tr>");
-                          WriteLine("<td>");
+                  if (oEnergyStatus) {
+                    !STATUS
+                    WriteLine("<td class="#ctrHidden#">");
+                      WriteLine("<table class='ControlBtnInfo' style='min-width: 240px;'>");
+                        if (oEnergy) {
+                          WriteLine("<tr>");
+                            WriteLine("<td>");
                               WriteLine("<tr>");
                                 WriteLine("<td>");
                                   WriteLine("<span>${lblDevStatus}</span>");
@@ -1910,12 +1911,12 @@ function ::CreatePowermeterESIIndControl_2() {
                                   WriteLine("<span>"#totalConsumptionStatus#"</span>");
                                 WriteLine("</td>");
                               WriteLine("</tr>");
-                          WriteLine("</td>");
-                        WriteLine("</tr>");
-                     }
-                    WriteLine("</table>");
-                  WriteLine("</td>");
-
+                            WriteLine("</td>");
+                          WriteLine("</tr>");
+                       }
+                      WriteLine("</table>");
+                    WriteLine("</td>");
+                   }
                 WriteLine("</tr>");
 
                 WriteLine("<tr><td colspan='2'><hr></td></tr>");

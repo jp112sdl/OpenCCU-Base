@@ -280,9 +280,7 @@ jQuery.extend(true,langJSON, {
     "HmIP-WRC2": "Homematic IP Wandtaster 2-fach",
     "HmIP-WRCC2": "Homematic IP Wandtaster - flach",
     "HmIP-WSC" : "Homematic IP Servosteuerung",
-
     "HmIP-WSM" : "Homematic IP Bew%E4sserungsaktor",
-
     "HmIP-WTH": "Homematic IP Wandthermostat",
     "HmIP-WTH-B": "Homematic IP Wandthermostat - basic",
     "HmIP-WTH-2": "Homematic IP Wandthermostat mit Luftfeuchtigkeitssensor",

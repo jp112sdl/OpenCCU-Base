@@ -1228,6 +1228,29 @@ function ::getSpecialTranslationPrgCond() {
     }
   }
 
+
+  if (oCC.HssType().Find("ENERGIE_METER_TRANSMITTER") != -1) {
+    if ((oCC.Label() == "HmIP-ESI-IND")) {
+      object oDevice = dom.GetObject(oCC.Device());
+      integer devMode = oDevice.MetaData("modeGasWater");
+
+      if (sShortKey.Find("GAS_FLOW") != -1) {
+        sValue = "${stringTablePowerMeterGasFlow}";
+        if (devMode == 1) {
+          sValue = "${stringTablePowerMeterWaterFlow}";
+        }
+      }
+
+      if (sShortKey.Find("GAS_VOLUME") != -1) {
+        sValue = "${stringTablePowerMeterGasVolume}";
+        if (devMode == 1) {
+          sValue = "${stringTablePowerMeterWaterVolume}";
+        }
+      }
+    }
+  }
+
+
   return;
 }
 

@@ -909,7 +909,7 @@ proc showHmIPChannel {devType direction address chType} {
     }
   }
 
-  if {(($devType == "HMIP-WGS") || ($devType == "HMIP-WGS-A")) && ($chType == "KEY_TRANSCEIVER")} {
+  if {(($devType == "HMIP-WGS") || ($devType == "HMIP-WGS-A") || ($devType == "HMIPW-WGS") || ($devType == "HMIPW-WGS-A")) && ($chType == "KEY_TRANSCEIVER")} {
     # Determine the selected layout mode of the device
     set devAddress [lindex [split $address ":"] 0]
     set url $iface_url(HmIP-RF)

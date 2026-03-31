@@ -121,7 +121,7 @@ ChannelChooser = Singleton.create({
       && (channelTypeName != "hmip-pdt")
       && (channelTypeName != "hmip-pdt-uk")
       && (channelTypeName != "hmip-pcbs")
-      && ((channelTypeName != "hmip-wgs") && (channelTypeName != "hmip-wgs-a")) // the wgs gets a special treatment further down
+      && ((channelTypeName != "hmip-wgs") && (channelTypeName != "hmip-wgs-a") && (channelTypeName != "hmipw-wgs") && (channelTypeName != "hmip-wgs-a")) // the wgs gets a special treatment further down
     ) {
       arChannels.push(channel);
     }
@@ -272,7 +272,7 @@ ChannelChooser = Singleton.create({
     }
 
     // Depending on the selected layout mode (1, 2 or 4 buttons) we have to filter some channels
-    if ((channel.channelType == "KEY_TRANSCEIVER") && ((channelTypeName == "hmip-wgs") || (channelTypeName == "hmip-wgs-a"))) {
+    if ((channel.channelType == "KEY_TRANSCEIVER") && ((channelTypeName == "hmip-wgs") || (channelTypeName == "hmip-wgs-a") || channelTypeName == "hmipw-wgs") || (channelTypeName == "hmipw-wgs-a")) {
       var curDevice, chnDescription, mode;
       curDevice = channel.device.address;
       chnDescription = homematic("Interface.getParamset", {

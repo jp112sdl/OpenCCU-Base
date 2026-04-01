@@ -121,7 +121,7 @@ ChannelChooser = Singleton.create({
       && (channelTypeName != "hmip-pdt")
       && (channelTypeName != "hmip-pdt-uk")
       && (channelTypeName != "hmip-pcbs")
-      && ((channelTypeName != "hmip-wgs") && (channelTypeName != "hmip-wgs-a") && (channelTypeName != "hmipw-wgs") && (channelTypeName != "hmip-wgs-a")) // the wgs gets a special treatment further down
+      && ((channelTypeName != "hmip-wgs") && (channelTypeName != "hmip-wgs-a") && (channelTypeName != "hmipw-wgs") && (channelTypeName != "hmip-wgs-a") && (channelTypeName != "hmipw-wgs-a")) // the wgs gets a special treatment further down
     ) {
       arChannels.push(channel);
     }

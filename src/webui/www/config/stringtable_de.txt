@@ -1124,8 +1124,10 @@ LED_STATUS=OFF	${stringTableLEDStatusOff}
 LED_STATUS=ORANGE	${stringTableLEDStatusOrange}
 LED_STATUS=RED	${stringTableLEDStatusRed}
 LEVEL	${stringTableLevel}
+LEVEL_COMMAND_TRANSMITTER_CO2	${chType_LEVEL_COMMAND_TRANSMITTER_CO2}
+LEVEL_COMMAND_TRANSMITTER_HUMIDITY	${chType_LEVEL_COMMAND_TRANSMITTER_HUMIDITY}
+LEVEL_COMMAND_TRANSMITTER_TEMPERATURE	${chType_LEVEL_COMMAND_TRANSMITTER_TEMPERATURE}
 LEVEL_REAL	${stringTableLevelReal}
-
 LEVEL_STATUS=ERROR	${lblValue} ${stringTableLevelStatus}: ${lblError}
 LEVEL_STATUS=4	${lblValue} ${stringTableLevelStatus}: ${lblError}
 LEVEL_STATUS=NORMAL	${lblValue} ${stringTableLevelStatus}: ${lblNormal}

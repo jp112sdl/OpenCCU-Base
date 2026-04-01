@@ -33,8 +33,9 @@ DimmerCombinedParamDialog = Class.create({
     this.isUniversalActor = ((this.deviceType == "HmIP-WUA") || (this.deviceType == "ELV-SH-WUA")) ? true : false;
     this.isServoController = ((this.deviceType == "HmIP-WSC") || (this.deviceType == "ELV-SH-WSC")) ? true : false;
     this.isWGS = ((this.deviceType == "HmIP-WGS") || (this.deviceType == "HmIP-WGS-A") || (this.deviceType == "HmIPW-WGS") || (this.deviceType == "HmIPW-WGS-A")) ? true : false;
+    this.isWiredWGT = ((this.deviceType == "HmIPW-WGT") || (this.deviceType == "HmIPW-WGT-A")) ? true : false;
     this.arNoOntimeAvailable = ["HmIP-MP3P", "HmIP-BSL", "HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
-    this.arNoRamptimeAvailable = ["HmIP-WGS", "HmIP-WGS-A", "HmIPW-WGS", "HmIPW-WGS-A"];
+    this.arNoRamptimeAvailable = ["HmIP-WGS", "HmIP-WGS-A", "HmIPW-WGS", "HmIPW-WGS-A", "HmIPW-WGT", "HmIPW-WGT-A"];
     this.showRampTimeOffElm = ["HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
     this.showColorElms = ["HmIP-MP3P", "HmIP-BSL", "HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
     this.showBehaviourElms = ["HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
@@ -100,7 +101,7 @@ DimmerCombinedParamDialog = Class.create({
     this.behaviourElmVisible = false;
     this.setDialogElements();
 
-    if (! this.isWGS) {
+    if ((! this.isWGS) && (! this.isWiredWGT)) {
       this.initDialog();
     } else {
       this.initDialog_WGS();
@@ -601,10 +602,10 @@ DimmerCombinedParamDialog = Class.create({
           if (this.isServoController) {
             result = "L=" + level + ",RT=" + _rampTimeValue; // ON_TIME is for the Hmip-WSC not allowed (see SPHM-942)
           } else {
-            if ((! this.isWGS)  &&  (_rampTimeValue > 0) ) {
+            if ((! this.isWGS) && (! this.isWiredWGT)  &&  (_rampTimeValue > 0) ) {
               result = "L=" + level + ",OT=" + this.maxOnTime + ",RT=" + _rampTimeValue; // ON_TIME = permanently ON
             } else {
-              if (! this.isWGS) {
+              if ((! this.isWGS) && (! this.isWiredWGT)) {
                 result = "L=" + level + ",OT=0,RT=0";
               } else {
                 result = "L=" + level + ",OT=0";
@@ -617,7 +618,7 @@ DimmerCombinedParamDialog = Class.create({
             result = "L=" + level + ",RT=" + _rampTimeValue; // ON_TIME is for the Hmip-WSC not allowed (see SPHM-942)
           } else {
 
-            if (! this.isWGS) {
+            if ((! this.isWGS) && (! this.isWiredWGT)) {
               if (durationValue == 0) {
                 result = "L=" + level + ",OT=" + this._getOnTimeVal(durationValue, durationUnit) + ",RT=0";
               } else {

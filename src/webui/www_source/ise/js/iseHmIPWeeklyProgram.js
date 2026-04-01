@@ -36,6 +36,7 @@ iseHmIPWeeklyProgram.prototype = {
     this.isWiredWGS = (this.device.deviceType.id.includes("HmIPW-WGS")) ? true : false;
 
     this.isWGT = (this.device.deviceType.id.includes("HmIP-WGT")) ? true : false;
+    this.isWiredWGT = (this.device.deviceType.id.includes("HmIPW-WGT")) ? true : false;
 
 
     this.expert = (! this.opts.userEasyLinkMode || this.deviceIsHmIP_FLC) ? true : false;
@@ -79,6 +80,10 @@ iseHmIPWeeklyProgram.prototype = {
       } else {
         this.relevantChn = (this.expert) ? [2, 4, 5, 6] : [2, 4];
       }
+    }
+
+    if (this.isWiredWGT) {
+      this.relevantChn = [2];
     }
 
     if (this.deviceIsHmIP_RGBW) {

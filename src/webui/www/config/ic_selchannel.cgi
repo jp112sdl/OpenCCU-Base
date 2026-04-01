@@ -924,6 +924,11 @@ proc showHmIPChannel {devType direction address chType} {
     }
   }
 
+  if {$chType == "KWL_CONTROLLER_TRANSMITTER"} {
+    # hide the channel
+    return 0
+  }
+
   # Hide the virtual channel 2 and 3 of HmIP devices when the expert mode is not activated.
   if {! [session_is_expert]} {
     return [linkIsExpertChannel $devType $chType $ch]

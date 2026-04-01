@@ -992,6 +992,16 @@ function ::destinationIsParameterVisible() {
     }
   }
 
+  if (oCH.HssType().Find("HEATING_CLIMATECONTROL_TRANSCEIVER") != -1) {
+    if (
+    (oDP.HSSID().Find("ACTIVE_PROFILE") != -1)
+    || (oDP.HSSID().Find("DURATION_VALUE") != -1)
+    || (oDP.HSSID().Find("DURATION_UNIT") != -1)
+    ) {
+      showChannelParam = false;
+    }
+  }
+
   !HmIP-WSM
   ! Hide all parameters of the channel WATER_SWITCH_VIRTUAL_RECEIVER except COMBINED_PARAMETER
   if ( oCH.HssType().Find("WATER_SWITCH_VIRTUAL_RECEIVER") != -1) {
@@ -1019,6 +1029,16 @@ function ::destinationIsParameterVisible() {
     if ( (sValue.Find("${stringTableDoorLockStateTransmitterLockTargetLevelLocked}")) ) {showChannelParam = true;} else {showChannelParam = false;}
     if ( (sValue.Find("${stringTableDoorLockStateTransmitterLockTargetLevelUnlocked}")) ) {showChannelParam = true;} else {showChannelParam = false;}
     if ( (sValue.Find("${stringTableDoorLockStateTransmitterLockTargetLevelOpen}")) ) {showChannelParam = true;} else {showChannelParam = false;}
+  }
+
+  if (oCH.HssType().Find("HEATING_CLIMATECONTROL_TRANSCEIVER") != -1) {
+    if (
+    (oDP.HSSID().Find("ACTIVE_PROFILE") != -1)
+    || (oDP.HSSID().Find("DURATION_VALUE") != -1)
+    || (oDP.HSSID().Find("DURATION_UNIT") != -1)
+    ) {
+      showChannelParam = false;
+    }
   }
 
   return;

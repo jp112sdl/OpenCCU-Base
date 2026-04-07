@@ -418,7 +418,7 @@ function ::dcCreate()
           }
 
           !# CN_CARBON_DIOXIDE_RECEIVER
-          if ((ch.Label() != "HmIPW-SCTHD") && (ch.Label().Substr(5,4) != "WGTC") ) {
+          if ((ch.Label() != "HmIPW-SCTHD") && (ch.Label().Substr(5,4) != "WGTC") && (ch.Label().Substr(6,4) != "WGTC") ) {
             bIsControl = ( sControlName.Find(CN_CARBON_DIOXIDE_RECEIVER) > -1 );
             if( bIsControl && (sLastControlName!=CN_CARBON_DIOXIDE_RECEIVER) )
             {

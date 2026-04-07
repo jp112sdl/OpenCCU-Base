@@ -33,9 +33,9 @@ DimmerCombinedParamDialog = Class.create({
     this.isUniversalActor = ((this.deviceType == "HmIP-WUA") || (this.deviceType == "ELV-SH-WUA")) ? true : false;
     this.isServoController = ((this.deviceType == "HmIP-WSC") || (this.deviceType == "ELV-SH-WSC")) ? true : false;
     this.isWGS = ((this.deviceType == "HmIP-WGS") || (this.deviceType == "HmIP-WGS-A") || (this.deviceType == "HmIPW-WGS") || (this.deviceType == "HmIPW-WGS-A")) ? true : false;
-    this.isWiredWGT = ((this.deviceType == "HmIPW-WGT") || (this.deviceType == "HmIPW-WGT-A")) ? true : false;
+    this.isWiredWGT = ((this.deviceType == "HmIPW-WGT") || (this.deviceType == "HmIPW-WGT-A") || (this.deviceType == "HmIPW-WGTC") || (this.deviceType == "HmIPW-WGTC-A") ) ? true : false;
     this.arNoOntimeAvailable = ["HmIP-MP3P", "HmIP-BSL", "HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
-    this.arNoRamptimeAvailable = ["HmIP-WGS", "HmIP-WGS-A", "HmIPW-WGS", "HmIPW-WGS-A", "HmIPW-WGT", "HmIPW-WGT-A"];
+    this.arNoRamptimeAvailable = ["HmIP-WGS", "HmIP-WGS-A", "HmIPW-WGS", "HmIPW-WGS-A", "HmIPW-WGT", "HmIPW-WGT-A", "HmIPW-WGTC", "HmIPW-WGTC-A"];
     this.showRampTimeOffElm = ["HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
     this.showColorElms = ["HmIP-MP3P", "HmIP-BSL", "HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];
     this.showBehaviourElms = ["HmIPW-WRC6", "HmIPW-WRC6-A", "HmIP-WRC6-230", "HmIP-WRC6-230-A"];

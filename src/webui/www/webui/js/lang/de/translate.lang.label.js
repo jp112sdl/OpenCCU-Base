@@ -203,6 +203,7 @@ jQuery.extend(true,langJSON, {
     "lblOff" : "Aus",
     "lblOn" : "Ein",
     "lblOnTime" : "Einschaltdauer",
+    "lblOffTime" : "Ausschaltdauer",
     "lblOnTimeLimited" : "Einschaltdauer begrenzt",
     "lblOpen" : "%D6ffnen",
     "lblOperatingMode" : "Betriebsmodus",

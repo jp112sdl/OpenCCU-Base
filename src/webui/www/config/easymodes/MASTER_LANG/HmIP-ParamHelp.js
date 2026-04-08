@@ -298,6 +298,12 @@ jQuery.extend(true,langJSON, {
     "MOUNTING_ORIENTATION_A" : "Dieser Parameter erm%F6glicht es, den Aktor im gew%FCnschten Winkel einzusetzen. ",
 
     "POWERUP_ONTIME_UNIT" :
+      "PowerUpOntimeUnit",
+
+    "POWERUP_OFFTIME_UNIT" :
+      "PowerUpOfftimeUnit",
+
+    "POWERUP_ONTIME_UNIT_AUTORELOCK" :
       "W%E4hlen Sie die Wartezeit bis zum <i>Auto Relock</i>, nachdem das T%FCrschloss entriegelt oder ge%F6ffnet wurde.<br/><br/>" +
       "Um <i>Auto Relock</i> zu nutzen, muss au%DFerdem mindestens ein entsprechender Eintrag vom Typ 'Modus f%FCr den T%FCrschlossantrieb' im Wochenprogramm vorgenommen werden.",
     
@@ -911,6 +917,12 @@ jQuery.extend(true,langJSON, {
     "MOUNTING_ORIENTATION_A" : "This parameter enables the actuator to be placed at the required angle.",
 
     "POWERUP_ONTIME_UNIT" :
+      "en* PowerUpOntimeUnit",
+
+    "POWERUP_OFFTIME_UNIT" :
+      "en* PowerUpOfftimeUnit",
+
+    "POWERUP_ONTIME_UNIT_AUTORELOCK" :
       "Select the delay time until <i>Auto Relock</i> is executed after the door lock has been unlocked or opened.<br/><br/>" +
       "In order to use <i>Auto Relock</i>, at least one corresponding entry of the type 'Mode for the door lock drive' must also be entered in the week progam.",
 

@@ -203,6 +203,7 @@ jQuery.extend(true,langJSON, {
     "lblOff" : "Off",
     "lblOn" : "On",
     "lblOnTime" : "Switch-on time",
+    "lblOffTime" : "Switch-off time",
     "lblOnTimeLimited" : "Switch-on time limited",
     "lblOpen" : "Open",
     "lblOperatingMode" : "Operating mode",

@@ -99,7 +99,7 @@ shutterSelfCalibration.prototype = {
   getHtml: function() {
     var topSetHidden = false;
     var html = "<table>";
-    if (this.topSet != 1) {
+    if (this.topSet == 0) {
       // Change Motor Direction
       html += "<tr>";
       html += "<td colspan='4'>";

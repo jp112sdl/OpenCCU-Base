@@ -338,6 +338,10 @@ jQuery.extend(true, langJSON, {
       "en* Die Endlagen wurden gespeichert.<br><br>" +
       "Der Rohrmotor kann nun genutzt werden.<br/><br/>",
 
+    "hintEndPositionNotSaved":
+      "en* Die Endlagen wurden noch nicht kalibriert.<br/>"+
+      "Der Rohrmotor kann daher nicht genutzt werden.",
+
     "optionOff" : "en* Deaktiviert",
     "optionVeryInsensitive" : "en* Sehr unempfindlich",
     "optionInsensitive" : "en* Unempfindlich",

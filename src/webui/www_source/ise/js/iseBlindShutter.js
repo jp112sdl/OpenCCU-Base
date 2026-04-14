@@ -24,11 +24,13 @@ iseButtonsShutter.prototype = {
     this.divUp = $(this.id + "Up");
     this.divDown = $(this.id + "Down");
 
-    this.shutter = new shutterControl(id, initState);
+     this.shutter = new shutterControl(id, initState);
 
     this.Perc.value = initState;
     this.shutter.setValue(initState);
     this.opts = opts;
+
+    this.chMaintenance = this.opts.devAddress + ":0";
 
     this.pressedUpDown = "";
 
@@ -58,6 +60,11 @@ iseButtonsShutter.prototype = {
       this.clickStop = this.onClickStop.bindAsEventListener(this);
       Event.observe(this.divStop, 'mousedown', this.clickStop);
     }
+
+    if (opts.chnLabel.includes("HmIP-M-TD"))  {
+      this.checkEndPos();
+    }
+
     this.initJalousie();
     this.initHmIPJalousieShutter();
 
@@ -65,6 +72,18 @@ iseButtonsShutter.prototype = {
 
   initJalousie: function() {},
   initHmIPJalousieShutter: function() {},
+
+  checkEndPos: function() {
+    this.topSet = parseInt(homematic("Interface.getValue", {'interface': this.opts.iface, 'address' : this.chMaintenance, 'valueKey': 'MANUAL_SELF_CALIBRATION_TOP_POS_SET'}));
+    this.bottomSet = parseInt(homematic("Interface.getValue", {'interface': this.opts.iface, 'address' : this.chMaintenance, 'valueKey': 'MANUAL_SELF_CALIBRATION_BOTTOM_POS_SET'}));
+
+    if ((this.topSet == 0) || (this.bottomSet == 0)) {
+      jQuery("#endPosNotSaved" + this.id).show();
+    } else {
+      jQuery("#endPosNotSaved" + this.id).hide();
+    }
+
+  },
 
   onClickShutter: function(ev) {
     var pos = Position.page(this.shutter.divShutterBg);

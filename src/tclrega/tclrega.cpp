@@ -64,7 +64,6 @@ struct sockaddr_in dest_addr;
 static std::string uri;
 static std::string sid;
 
-// - - - niclaus - - -
 static std::string portRega("8183");
 static volatile bool portRegaRead;
 
@@ -112,7 +111,6 @@ void initPorts() {
         portRegaRead = true;
     }
 }
-// - - - niclaus - - -
 
 extern "C" {
 

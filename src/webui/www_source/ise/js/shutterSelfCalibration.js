@@ -37,7 +37,7 @@ shutterSelfCalibration.prototype = {
 
 
     var title = ((this.topSet == 0) && (this.bottomSet == 0)) ? translateKey("btnSelfCalibration") : "";
-    var dlgWith = ((this.topSet == 0) || (this.bottomSet == 0)) ? 310 : 182;
+    var dlgWith = ((this.topSet == 0) || (this.bottomSet == 0)) ? 360 : 182;
 
     this.dlg = new YesNoDialog(title, this.getHtml(), function(result) {
       if (result == YesNoDialog.RESULT_NO) {

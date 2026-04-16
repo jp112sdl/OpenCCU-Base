@@ -369,7 +369,7 @@ static int Tclrpc_Cmd (ClientData, Tcl_Interp * interp, int argc, CONST84 char* 
         		Tcl_AppendResult(interp, "Fault received on xmlrpc call ", argv[2], "(", params.toText().c_str(), ")\n", buffer, "faultString=", const_cast<char*>(((std::string)response["faultString"]).c_str()), NULL);
 		//retval=TCL_ERROR;
 		/*
-		* C.Niclaus: Reverted change from svn revsision 56882 made to fix something in another project. The change broke the return code evaluation in
+		* Reverted change from svn revsision 56882 made to fix something in another project. The change broke the return code evaluation in
 		* tcl script 'dispatch.tcl'. Since this code was forked in twist project, this should be reverted now, to evaluate new return code
 		* (i.e. -10 TransmissionPending from Legacy API
 		*/

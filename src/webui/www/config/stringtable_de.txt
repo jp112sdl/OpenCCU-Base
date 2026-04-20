@@ -837,6 +837,8 @@ ERROR_JAMMED=TRUE	${stringTableErrorJammed}: ${lblYes}
 ERROR_LOAD_TOO_LOW	${stringTableLoadTooLow}
 ERROR_LOAD_TOO_LOW=FALSE	${stringTableLoadTooLow}: ${lblNo}
 ERROR_LOAD_TOO_LOW=TRUE	${stringTableLoadTooLow}: ${lblYes}
+ERROR_MAX_WATER_FLOW	${stringTableErrorMaxWaterFlow}
+ERROR_MAX_WATER_FLOW_DURATION	${stringTableErrorMaxWaterFlowDuration}
 ERROR_MOUNTING_MODULE=FALSE	${stringTableErrorMountingModuleFalse}
 ERROR_MOUNTING_MODULE=TRUE	${stringTableErrorMountingModuleTrue}
 ERROR_NON_FLAT_POSITIONING	${stringTableErrorNonFlatPositioning}

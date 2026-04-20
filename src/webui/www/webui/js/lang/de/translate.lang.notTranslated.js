@@ -391,6 +391,12 @@ jQuery.extend(true, langJSON, {
     "lblCondThresholdHi_WSS" : "Durchflussmenge %DFberwachung",
     "unitLiters" : "Liter",
 
+    "stringTableErrorMaxWaterFlow" :
+      "Spitzendurchfluss %FCberschritten. Bitte auf Leckage pr%FCfen.",
+
+    "stringTableErrorMaxWaterFlowDuration" :
+      "Wasserdurchflusszeit %FCberschritten. Bitte auf Leckage pr%FCfen.",
+
     "noMoreKeys" : ""
   }
 });

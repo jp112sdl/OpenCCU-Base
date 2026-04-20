@@ -384,6 +384,12 @@ jQuery.extend(true, langJSON, {
     "lblCondThresholdHi_WSS" : "Flow rate monitoring",
     "unitLiters" : "en* Liters",
 
+    "stringTableErrorMaxWaterFlow" :
+      "Peak flow rate exceeded. Check it for leaks.",
+
+    "stringTableErrorMaxWaterFlowDuration" :
+      "Water flow time exceeded. Check it for leaks.",
+
     "noMoreKeys" : ""
   }
 });

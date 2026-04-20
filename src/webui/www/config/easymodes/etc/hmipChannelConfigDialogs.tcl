@@ -8182,30 +8182,6 @@ proc getWaterFlowTransmitter {chn p descr} {
     append html "</tr>"
   }
 
-  if { [info exists ps(EVENT_BLINDTIME_BASE)] == 1  } {
-
-    append html "<tr>"
-      append html "<td>\${lblEventBlindTime}</td>"
-
-      append html "<td>"
-        set param EVENT_BLINDTIME_VALUE
-        incr prn
-        append html "<input type='text' id='separate_$special_input_id\_$prn' name='$param' value='$ps($param)' size=4 onblur=\"ProofAndSetValue(this.id, this.id, '0', '63', 1);\">"
-        append html "<span> x </span>"
-
-        set param EVENT_BLINDTIME_BASE
-        incr prn
-        append html "<select id='separate_$special_input_id\_$prn' name='$param'>"
-          append html "<option value='1'>\${optionUnit1S}</option>"
-          append html "<option value='2'>\${optionUnit1M}</option>"
-          append html "<option value='3'>\${optionUnit1H}</option>"
-        append html "</select>"
-      append html "</td>"
-      append html "<script type='text/javascript'> jQuery('\#separate_$special_input_id\_$prn').val('$ps($param)');; </script>"
-    append html "</tr>"
-
-  }
-
   set param INTERVAL_UNIT
   if { [info exists ps($param)] == 1  } {
     incr prn
@@ -8228,12 +8204,40 @@ proc getWaterFlowTransmitter {chn p descr} {
     append html "<script type=\"text/javascript\">setTimeout(function() {setCurrentAutoIntervalAOption($chn, [expr $prn - 1], '$specialID');}, 100)</script>"
   }
 
+  if { [info exists ps(EVENT_BLINDTIME_BASE)] == 1  } {
+    append html "[getHorizontalLine]"
+
+    append html "<tr>"
+      append html "<td>\${lblEventBlindTime}</td>"
+
+      append html "<td>"
+        set param EVENT_BLINDTIME_VALUE
+        incr prn
+        append html "<input type='text' id='separate_$special_input_id\_$prn' name='$param' value='$ps($param)' size=4 onblur=\"ProofAndSetValue(this.id, this.id, '0', '63', 1);\">"
+        append html "<span> x </span>"
+
+        set param EVENT_BLINDTIME_BASE
+        incr prn
+        append html "<select id='separate_$special_input_id\_$prn' name='$param'>"
+          # append html "<option value='1'>\${optionUnit1S}</option>"
+          append html "<option value='2'>\${optionUnit1M}</option>"
+          append html "<option value='3'>\${optionUnit1H}</option>"
+        append html "</select>"
+
+        append html "&nbsp;[getHelpIcon $param\_WSS 320 100]"
+
+      append html "</td>"
+      append html "<script type='text/javascript'> jQuery('\#separate_$special_input_id\_$prn').val('$ps($param)');</script>"
+    append html "</tr>"
+
+  }
+
     set param COND_TX_THRESHOLD_HI
     if { [info exists ps($param)] == 1 } {
       incr prn
       append html "<tr>"
-        append html "<td>\${stringTableCondThresholdHi}</td>"
-       append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getCondTXThresholdUnit $devType $chn]&nbsp;[getMinMaxValueDescr $param]</td>"
+        append html "<td>\${lblCondThresholdHi_WSS}</td>"
+       append html "<td>[getTextField $param $ps($param) $chn $prn]&nbsp;[getCondTXThresholdUnit $devType $chn]&nbsp;[getMinMaxValueDescr $param]&nbsp;[getHelpIcon $param\_WSS 320 100]</td>"
       append html "</tr>"
     }
 

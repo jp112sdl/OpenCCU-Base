@@ -387,7 +387,8 @@ jQuery.extend(true, langJSON, {
     "optionPressureSensorGBCan" : "Gr%FCnbeck CAN PRESSURE",
     "optionPressureSensorGBHW1" : "Gr%FCnbeck HW1",
 
-    "lblEventBlindTime" : "<span class='attention'>EVENT_BLINDTIME</span>",
+    "lblEventBlindTime" : "Durchflusszeit %DCberwachung",
+    "lblCondThresholdHi_WSS" : "Durchflussmenge %DFberwachung",
     "unitLiters" : "Liter",
 
     "noMoreKeys" : ""

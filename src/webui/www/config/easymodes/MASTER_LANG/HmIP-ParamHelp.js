@@ -623,6 +623,14 @@ jQuery.extend(true,langJSON, {
       "Das nutzbare Messintervall ist im Interface auf den Bereich von 1 Minute bis 24 Stunden begrenzt. " +
       "Zu gro%DF oder zu klein konfigurierte Werte werden im Interface auf den begrenzten Bereich angepasst.",
 
+    "EVENT_BLINDTIME_BASE_WSS" :
+      "Legen Sie fest, wie lange Wasser dauerhaft flie%DFen darf, bevor eine Aktion ausgel%F6st wird.<br/><br/>" +
+      "Der Zeitraum kann zwischen 1 Minute und 63 Stunden eingestellt werden.",
+
+    "COND_TX_THRESHOLD_HI_WSS" :
+      "Legen Sie fest, wie viel Wasser flie%DFen darf, bevor eine Aktion ausgel%F6st wird.<br/><br/>" +
+      "Die Menge kann zwischen 0 und 1000 Liter pro Minute eingestellt werden.",
+
     "noMoreHelp" : ""
   },
 
@@ -1241,6 +1249,14 @@ jQuery.extend(true,langJSON, {
     "INTERVAL_UNIT_dusi" :
       "The usable measurement interval is limited to a range of 1 minute to 24 hours in the interface. " +
       "Values that are configured too large or too small are adjusted to the limited range in the interface.",
+
+    "EVENT_BLINDTIME_BASE_WSS" :
+      "Specify how long water may flow continuously before an action is triggered.<br/><br/>" +
+      "The time period can be set between 1 minute and 63 hours.",
+
+    "COND_TX_THRESHOLD_HI_WSS" :
+      "Specify how much water may flow before an action is triggered.<br/><br/>" +
+      "The volume can be set between 0 and 1000 litres per minute.",
 
     "noMoreHelp" : ""
     }

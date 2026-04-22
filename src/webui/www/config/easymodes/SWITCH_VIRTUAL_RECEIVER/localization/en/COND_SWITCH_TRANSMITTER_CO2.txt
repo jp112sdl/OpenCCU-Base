@@ -4,6 +4,7 @@
 "description_4" : "<span class=\"translated\">The profile is not active</span>",
 "switchPoint" : "Switching at",
 
+"switchPoint" : "Switching at",
 "subset_1": "Reaching the upper CO2 threshold",
 "subset_2": "Value falls below lower CO2 threshold",
 "subset_3": "Reaching the upper CO2 threshold on - Value falls below lower threshold off",

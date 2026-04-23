@@ -363,6 +363,8 @@ jQuery.extend(true, langJSON, {
 
     "lblFlowControl" : "Durchfluss-Kontrolle",
 
+    "btnWaterOnCond" : "Bedingt ge%F6ffnet",
+
     "optionWaterOn" : "Wasser ein",
     "optionWaterOff" : "Wasser aus",
 

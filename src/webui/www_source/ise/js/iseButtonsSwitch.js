@@ -1,15 +1,3 @@
-/**
- * ise/iseButtonsSwitch.js
- **/
-
-/**
- * @fileOverview ?
- * @author ise
- **/
-
-/**
- * @class
- **/
 iseButtonsSwitch = Class.create();
 
 iseButtonsSwitch.prototype = {
@@ -19,6 +7,7 @@ iseButtonsSwitch.prototype = {
    * idDpState = id of state-DP
    */
   initialize: function(id, initState, idDpState, iViewOnly, chnAddress, chnLabel, iFace) {
+    var self = this;
     this.id = id;
     this.state = initState;
     this.divOn = $(this.id + "On");
@@ -46,16 +35,22 @@ iseButtonsSwitch.prototype = {
       this.clickOn = this.onClickOn.bindAsEventListener(this);
       Event.observe(this.divOn, 'mousedown', this.clickOn);
 
-/*      if (this.chnLabel.indexOf("HmIP-WSM") != -1) {
-        this.defaultDurationUnit = 5; // 5 minutes
-        this.durationSelect = jQuery("#" + this.id +"durationSelect");
-        this.durationValueElm = jQuery("#" + this.id + "durationValue");
-        this.durationUnitElm = jQuery("#" + this.id + "durationUnit");
-        this.durationElm = jQuery("#" + this.id + "duration"); // here we set the value which will be transmitted
 
-        this.initDurationValue();
-        this.initEventFlowDuration();
-      }*/
+      if (this.chnLabel.indexOf("HmIP-WSM") != -1) {
+
+        this.divOnCond = jQuery("#" + this.id + "OnCond").on("click", function() {
+          jQuery("#" + self.id + "tdFlowRate").show();
+        });
+
+        //this.defaultDurationUnit = 5; // 5 minutes
+        //this.durationSelect = jQuery("#" + this.id +"durationSelect");
+        //this.durationValueElm = jQuery("#" + this.id + "durationValue");
+        //this.durationUnitElm = jQuery("#" + this.id + "durationUnit");
+        //this.durationElm = jQuery("#" + this.id + "duration"); // here we set the value which will be transmitted
+
+        //this.initDurationValue();
+        //this.initEventFlowDuration();
+      }
 
     }
   },

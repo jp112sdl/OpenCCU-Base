@@ -44,7 +44,7 @@ iseButtonsSwitch.prototype = {
         this.unitLitersElm = jQuery("#" + this.id + "unitLiters");
 
         this.divOnCond = jQuery("#" + this.id + "OnCond").on("click", function() {
-          jQuery("#" + self.id + "tdFlowRate").show();
+          jQuery("#" + self.id + "tdFlowRate").toggle();
         });
 
         this.setCondition = jQuery("#" + this.id + "Set").on("click", function() {

@@ -844,10 +844,11 @@ MD_proofClassic = function(id)
   if (min_interval.value == min_interval.length - 1) 
   {
     $(id).options[0].selected = true;
-
+    $(id).options[0].defaultSelected = true;
   } else 
   {
     $(id).options[1].selected = true;
+    $(id).options[1].defaultSelected = true;
   }
   
   MD_minInterval(id);

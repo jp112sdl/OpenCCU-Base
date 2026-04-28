@@ -21,9 +21,10 @@ AddProfileValues = function(prefix)
 {
   var i = 1;
 
-  while (document.getElementById(prefix + i))
+  var elem;
+  while (elem = document.getElementById(prefix + i))
   {
-    AddParam(document.getElementById(prefix + i));
+    AddParam(elem);
     i++;
   }
 };
@@ -31,13 +32,14 @@ AddProfileValues = function(prefix)
 AddSeparateSettings = function(prefix, pnr)
 {
   var i = 1,
-  elem;
-  while (document.getElementById(prefix + pnr + '_' + i))
+  var elem;
+  while (elem = document.getElementById(prefix + pnr + '_' + i))
   {
-    elem = document.getElementById(prefix + pnr + '_' + i);
-    if (IsDirty(elem)) {
-      AddParam(document.getElementById(prefix + pnr + '_' + i));
-    }
+    // add ALL parameters (do NOT use IsDirty()) because
+    // AddSeparateSettings is also used while modifiying
+    // device link paramaters which requires all parameters
+    // to be present.
+    AddParam(elem);
     i++;
   }
 };

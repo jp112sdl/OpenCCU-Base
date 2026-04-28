@@ -164,6 +164,8 @@ jQuery.extend(true, langJSON, {
     "helpColorBehaviour_8" : "The selected behaviour is only taken into account for channel 8!",
     "helpColorBehaviour_12" : "The selected behaviour is only taken into account for channel 12!",
 
+    "helpConditionWaterFlow" : "en* helpConditionWaterFlow",
+
     "END" : ""
   }
 });

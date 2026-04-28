@@ -38,23 +38,42 @@ iseButtonsSwitch.prototype = {
 
       if (this.chnLabel.indexOf("HmIP-WSM") != -1) {
 
+        this.durationValueElm = jQuery("#" + this.id + "durationValue");
+        this.durationUnitElm = jQuery("#" + this.id + "durationUnit");
+        this.valueLitersElm = jQuery("#" + this.id + "valueLiters");
+        this.unitLitersElm = jQuery("#" + this.id + "unitLiters");
+
         this.divOnCond = jQuery("#" + this.id + "OnCond").on("click", function() {
           jQuery("#" + self.id + "tdFlowRate").show();
         });
 
-        //this.defaultDurationUnit = 5; // 5 minutes
-        //this.durationSelect = jQuery("#" + this.id +"durationSelect");
-        //this.durationValueElm = jQuery("#" + this.id + "durationValue");
-        //this.durationUnitElm = jQuery("#" + this.id + "durationUnit");
-        //this.durationElm = jQuery("#" + this.id + "duration"); // here we set the value which will be transmitted
-
-        //this.initDurationValue();
-        //this.initEventFlowDuration();
+        this.setCondition = jQuery("#" + this.id + "Set").on("click", function() {
+          var elm = jQuery(this);
+          elm.removeClass("ControlBtnOff").addClass("ControlBtnOn");
+          window.setTimeout(function(){elm.removeClass("ControlBtnOn").addClass("ControlBtnOff");},500);
+          self.setConditionWaterFlow();
+        });
       }
 
     }
   },
-  
+
+  setConditionWaterFlow: function() {
+
+    if ((parseInt(this.durationValueElm.val()) == 0) && (parseInt(this.valueLitersElm.val()) > 0))  {
+      this.durationValueElm.val(31);
+      this.durationUnitElm.val(2);
+    }
+
+    homematic("Interface.putParamset",{'interface': this.HmIPInterfaceID, 'address' : this.chnAddress, 'paramsetKey' : 'VALUES', 'set':
+        [
+          {name:'DURATION_VALUE', type: 'int', value: this.durationValueElm.val()},
+          {name:'DURATION_UNIT', type: 'int', value: this.durationUnitElm.val()},
+          {name:'OUTPUT_BEHAVIOUR', type: 'int', value: (parseInt(this.valueLitersElm.val()) + parseInt(this.unitLitersElm.val())) },
+        ]
+    },function(result){console.log(result);});
+  },
+
   onClickOff: function() {
     ControlBtn.pushed(this.divOff);
     //this.state = false;
@@ -104,18 +123,6 @@ iseButtonsSwitch.prototype = {
       ControlBtn.on(this.divOff);
     }
   }
-
-  // Water
-/*  initDurationValue: function() {
-    this.durationElm.val(parseInt(this.durationSelect.val()) * this.defaultDurationUnit); // here we set the value which will be transmitted
-  },
-
-  initEventFlowDuration: function() {
-    var self = this;
-    this.durationSelect.on("change", function() {
-      self.durationElm.val(parseInt(this.value) * self.defaultDurationUnit); // set the value which will be transmitted
-    });
-  }*/
 
 };
 

@@ -169,6 +169,8 @@ jQuery.extend(true, langJSON, {
     "helpColorBehaviour_8" : "Das eingestellte Verhalten wird nur f%FCr Kanal 8 ber%FCcksichtigt!",
     "helpColorBehaviour_12" : "Das eingestellte Verhalten wird nur f%FCr Kanal 12 ber%FCcksichtigt!",
 
+    "helpConditionWaterFlow" : "helpConditionWaterFlow",
+
     "END" : ""
   }
 });

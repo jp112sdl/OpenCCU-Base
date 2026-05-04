@@ -27,7 +27,7 @@ AddProfileValues = function(prefix)
     AddParam(elem);
     i++;
   }
-    
+  /*jsl:end*/ 
 };
 
 AddSeparateSettings = function(prefix, pnr)
@@ -44,6 +44,7 @@ AddSeparateSettings = function(prefix, pnr)
     AddParam(elem);
     i++;
   }
+  /*jsl:end*/ 
 };
 
 SubmitProfile = function(pnr, pname)

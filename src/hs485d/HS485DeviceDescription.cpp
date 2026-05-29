@@ -15,7 +15,7 @@
 #include <FrameDescription.h>
 #include <Logger.h>
 #include <typeinfo>
-#include <dynamic.h>
+#include <type_registry.h>
 #include "HS485Device.h"
 
 using namespace XmlRpc;
@@ -242,7 +242,7 @@ HS485Device* HS485DeviceDescription::CreateDevice()
 	if(!creation_tag.empty()){
 		std::string full_tag="device_class_";
 		full_tag+=creation_tag;
-		void* obj=dynamic::create(full_tag.c_str());
+		void* obj=hsscomm::type_registry::create(full_tag.c_str());
 		if(!obj){
 			LOG(Logger::LOG_ERROR, "Device class %s not supported", creation_tag.c_str());
 			return NULL;

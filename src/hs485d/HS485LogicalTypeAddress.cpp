@@ -13,9 +13,9 @@
 #include "HS485LogicalTypeAddress.h"
 #include <limits.h>
 #include <Logger.h>
-#include <dynamic.h>
+#include <type_registry.h>
 
-static dynamic::factory<HS485LogicalTypeAddress> HS485LogicalTypeAddressFactory;
+static hsscomm::type_registry::factory<HS485LogicalTypeAddress> HS485LogicalTypeAddressFactory;
 
 using namespace XmlRpc;
 

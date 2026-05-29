@@ -34,7 +34,7 @@ public:
 	bool LogicalToPhysical(LogicalInstance* inst, XmlRpc::XmlRpcValue& in, XmlRpc::XmlRpcValue* out);
 	virtual bool InitFromXml(XMLNode &node, XMLNode &root_node);
 	//! Hilfsmethode für die dynamische Erzeugung durch ein Factory-Objekt
-	/*! Objekte dieser Klasse lassen sich durch dynamic::create("type_conversion_address_array") erzeugen
+	/*! Objekte dieser Klasse lassen sich durch hsscomm::type_registry::create("type_conversion_address_array") erzeugen
 	 */
 	static bool CheckCreationTag(const char* tag);
 	HS485TypeConversionAddressArray();

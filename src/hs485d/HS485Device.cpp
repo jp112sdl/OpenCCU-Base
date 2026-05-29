@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <fstream>
-#include <dynamic.h>
+#include <type_registry.h>
 #include <inttypes.h>
 
 using namespace XmlRpc;
@@ -378,7 +378,7 @@ bool HS485Device::AddChannel(int index, const std::string& type)
 	if(!ch_desc->GetCreationTag().empty()){
 		std::string creation_tag="channel_class_";
 		creation_tag+=ch_desc->GetCreationTag();
-		void* obj=dynamic::create(creation_tag.c_str());
+		void* obj=hsscomm::type_registry::create(creation_tag.c_str());
 		if(!obj){
 			LOG(Logger::LOG_ERROR, "Channel class %s not supported", ch_desc->GetCreationTag().c_str());
 			return false;

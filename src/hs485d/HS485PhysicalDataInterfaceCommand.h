@@ -28,7 +28,7 @@ public:
     virtual bool PutData(LogicalInstance* inst, XmlRpc::XmlRpcValue& param);
 	virtual bool GetFromIncomingFrame(LogicalInstance* inst, StructuredFrame& frame, FrameDescription* fd, XmlRpc::XmlRpcValue* val);
 	//! Hilfsmethode für die dynamische Erzeugung durch ein Factory-Objekt
-	/*! Objekte dieser Klasse lassen sich durch dynamic::create("data_interface_command") erzeugen
+	/*! Objekte dieser Klasse lassen sich durch hsscomm::type_registry::create("data_interface_command") erzeugen
 	 */
 	static bool CheckCreationTag(const char *tag);
 	bool SetupInstance(LogicalInstance* inst);

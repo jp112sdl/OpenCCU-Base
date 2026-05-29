@@ -9,7 +9,7 @@
 #include "HS485PhysicalDataInterfaceEEprom.h"
 
 #include <Logger.h>
-#include <dynamic.h>
+#include <type_registry.h>
 #include "HS485LogicalInstance.h"
 #include "HS485Device.h"
 #include "HS485DeviceDescription.h"
@@ -17,7 +17,7 @@
 
 using namespace XmlRpc;
 
-static dynamic::factory<HS485PhysicalDataInterfaceEEProm> HS485PhysicalDataInterfaceEEPromFactory;
+static hsscomm::type_registry::factory<HS485PhysicalDataInterfaceEEProm> HS485PhysicalDataInterfaceEEPromFactory;
 
 HS485PhysicalDataInterfaceEEProm::HS485PhysicalDataInterfaceEEProm(void)
 {

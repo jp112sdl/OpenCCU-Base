@@ -12,12 +12,12 @@
 #include <Logger.h>
 #include <fstream>
 #include <set>
-#include <dynamic.h>
+#include <type_registry.h>
 
 using namespace XmlRpc;
 
-static dynamic::factory<HS485Central::HS485CentralChannel> HS485CentralChannelFactory;
-static dynamic::factory<HS485Central> HS485CentralFactory;
+static hsscomm::type_registry::factory<HS485Central::HS485CentralChannel> HS485CentralChannelFactory;
+static hsscomm::type_registry::factory<HS485Central> HS485CentralFactory;
 
 HS485Central* HS485Central::singleton=NULL;
 

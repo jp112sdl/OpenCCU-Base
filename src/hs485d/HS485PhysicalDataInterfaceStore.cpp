@@ -11,10 +11,10 @@
 #include "HS485Device.h"
 
 #include <Logger.h>
-#include "dynamic.h"
+#include "type_registry.h"
 using namespace XmlRpc;
 
-static dynamic::factory<HS485PhysicalDataInterfaceStore> HS485PhysicalDataInterfaceStoreFactory;
+static hsscomm::type_registry::factory<HS485PhysicalDataInterfaceStore> HS485PhysicalDataInterfaceStoreFactory;
 
 HS485PhysicalDataInterfaceStore::HS485PhysicalDataInterfaceStore(void)
 {

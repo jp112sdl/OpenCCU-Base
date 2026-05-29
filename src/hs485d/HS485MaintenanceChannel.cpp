@@ -9,9 +9,9 @@
 #include "HS485MaintenanceChannel.h"
 #include "HS485Device.h"
 #include <Logger.h>
-#include "dynamic.h"
+#include "type_registry.h"
 
-static dynamic::factory<HS485MaintenanceChannel> HS485MaintenanceChannelFactory;
+static hsscomm::type_registry::factory<HS485MaintenanceChannel> HS485MaintenanceChannelFactory;
 
 
 HS485MaintenanceChannel::HS485MaintenanceChannel(void)

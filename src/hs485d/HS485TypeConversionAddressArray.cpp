@@ -13,9 +13,9 @@
 #include "HS485TypeConversionAddressArray.h"
 #include "HS485Manager.h"
 #include <Logger.h>
-#include <dynamic.h>
+#include <type_registry.h>
 
-static dynamic::factory<HS485TypeConversionAddressArray> HS485TypeConversionAddressArrayFactory;
+static hsscomm::type_registry::factory<HS485TypeConversionAddressArray> HS485TypeConversionAddressArrayFactory;
 
 
 using namespace XmlRpc;

@@ -2047,7 +2047,7 @@ HmIPWeeklyProgram.prototype = {
         break;
       case self.userDoorLockMode:
         chBoxElms.first().prev("label").hide();  //Deactivate the label of channel 1
-        chBoxElms.first().prop("checked", false).change().hide();  //Deactivate channel 1
+        chBoxElms.first().prop("checked", false).hide();  //Deactivate channel 1
         panelTargetChannelElms.show(); // Show the target channel selection
         if (setVal) {
           chBoxElms.not(":eq(0)").prop("checked", true).change(); //Activate channels 2 - 9
@@ -3117,12 +3117,7 @@ HmIPWeeklyProgram.prototype = {
       var arTargetChannels;
       arTargetChannels = jQuery("[name='targetChannel" + chn + "_" + number + "']:visible");
       jQuery("#separate_CHANNEL_" + chn + "_" + prn).val(0);
-      if (!self.isDoorLockDrive) {
-        arTargetChannels.prop("checked", true).change();
-      } else {
-        // Activate all target channels, except the first one which has a special meaning and has to be always false in this case (UserMode).
-        arTargetChannels.not(":eq(0)").prop("checked", true).change();
-      }
+      arTargetChannels.prop("checked", true).change();
     };
 
     selectTargetChannelNone = function (chn, number, prn) {

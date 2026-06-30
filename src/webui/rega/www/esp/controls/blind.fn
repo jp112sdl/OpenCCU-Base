@@ -97,6 +97,11 @@ function ::CreateShutterActuator()
 
 function ::CreateJalousieActuator()
 {
+
+  object ch = dom.GetObject(chnId);
+  string chnAddress = ch.Address();
+  string devAddress = chnAddress.StrValueByIndex(":",0);
+
   object oLvl = cObj.DPByControl("JALOUSIE.LEVEL");
   object oLvlSlats = cObj.DPByControl("JALOUSIE.LEVEL_SLATS");
   object oLvlCombined = cObj.DPByControl("JALOUSIE.LEVEL_COMBINED");
@@ -253,6 +258,8 @@ function ::CreateJalousieActuator()
   WriteLine("<script type='text/javascript'>");
 
     WriteLine("var opts = {");
+      WriteLine("chnLabel:'"#ch.Label()#"',");
+      WriteLine("devAddress:'"#devAddress#"',");
       WriteLine("levelD:"#iLvlId#",");
       WriteLine("levelValue:"#iLvl#",");
       WriteLine("levelSlatsID:"#iLvlSlatsId#",");
@@ -452,6 +459,8 @@ function ::CreateBlindVirtualReceiver()
     WriteLine("var opts = {");
       WriteLine("chnInterface:'"#chInterface.Name()#"',");
       WriteLine("chnAddress:'"#chnAddress#"',");
+      WriteLine("devAddress:'"#devAddress#"',");
+      WriteLine("chnLabel:'"#ch.Label()#"',");
       WriteLine("levelD:"#iLvlId#",");
       WriteLine("levelValue:"#iLvl#",");
       WriteLine("levelSlatsID:"#iLvlSlatsId#",");

@@ -61,7 +61,7 @@ iseButtonsShutter.prototype = {
       Event.observe(this.divStop, 'mousedown', this.clickStop);
     }
 
-    if (opts.chnLabel.includes("HmIP-M-TD"))  {
+    if ((opts.chnLabel.includes("HmIP-M-TD")) || (opts.chnLabel.includes("RM-110-45/15")))  {
       this.checkEndPos();
     }
 

@@ -14,6 +14,7 @@
 #include "IDownstreamSerialFrameSink.h"
 #include "MultimacManager.h"
 #include "UpstreamCharConnection.h"
+#include "TrafficLogger.h"
 #ifndef WIN32
 #include <sys/syscall.h>
 #endif
@@ -223,6 +224,7 @@ void Subsystem::SendFrameUpstream( SerialFrame* frame )
 
 void Subsystem::SendFrameDownstream( SerialFrame* frame )
 {
+	TrafficLogger::Instance().OnDownstreamFrame( *frame );
 	LockGuard lock(_mutex);
 	frame->SetResponsibleSubsystem( this );
 	_mapFrameIdToSequenceCounter[frame->GetId()] = frame->GetSequenceCounter();

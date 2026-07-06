@@ -34,7 +34,7 @@ public:
 private:
 	TrafficLogger();
 	~TrafficLogger();
-	void LogBidcosTelegram( const char* direction, const BinaryData& telegramData );
+	void LogBidcosTelegram( const char* direction, const BinaryData& telegramData, int rssi );
 	void LogHmIpFrame( const char* direction, const BinaryData& frameData );
 	void WriteLine( const char* direction, const char* protocol, const std::string& fields );
 	FILE* GetLogFile( const struct tm& localTime );

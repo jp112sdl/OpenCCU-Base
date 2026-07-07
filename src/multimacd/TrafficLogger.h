@@ -9,6 +9,7 @@
 #pragma once
 #include "BinaryData.h"
 #include "tinythread.h"
+#include <atomic>
 #include <stdio.h>
 #include <time.h>
 #include <string>
@@ -40,7 +41,8 @@ private:
 	FILE* GetLogFile( const struct tm& localTime );
 	static std::string ToHex( const BinaryData& data );
 
-	bool _enabled;
+	//atomic: read lock-free on the per-frame fast path, written by Configure()
+	std::atomic<bool> _enabled;
 	std::string _directory;
 	FILE* _file;
 	int _fileYear;

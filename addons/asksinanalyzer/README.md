@@ -18,7 +18,9 @@ Funkmodul ⇄ multimacd (TrafficLogger)
 
 - **Datenquelle** ist der `TrafficLogger` in `src/multimacd` (Konfig-Schalter
   `Traffic Log = 1`, `Traffic Log Directory = /var/log` in der multimacd.conf
-  bzw. `/etc/config_templates/multimacd.conf`).
+  bzw. `/etc/config_templates/multimacd.conf`). `api.cgi` liest das
+  `Traffic Log Directory` aus `/etc/config/multimacd.conf` (Fallback `/var/log`),
+  ein geändertes Verzeichnis wird also automatisch übernommen.
 - **`www/api.cgi`** — Endpunkte:
   - `?cmd=dates` — verfügbare Log-Tage (JSON)
   - `?cmd=data&date=YYYY-MM-DD&offset=N` — neue Logzeilen ab Datei-Offset (Live-Polling)

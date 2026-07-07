@@ -421,12 +421,12 @@ function renderDevStats(bidcos, spanSec) {
   for (const t of bidcos) {
     if (!t.from) continue;
     let a = agg.get(t.from);
-    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: 0, air: 0 }; agg.set(t.from, a); }
+    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: null, air: 0 }; agg.set(t.from, a); }
     if (t.dir === "RX") a.rx++; else a.tx++;
     a.air += airtimeMs(t.len);
     if (t.rssi !== null) {
       a.rssiSum += t.rssi; a.rssiN++;
-      if (t.rssi < a.rssiMin || a.rssiMin === 0) a.rssiMin = t.rssi;
+      if (a.rssiMin === null || t.rssi < a.rssiMin) a.rssiMin = t.rssi;
     }
   }
   const rows = [...agg.values()];
@@ -605,7 +605,12 @@ function exportCsv() {
   const head = "tstamp;date;time;direction;protocol;rssi;len;cnt;type;flags;fromAddr;fromName;toAddr;toName;payload";
   const lines = [head];
   for (const t of list) {
-    const q = s => `"${String(s == null ? "" : s).replace(/"/g, '""')}"`;
+    const q = s => {
+      let v = String(s == null ? "" : s);
+      // Formel-Injection in Tabellenkalkulationen neutralisieren (=, +, -, @, Tab, CR)
+      if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+      return `"${v.replace(/"/g, '""')}"`;
+    };
     lines.push([
       t.ts, new Date(t.ts).toISOString().slice(0, 10), t.time, t.dir, t.proto,
       t.rssi == null ? "" : t.rssi, t.len,
@@ -630,11 +635,20 @@ function setStatus(cls, text) {
   $("status").innerHTML = `<span class="dot ${cls}"></span>${text}`;
 }
 
+let pollInFlight = false;
+
 async function poll() {
   if (state.paused || !state.date) return;
+  // nur ein Request gleichzeitig - sonst wird derselbe Offset-Bereich bei
+  // langsamem Netz mehrfach geholt und doppelt ingestet
+  if (pollInFlight) return;
+  pollInFlight = true;
+  const date = state.date;
   try {
-    const r = await fetch(`${API}?cmd=data&date=${state.date}&offset=${state.offset}`);
+    const r = await fetch(`${API}?cmd=data&date=${date}&offset=${state.offset}`);
     const text = await r.text();
+    // Datum wurde waehrend des Requests gewechselt: Antwort verwerfen
+    if (date !== state.date) return;
     const nl = text.indexOf("\n");
     const first = text.slice(0, nl);
     const newOffset = parseInt(first.replace("OFFSET ", ""), 10);
@@ -650,6 +664,8 @@ async function poll() {
       `<b>${state.telegrams.length}</b> Telegramme${state.live ? " · live" : ""}`);
   } catch (e) {
     setStatus("off", "Verbindungsfehler");
+  } finally {
+    pollInFlight = false;
   }
 }
 

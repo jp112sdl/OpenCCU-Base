@@ -1,6 +1,7 @@
 #!/bin/tclsh
 # AskSinAnalyzer CCU - API backend
-# Datenquelle: /var/log/multimacd-traffic-YYYY-MM-DD.log (TrafficLogger in multimacd)
+# Datenquelle: <Traffic Log Directory>/multimacd-traffic-YYYY-MM-DD.log (TrafficLogger
+# in multimacd; Verzeichnis aus /etc/config/multimacd.conf, Fallback /var/log)
 # Kommandos:
 #   ?cmd=dates                     -> JSON: verfuegbare Log-Daten
 #   ?cmd=data&date=YYYY-MM-DD&offset=N -> text/plain: "OFFSET <n>\n" + neue Logzeilen ab Offset
@@ -8,8 +9,21 @@
 
 set LOGDIR "/var/log"
 set LOGPREFIX "multimacd-traffic-"
+set CONFFILE "/etc/config/multimacd.conf"
 set CACHEFILE "/tmp/asksinanalyzer.devlist.json"
 set CACHETTL 600
+
+# "Traffic Log Directory" aus der multimacd.conf uebernehmen (Fallback: /var/log)
+catch {
+    set fh [open $CONFFILE r]
+    set conf [read $fh]
+    close $fh
+    foreach line [split $conf "\n"] {
+        if {[regexp {^\s*Traffic Log Directory\s*=\s*(.*\S)\s*$} $line -> dir]} {
+            set LOGDIR $dir
+        }
+    }
+}
 
 # ---------- Helpers ----------
 
@@ -78,18 +92,27 @@ proc cmdData {params} {
         if {[string is integer -strict $o] && $o >= 0} { set offset $o }
     }
     set path [file join $LOGDIR "${LOGPREFIX}${date}.log"]
-    httpHeader "text/plain; charset=utf-8"
-    if {![file exists $path]} {
-        puts "OFFSET 0"
-        return
+    # Datei komplett lesen, bevor der Header geschrieben wird - so landet bei
+    # I/O-Fehlern nie ein zweiter Header (JSON-Fehlerhandler) in der Antwort
+    set chunk ""
+    if {[catch {
+        if {![file exists $path]} {
+            set offset 0
+        } else {
+            set size [file size $path]
+            if {$offset > $size} { set offset 0 }
+            set fh [open $path r]
+            fconfigure $fh -translation binary
+            seek $fh $offset
+            set chunk [read $fh]
+            close $fh
+        }
+    }]} {
+        # Lesefehler: leere Antwort, Offset unveraendert (Client versucht es erneut)
+        catch {close $fh}
+        set chunk ""
     }
-    set size [file size $path]
-    if {$offset > $size} { set offset 0 }
-    set fh [open $path r]
-    fconfigure $fh -translation binary
-    seek $fh $offset
-    set chunk [read $fh]
-    close $fh
+    httpHeader "text/plain; charset=utf-8"
     # nur vollstaendige Zeilen ausliefern
     set lastNl [string last "\n" $chunk]
     if {$lastNl < 0} {
@@ -133,6 +156,9 @@ proc buildDevList {} {
     set entries {}
     if {![catch {xmlrpc http://127.0.0.1:2001/ listDevices} devs]} {
         foreach d $devs {
+            # Array vor jedem Geraet leeren - auch nach einem Fehler in der
+            # vorigen Iteration duerfen keine Felder des alten Geraets uebrigbleiben
+            array unset a
             catch {
                 array set a $d
                 if {[string first ":" $a(ADDRESS)] < 0 && [info exists a(RF_ADDRESS)]} {
@@ -144,7 +170,6 @@ proc buildDevList {} {
                     set name [encoding convertfrom iso8859-1 $name]
                     lappend entries "{\"address\":$rf,\"serial\":\"[jsonEscape $serial]\",\"name\":\"[jsonEscape $name]\",\"type\":\"[jsonEscape $type]\"}"
                 }
-                array unset a
             }
         }
     }

@@ -51,6 +51,8 @@
   .dir-TX { color: var(--tx); font-weight: 600; }
   .proto-HMIP td { opacity: .75; }
   .proto-HMIP .proto { color: var(--hmip); }
+  .bcast-name { color: var(--hmip); }
+  .bcast-hex { color: var(--hmip); font-weight: 700; text-decoration: underline dotted; cursor: help; }
   .devname { color: var(--fg); }
   .devaddr { color: var(--fg-dim); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
   .rssi-good { color: var(--rx); } .rssi-mid { color: var(--tx); } .rssi-bad { color: var(--warn); }
@@ -178,6 +180,30 @@ const FLAG_BITS = [
   [0x20, "BIDI"], [0x40, "RPTED"], [0x80, "RPTEN"]
 ];
 
+// Bekannte HmIP-Broadcast-/Multicastadressen (vgl. AskSinAnalyzer ccu_create_devlist).
+// HmIP-Frames werden roh geloggt; diese Adressen lassen sich aber byte-aligned
+// im Payload wiederfinden und namentlich aufloesen.
+const HMIP_BCAST = {
+  "F00001": "HmIP Multicast All Devices",
+  "F00002": "HmIP Multicast All Routers",
+  "F00003": "HmIP Multicast All AccessControllers",
+  "F00004": "HmIP Multicast All Thermostats",
+  "F00005": "HmIP Multicast All Smoke Sensors",
+  "F00081": "HmIP Multicast All Permanent Listener",
+  "F00082": "HmIP Multicast All Burst Listener",
+  "F00083": "HmIP Multicast All Triple Burst Listener"
+};
+
+// liefert die im Payload gefundenen Multicastadressen (nur an Byte-Grenzen)
+function scanHmipBcast(payload) {
+  let found = null;
+  for (let i = 0; i + 6 <= payload.length; i += 2) {
+    const a = payload.substr(i, 6);
+    if (HMIP_BCAST[a] && (!found || !found.includes(a))) (found || (found = [])).push(a);
+  }
+  return found;
+}
+
 function decodeType(t, payload) {
   if (t === 0x02) {
     const sub = parseInt(payload.slice(0, 2), 16);
@@ -241,6 +267,7 @@ function parseLine(line) {
       case "DATA":  t.payload = v; break;
     }
   }
+  if (proto === "HMIP" && t.payload) t.bcast = scanHmipBcast(t.payload);
   return t;
 }
 
@@ -254,6 +281,7 @@ function ingest(text) {
     if (t.type !== null) state.types.add(decodeType(t.type, t.payload));
     if (t.from) state.addrs.add(t.from);
     if (t.to && t.to !== "000000") state.addrs.add(t.to);
+    if (t.bcast) for (const a of t.bcast) state.addrs.add(a);
     if (t.dir === "TX" && t.proto === "BIDCOS" && t.from) state.centralAddr = t.from;
     added++;
   }
@@ -281,6 +309,7 @@ async function loadDevList(refresh) {
 function devName(addr) {
   if (!addr) return "";
   if (addr === "000000") return "Broadcast";
+  if (HMIP_BCAST[addr]) return HMIP_BCAST[addr];
   const d = state.devByAddr.get(addr);
   if (d) return d.name;
   if (addr === state.centralAddr) return "Zentrale (CCU)";
@@ -309,11 +338,13 @@ function filtered() {
   return state.telegrams.filter(t => {
     if (f.dir && t.dir !== f.dir) return false;
     if (f.proto && t.proto !== f.proto) return false;
-    if (f.hideBcast && t.to === "000000") return false;
+    if (f.hideBcast && (t.to === "000000" || t.bcast)) return false;
     if (f.type && (t.type === null || decodeType(t.type, t.payload) !== f.type)) return false;
-    if (f.dev && t.from !== f.dev && t.to !== f.dev) return false;
+    if (f.dev && t.from !== f.dev && t.to !== f.dev &&
+        !(t.bcast && t.bcast.includes(f.dev))) return false;
     if (f.search) {
-      const hay = (t.raw + " " + (devName(t.from) || "") + " " + (devName(t.to) || "")).toLowerCase();
+      const hay = (t.raw + " " + (devName(t.from) || "") + " " + (devName(t.to) || "") +
+        (t.bcast ? " " + t.bcast.map(a => HMIP_BCAST[a]).join(" ") : "")).toLowerCase();
       if (!hay.includes(f.search)) return false;
     }
     return true;
@@ -354,6 +385,32 @@ function addrCell(addr) {
   return `<span class="devname" title="${esc(addr)}${state.devByAddr.get(addr) ? " / " + esc(state.devByAddr.get(addr).serial) : ""}">${esc(n)}</span>`;
 }
 
+// "An"-Zelle fuer HmIP: im Payload erkannte Multicastadressen namentlich anzeigen
+function hmipBcastCell(t) {
+  if (!t.bcast) return "";
+  return t.bcast.map(a =>
+    `<span class="devname bcast-name" title="${a} im Payload erkannt">${esc(HMIP_BCAST[a])}</span>`
+  ).join(", ");
+}
+
+// Payload-Hex mit hervorgehobenen HmIP-Multicastadressen (byte-aligned)
+function payloadCell(t) {
+  if (!t.bcast) return esc(t.payload);
+  const p = t.payload;
+  let out = "", i = 0;
+  while (i < p.length) {
+    const a = p.substr(i, 6);
+    if (i % 2 === 0 && HMIP_BCAST[a]) {
+      out += `<span class="bcast-hex" title="${esc(HMIP_BCAST[a])}">${a}</span>`;
+      i += 6;
+    } else {
+      out += esc(p[i]);
+      i++;
+    }
+  }
+  return out;
+}
+
 function renderTable() {
   const list = filtered();
   $("filterInfo").textContent = `${list.length} von ${state.telegrams.length} Telegrammen`;
@@ -374,8 +431,8 @@ function renderTable() {
       `<td>${typeStr}</td>` +
       `<td class="flags">${flagsStr}</td>` +
       `<td>${addrCell(t.from)}</td>` +
-      `<td>${addrCell(t.to)}</td>` +
-      `<td class="payload">${esc(t.payload)}</td>` +
+      `<td>${t.to ? addrCell(t.to) : hmipBcastCell(t)}</td>` +
+      `<td class="payload">${payloadCell(t)}</td>` +
       `</tr>`);
   }
   $("tbody").innerHTML = rows.join("");
@@ -619,7 +676,9 @@ function exportCsv() {
       t.cnt == null ? "" : t.cnt,
       t.proto === "HMIP" ? "" : decodeType(t.type, t.payload),
       t.proto === "HMIP" ? "" : decodeFlags(t.flags).join("|"),
-      t.from || "", q(devLabel(t.from) || ""), t.to || "", q(devLabel(t.to) || ""),
+      t.from || "", q(devLabel(t.from) || ""),
+      t.to || (t.bcast ? t.bcast.join("|") : ""),
+      q(devLabel(t.to) || (t.bcast ? t.bcast.map(a => HMIP_BCAST[a]).join("|") : "")),
       t.payload
     ].join(";"));
   }

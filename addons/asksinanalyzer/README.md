@@ -65,3 +65,8 @@ Aufruf: `http://<ccu>/addons/asksinanalyzer/`
   Optionale Bereinigung alter Tageslogs per Cron:
   `10 0 * * * find /var/log -name "multimacd-traffic-*.log" -mtime +7 -delete`
 - HmIP-Payloads sind AES-verschlüsselt und werden nur als Rohdaten angezeigt.
+  Bekannte HmIP-Broadcast-/Multicastadressen (`F00001`–`F00005`, `F00081`–`F00083`,
+  vgl. `ccu_create_devlist` des AskSinAnalyzer) werden aber byte-aligned im
+  Payload erkannt, dort hervorgehoben und in der Spalte „An" namentlich
+  aufgelöst (z. B. `F00001` → „HmIP Multicast All Devices"). Sie sind auch
+  über Suche, Geräte-Filter und „Broadcasts ausblenden" nutzbar.

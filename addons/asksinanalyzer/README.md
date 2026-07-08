@@ -70,3 +70,8 @@ Aufruf: `http://<ccu>/addons/asksinanalyzer/`
   Payload erkannt, dort hervorgehoben und in der Spalte „An" namentlich
   aufgelöst (z. B. `F00001` → „HmIP Multicast All Devices"). Sie sind auch
   über Suche, Geräte-Filter und „Broadcasts ausblenden" nutzbar.
+  Zusätzlich wird die HmIP-Funkadresse der Zentrale aus
+  `/etc/config/hmip_address.conf` (`Adapter.1.Address`) ermittelt und wie die
+  Multicastadressen aufgelöst; steht eine bekannte Adresse an der festen
+  Absender- (Byte 4–6) bzw. Empfängerposition (Byte 7–9) des HmIP-Frames,
+  wird sie in der Spalte „Von" bzw. „An" angezeigt.

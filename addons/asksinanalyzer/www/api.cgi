@@ -6,6 +6,7 @@
 #   ?cmd=dates                     -> JSON: verfuegbare Log-Daten
 #   ?cmd=data&date=YYYY-MM-DD&offset=N -> text/plain: "OFFSET <n>\n" + neue Logzeilen ab Offset
 #   ?cmd=devlist[&refresh=1]       -> JSON: Geraeteliste (RF-Adresse, Serial, Name, Typ)
+#                                     + hmip_central (HmIP-Funkadresse der Zentrale)
 #   ?cmd=version                   -> JSON: Addon-Version (aus ../VERSION)
 
 set LOGDIR "/var/log"
@@ -125,6 +126,23 @@ proc cmdData {params} {
     puts -nonewline $chunk
 }
 
+# HmIP-Funkadresse der Zentrale aus /etc/config/hmip_address.conf
+# (Adapter.1.Address=<hex>), als 6-stelliger Hex-String; "" wenn nicht ermittelbar
+proc readHmipCentral {} {
+    set addr ""
+    catch {
+        set fh [open "/etc/config/hmip_address.conf" r]
+        set conf [read $fh]
+        close $fh
+        foreach line [split $conf "\n"] {
+            if {[regexp {^\s*Adapter\.1\.Address\s*=\s*(?:0[xX])?([0-9A-Fa-f]{1,6})\s*$} $line -> a]} {
+                set addr [format %06X 0x$a]
+            }
+        }
+    }
+    return $addr
+}
+
 proc buildDevList {} {
     load tclrpc.so
     load tclrega.so
@@ -174,7 +192,7 @@ proc buildDevList {} {
             }
         }
     }
-    return "{\"created_at\":[clock seconds],\"devices\":\[[join $entries ,]\]}"
+    return "{\"created_at\":[clock seconds],\"hmip_central\":\"[jsonEscape [readHmipCentral]]\",\"devices\":\[[join $entries ,]\]}"
 }
 
 proc cmdDevList {params} {

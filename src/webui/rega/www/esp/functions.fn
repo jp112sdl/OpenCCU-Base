@@ -818,7 +818,7 @@ function ::conditionIsParameterVisible() {
 
   if ((oCC.HssType() == "HEATING_CLIMATECONTROL_TRANSCEIVER") && (oCC.Label().Find("HmIPW-WGTC") != -1)) {
     if (oDP.HSSID().Find("ACTIVE_PROFILE") != -1) {
-    !  showChannelParam = false;
+      showChannelParam = false;
     }
   }
 

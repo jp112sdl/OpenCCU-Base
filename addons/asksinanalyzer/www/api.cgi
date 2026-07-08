@@ -6,6 +6,7 @@
 #   ?cmd=dates                     -> JSON: verfuegbare Log-Daten
 #   ?cmd=data&date=YYYY-MM-DD&offset=N -> text/plain: "OFFSET <n>\n" + neue Logzeilen ab Offset
 #   ?cmd=devlist[&refresh=1]       -> JSON: Geraeteliste (RF-Adresse, Serial, Name, Typ)
+#   ?cmd=version                   -> JSON: Addon-Version (aus ../VERSION)
 
 set LOGDIR "/var/log"
 set LOGPREFIX "multimacd-traffic-"
@@ -200,6 +201,17 @@ proc cmdDevList {params} {
     puts -nonewline $json
 }
 
+proc cmdVersion {} {
+    set v ""
+    catch {
+        set fh [open [file join [file dirname [info script]] ".." "VERSION"] r]
+        set v [string trim [read $fh]]
+        close $fh
+    }
+    httpHeader "application/json"
+    puts "{\"version\":\"[jsonEscape $v]\"}"
+}
+
 # ---------- Main ----------
 
 set params [getParams]
@@ -210,6 +222,7 @@ if {[catch {
         dates   { cmdDates }
         data    { cmdData $params }
         devlist { cmdDevList $params }
+        version { cmdVersion }
         default {
             httpHeader "application/json"
             puts "{\"error\":\"unknown cmd\"}"

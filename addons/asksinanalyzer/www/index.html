@@ -130,12 +130,12 @@
     <div class="cards" id="cards"></div>
     <div class="panel">
       <h2>RSSI-Verlauf (empfangene BidCos-Telegramme)</h2>
-      <canvas id="rssiChart" height="260"></canvas>
+      <canvas id="rssiChart" height="260" data-height="260"></canvas>
       <div class="legend" id="rssiLegend"></div>
     </div>
     <div class="panel">
       <h2>Telegramm-Rate (pro Minute)</h2>
-      <canvas id="rateChart" height="140"></canvas>
+      <canvas id="rateChart" height="140" data-height="140"></canvas>
     </div>
     <div class="panel">
       <h2>Telegramme pro Ger&auml;t</h2>
@@ -481,7 +481,9 @@ function renderDevStats(bidcos, spanSec) {
 /* --- Canvas-Basics --- */
 function setupCanvas(cv) {
   const dpr = window.devicePixelRatio || 1;
-  const w = cv.clientWidth, h = parseInt(cv.getAttribute("height"), 10);
+  // Soll-Hoehe aus data-height: cv.height veraendert das height-Attribut,
+  // sonst waechst der Canvas bei dpr>1 mit jedem Rendern weiter an
+  const w = cv.clientWidth, h = parseInt(cv.dataset.height, 10);
   cv.width = w * dpr; cv.height = h * dpr; cv.style.height = h + "px";
   const ctx = cv.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

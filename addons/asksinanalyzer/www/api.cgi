@@ -144,17 +144,29 @@ proc readHmipCentral {} {
 }
 
 proc buildDevList {} {
-    load tclrpc.so
     load tclrega.so
 
-    # Namen aus der ReGa: Serial -> Name
-    array set names {}
+    # Geraete inkl. RF-Adresse direkt aus der ReGa: die DEVDESC-Metadaten
+    # enthalten RF_ADDRESS auch fuer HmIP-Geraete (rfd auf Port 2001 kennt
+    # nur BidCos; vgl. ccu_create_devlist des AskSinAnalyzer)
+    set entries {}
     if {![catch {rega_script {
         string sDevId;
-        foreach(sDevId, root.Devices().EnumIDs()) {
+        string data;
+        string rf;
+        string ty;
+        foreach(sDevId, root.Devices().EnumUsedIDs()) {
           var d = dom.GetObject(sDevId);
           if (d.ReadyConfig() == true) {
-            WriteLine(d.Address() # "\t" # d.Name());
+            rf = "";
+            ty = "";
+            foreach(data, d.MetaData("DEVDESC").Split(",")) {
+              if (data.Substr(0,10) == "RF_ADDRESS") { rf = data.Replace("RF_ADDRESS:",""); }
+              if (data.Substr(0,4) == "TYPE")        { ty = data.Replace("TYPE:",""); }
+            }
+            if ((rf != "") && (rf != "0")) {
+              WriteLine(rf # "\t" # d.Address() # "\t" # d.Name() # "\t" # ty);
+            }
           }
         }
     }} regaResult]} {
@@ -162,33 +174,17 @@ proc buildDevList {} {
         if {[info exists res(STDOUT)]} {
             foreach line [split $res(STDOUT) "\n"] {
                 set parts [split $line "\t"]
-                if {[llength $parts] >= 2} {
-                    set ser [string trim [lindex $parts 0]]
-                    set nam [string trim [lindex $parts 1]]
-                    if {$ser ne ""} { set names($ser) $nam }
-                }
-            }
-        }
-    }
-
-    # RF-Adressen aus dem rfd (BidCos-RF, Port 2001)
-    set entries {}
-    if {![catch {xmlrpc http://127.0.0.1:2001/ listDevices} devs]} {
-        foreach d $devs {
-            # Array vor jedem Geraet leeren - auch nach einem Fehler in der
-            # vorigen Iteration duerfen keine Felder des alten Geraets uebrigbleiben
-            array unset a
-            catch {
-                array set a $d
-                if {[string first ":" $a(ADDRESS)] < 0 && [info exists a(RF_ADDRESS)]} {
-                    set serial $a(ADDRESS)
-                    set rf $a(RF_ADDRESS)
-                    set type [expr {[info exists a(TYPE)] ? $a(TYPE) : ""}]
-                    set name [expr {[info exists names($serial)] ? $names($serial) : $serial}]
-                    if {$serial eq "BidCoS-RF"} { set name "Zentrale (CCU)" }
-                    set name [encoding convertfrom iso8859-1 $name]
-                    lappend entries "{\"address\":$rf,\"serial\":\"[jsonEscape $serial]\",\"name\":\"[jsonEscape $name]\",\"type\":\"[jsonEscape $type]\"}"
-                }
+                if {[llength $parts] < 4} { continue }
+                lassign $parts rf serial name type
+                set rf [string trim $rf]
+                set serial [string trim $serial]
+                # virtuelle Team-Geraete (*SERIAL) duplizieren die RF-Adresse
+                if {![string is integer -strict $rf]} { continue }
+                if {$serial eq "" || [string index $serial 0] eq "*"} { continue }
+                set name [encoding convertfrom iso8859-1 [string trim $name]]
+                # DEVDESC liefert TYPE in Anfuehrungszeichen
+                set type [encoding convertfrom iso8859-1 [string map {\" ""} [string trim $type]]]
+                lappend entries "{\"address\":$rf,\"serial\":\"[jsonEscape $serial]\",\"name\":\"[jsonEscape $name]\",\"type\":\"[jsonEscape $type]\"}"
             }
         }
     }

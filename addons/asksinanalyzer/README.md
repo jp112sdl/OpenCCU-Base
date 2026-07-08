@@ -24,8 +24,10 @@ Funkmodul ⇄ multimacd (TrafficLogger)
 - **`www/api.cgi`** — Endpunkte:
   - `?cmd=dates` — verfügbare Log-Tage (JSON)
   - `?cmd=data&date=YYYY-MM-DD&offset=N` — neue Logzeilen ab Datei-Offset (Live-Polling)
-  - `?cmd=devlist[&refresh=1]` — Geräteliste: RF-Adresse via rfd `listDevices`
-    (Port 2001), Namen via ReGa; Cache `/tmp/asksinanalyzer.devlist.json` (600 s)
+  - `?cmd=devlist[&refresh=1]` — Geräteliste (BidCos **und** HmIP): RF-Adresse,
+    Name und Typ via ReGa aus den `DEVDESC`-Metadaten (enthalten `RF_ADDRESS`
+    auch für HmIP-Geräte; rfd auf Port 2001 kennt nur BidCos), dazu
+    `hmip_central`; Cache `/tmp/asksinanalyzer.devlist.json` (600 s)
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
   Geräte-Statistik mit DutyCycle-Schätzung), CSV-Export.
@@ -72,6 +74,7 @@ Aufruf: `http://<ccu>/addons/asksinanalyzer/`
   über Suche, Geräte-Filter und „Broadcasts ausblenden" nutzbar.
   Zusätzlich wird die HmIP-Funkadresse der Zentrale aus
   `/etc/config/hmip_address.conf` (`Adapter.1.Address`) ermittelt und wie die
-  Multicastadressen aufgelöst; steht eine bekannte Adresse an der festen
-  Absender- (Byte 4–6) bzw. Empfängerposition (Byte 7–9) des HmIP-Frames,
-  wird sie in der Spalte „Von" bzw. „An" angezeigt.
+  Multicastadressen aufgelöst; steht eine bekannte Adresse (Multicast,
+  Zentrale oder ein Gerät aus der Geräteliste) an der festen Absender-
+  (Byte 4–6) bzw. Empfängerposition (Byte 7–9) des HmIP-Frames, wird sie in
+  der Spalte „Von" bzw. „An" namentlich angezeigt.

@@ -220,9 +220,11 @@ function alignedHas(payload, addr) {
 function hmipHasCentral(t) {
   return !!state.hmipCentral && t.proto === "HMIP" && alignedHas(t.payload, state.hmipCentral);
 }
-// Name einer bekannten HmIP-Adresse (Multicast oder Zentrale), sonst null
+// Name einer bekannten HmIP-Adresse (Multicast, Geraet oder Zentrale), sonst null
 function hmipName(a) {
   if (HMIP_BCAST[a]) return HMIP_BCAST[a];
+  const d = state.devByAddr.get(a);
+  if (d) return d.name;
   if (a && a === state.hmipCentral) return HMIP_CENTRAL_NAME;
   return null;
 }
@@ -260,6 +262,7 @@ const state = {
   devByAddr: new Map(),   // "5A3F01" -> {name, serial, type}
   types: new Set(),
   addrs: new Set(),
+  hmipSeen: new Set(),    // an HmIP-Absender-/Empfaengerposition gesehene Adressen
   filterDirty: true,
   tab: "telegrams",
   pollTimer: null,
@@ -312,6 +315,10 @@ function ingest(text) {
     if (t.from) state.addrs.add(t.from);
     if (t.to && t.to !== "000000") state.addrs.add(t.to);
     if (t.bcast) for (const a of t.bcast) state.addrs.add(a);
+    if (t.proto === "HMIP") {
+      if (t.payload.length >= 14) state.hmipSeen.add(t.payload.substr(8, 6));
+      if (t.payload.length >= 20) state.hmipSeen.add(t.payload.substr(14, 6));
+    }
     if (t.dir === "TX" && t.proto === "BIDCOS" && t.from) state.centralAddr = t.from;
     added++;
   }
@@ -329,7 +336,9 @@ async function loadDevList(refresh) {
     state.devByAddr.clear();
     for (const d of (j.devices || [])) {
       const hex = d.address.toString(16).padStart(6, "0").toUpperCase();
-      state.devByAddr.set(hex, d);
+      // mehrere Geraete koennen dieselbe RF-Adresse melden (z.B. HmIP-RCV-1
+      // und RPI-RF-MOD fuer die Zentrale) - erster Eintrag gewinnt
+      if (!state.devByAddr.has(hex)) state.devByAddr.set(hex, d);
     }
     if (j.hmip_central && /^[0-9A-F]{6}$/.test(j.hmip_central)) {
       state.hmipCentral = j.hmip_central;
@@ -344,9 +353,9 @@ function devName(addr) {
   if (!addr) return "";
   if (addr === "000000") return "Broadcast";
   if (HMIP_BCAST[addr]) return HMIP_BCAST[addr];
-  if (addr === state.hmipCentral) return HMIP_CENTRAL_NAME;
   const d = state.devByAddr.get(addr);
   if (d) return d.name;
+  if (addr === state.hmipCentral) return HMIP_CENTRAL_NAME;
   if (addr === state.centralAddr) return "Zentrale (CCU)";
   return null;
 }
@@ -377,11 +386,20 @@ function filtered() {
     if (f.type && (t.type === null || decodeType(t.type, t.payload) !== f.type)) return false;
     if (f.dev && t.from !== f.dev && t.to !== f.dev &&
         !(t.bcast && t.bcast.includes(f.dev)) &&
-        !(f.dev === state.hmipCentral && hmipHasCentral(t))) return false;
+        !(f.dev === state.hmipCentral && hmipHasCentral(t)) &&
+        !(t.proto === "HMIP" &&
+          (t.payload.substr(8, 6) === f.dev || t.payload.substr(14, 6) === f.dev))) return false;
     if (f.search) {
+      let hmipNames = "";
+      if (t.proto === "HMIP") {
+        const a8 = hmipAddrAt(t, 8), a14 = hmipAddrAt(t, 14);
+        if (a8) hmipNames += " " + hmipName(a8);
+        if (a14) hmipNames += " " + hmipName(a14);
+        if (t.bcast) hmipNames += " " + t.bcast.map(a => HMIP_BCAST[a]).join(" ");
+        if (hmipHasCentral(t)) hmipNames += " " + HMIP_CENTRAL_NAME;
+      }
       const hay = (t.raw + " " + (devName(t.from) || "") + " " + (devName(t.to) || "") +
-        (t.bcast ? " " + t.bcast.map(a => HMIP_BCAST[a]).join(" ") : "") +
-        (hmipHasCentral(t) ? " " + HMIP_CENTRAL_NAME : "")).toLowerCase();
+        hmipNames).toLowerCase();
       if (!hay.includes(f.search)) return false;
     }
     return true;
@@ -397,7 +415,10 @@ function rebuildFilterOptions() {
   typeSel.value = curT;
 
   devSel.length = 1;
-  const opts = [...state.addrs].map(a => ({ a, label: devLabel(a) }))
+  // an HmIP-Framepositionen gesehene Adressen nur aufnehmen, wenn aufloesbar
+  const addrs = new Set(state.addrs);
+  for (const a of state.hmipSeen) if (hmipName(a) !== null) addrs.add(a);
+  const opts = [...addrs].map(a => ({ a, label: devLabel(a) }))
     .sort((x, y) => x.label.localeCompare(y.label));
   for (const o of opts)
     devSel.add(new Option(o.label === o.a ? o.a : `${o.label} (${o.a})`, o.a));
@@ -438,14 +459,22 @@ function hmipToCell(t) {
   return t.bcast.map(x => hmipKnownAddr(x, "")).join(", ");
 }
 
-// Payload-Hex mit hervorgehobenen bekannten HmIP-Adressen (byte-aligned)
+// Payload-Hex mit hervorgehobenen bekannten HmIP-Adressen. Multicast und
+// Zentrale sind eindeutig genug fuer beliebige (byte-aligned) Positionen;
+// Geraeteadressen nur an den festen Absender-/Empfaengerpositionen, sonst
+// gaebe es Fehltreffer (kurze BidCos-Adressen bestehen aus vielen Nullbytes)
 function payloadCell(t) {
   if (t.proto !== "HMIP") return esc(t.payload);
   const p = t.payload;
   let out = "", i = 0;
   while (i < p.length) {
     const a = p.substr(i, 6);
-    const n = i % 2 === 0 ? hmipName(a) : null;
+    let n = null;
+    if (i % 2 === 0) {
+      if (HMIP_BCAST[a]) n = HMIP_BCAST[a];
+      else if (a === state.hmipCentral) n = HMIP_CENTRAL_NAME;
+      else if ((i === 8 || i === 14) && state.devByAddr.has(a)) n = state.devByAddr.get(a).name;
+    }
     if (n) {
       out += `<span class="bcast-hex" title="${esc(n)}">${a}</span>`;
       i += 6;

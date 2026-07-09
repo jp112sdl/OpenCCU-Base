@@ -77,8 +77,17 @@ das Addon selbst gesetzt hat (erkennbar an einer Marker-Kommentarzeile).
 Nach der Installation startet die CCU neu (Standardverhalten des
 Addon-Installers); erst danach sind Binaries und Logging aktiv. Auf
 anderen Architekturen wird nur das Web-Addon installiert und ein Hinweis
-ausgegeben. **Achtung:** Firmware-Updates überschreiben `/bin`, `/lib` und
-die Templates — danach das Addon einfach erneut installieren.
+ausgegeben.
+
+**Selbstheilung nach Firmware-Updates:** Der `init`-Hook des rc.d-Scripts
+läuft bei jedem Boot (via `S55InitAddons`, also **vor** dem Start von
+multimacd/rfd) und vergleicht die System-Binaries/-Libraries mit den im
+Addon hinterlegten Kopien. Weicht etwas ab — z. B. weil ein
+Firmware-Update `/bin`, `/lib` und die Templates überschrieben hat —
+werden die Dateien erneut installiert und die Traffic-Log-Parameter
+wieder ergänzt; noch im selben Bootvorgang starten multimacd/rfd dann
+mit den richtigen Binaries. Stimmt alles überein, fasst der Hook nichts
+an (kein Remount, keine Schreibzugriffe).
 
 ### Variante 2: manuell per SSH
 

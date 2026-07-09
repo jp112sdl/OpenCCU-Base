@@ -1,5 +1,12 @@
 #!/bin/sh
-# AskSinAnalyzer CCU - rc.d-Script (WebUI Zusatzsoftware)
+# AskSinAnalyzer CCU - rc.d-Script (WebUI Zusatzsoftware + Boot-Hook)
+#
+# "init" wird bei jedem Boot von S55InitAddons aufgerufen - also VOR dem
+# Start von multimacd (S60) und rfd (S61) - und stellt sicher, dass die
+# TrafficLogger-Binaries/-Libraries aus dem Addon und die Traffic-Log-
+# Konfiguration im System aktuell sind. Nach einem Firmware-Update (das
+# /bin, /lib und /etc/config_templates ueberschreibt) repariert sich die
+# Installation damit beim naechsten Boot selbst.
 
 ADDON_NAME=asksinanalyzer
 ADDON_DIR=/usr/local/addons/${ADDON_NAME}
@@ -9,6 +16,42 @@ RCD_FILE=/usr/local/etc/config/rc.d/${ADDON_NAME}
 BINARIES="multimacd rfd"
 LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDeviceUtils.so libelvutils.so"
 MARKER="# added by asksinanalyzer addon"
+ARCH_DIR=${ADDON_DIR}/$(uname -m)-linux-gnu
+
+# ---------------------------------------------------------------------------
+# "Traffic Log"-Parameter ergaenzen, sofern noch nicht vorhanden.
+# $1 = Konfigurationsdatei. Die Zeilen muessen in der globalen Sektion
+# stehen, deshalb werden sie vor der ersten [Interface]-Sektion eingefuegt
+# (bzw. angehaengt, wenn es keine Sektionen gibt, wie in der multimacd.conf).
+patch_traffic_log() {
+    cfg="$1"
+    [ -f "${cfg}" ] || return 0
+    if grep -q '^Traffic Log[[:space:]]*=' "${cfg}"; then
+        return 0
+    fi
+    tmp="${cfg}.tmp-${ADDON_NAME}"
+    awk -v marker="${MARKER}" '
+        BEGIN { done = 0 }
+        /^\[/ && !done {
+            print marker
+            print "Traffic Log = 1"
+            print "Traffic Log Directory = /var/log"
+            print ""
+            done = 1
+        }
+        { print }
+        END {
+            if (!done) {
+                print ""
+                print marker
+                print "Traffic Log = 1"
+                print "Traffic Log Directory = /var/log"
+            }
+        }
+    ' "${cfg}" > "${tmp}" && cat "${tmp}" > "${cfg}"
+    rm -f "${tmp}"
+    echo "${ADDON_NAME}: Traffic Log in ${cfg} aktiviert"
+}
 
 # vom Addon eingefuegte Traffic-Log-Zeilen wieder entfernen (nur wenn die
 # Datei unsere Marker-Zeile enthaelt, manuelle Konfiguration bleibt erhalten);
@@ -27,15 +70,82 @@ unpatch_traffic_log() {
     rm -f "${tmp}"
 }
 
+# ---------------------------------------------------------------------------
+# Binaries/Libraries und Konfiguration mit dem System abgleichen.
+# Wird bei der Addon-Installation (update_script) und bei jedem Boot (init)
+# aufgerufen; tut nichts, wenn alles bereits uebereinstimmt.
+sync_system_files() {
+    if [ ! -d "${ARCH_DIR}" ]; then
+        echo "${ADDON_NAME}: keine Binaries fuer $(uname -m) im Addon -" \
+             "multimacd/rfd mit TrafficLogger muessen manuell installiert werden"
+        return 0
+    fi
+
+    # erst ohne remount pruefen, ob ueberhaupt etwas zu tun ist
+    work=0
+    for f in ${BINARIES}; do
+        if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/bin/${f}" ] && ! cmp -s "${ARCH_DIR}/${f}" "/bin/${f}"; then
+            work=1
+        fi
+    done
+    for f in ${LIBS}; do
+        if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/lib/${f}" ] && ! cmp -s "${ARCH_DIR}/${f}" "/lib/${f}"; then
+            work=1
+        fi
+    done
+    for cfg in /etc/config_templates/multimacd.conf /etc/config_templates/rfd.conf; do
+        if [ -f "${cfg}" ] && ! grep -q '^Traffic Log[[:space:]]*=' "${cfg}"; then
+            work=1
+        fi
+    done
+
+    if [ "${work}" = "1" ]; then
+        mount -o remount,rw / 2>/dev/null
+        for f in ${BINARIES}; do
+            if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/bin/${f}" ] && ! cmp -s "${ARCH_DIR}/${f}" "/bin/${f}"; then
+                [ -f "/bin/${f}.pre-${ADDON_NAME}" ] || cp -a "/bin/${f}" "/bin/${f}.pre-${ADDON_NAME}"
+                cp -f "${ARCH_DIR}/${f}" "/bin/${f}"
+                chmod 755 "/bin/${f}"
+                echo "${ADDON_NAME}: /bin/${f} aktualisiert"
+            fi
+        done
+        for f in ${LIBS}; do
+            if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/lib/${f}" ] && ! cmp -s "${ARCH_DIR}/${f}" "/lib/${f}"; then
+                [ -f "/lib/${f}.pre-${ADDON_NAME}" ] || cp -a "/lib/${f}" "/lib/${f}.pre-${ADDON_NAME}"
+                cp -f "${ARCH_DIR}/${f}" "/lib/${f}"
+                chmod 755 "/lib/${f}"
+                echo "${ADDON_NAME}: /lib/${f} aktualisiert"
+            fi
+        done
+        # multimacd: das Init-Script generiert /var/etc/multimacd.conf bei
+        # jedem Start aus dem Template -> Template anpassen
+        patch_traffic_log /etc/config_templates/multimacd.conf
+        # rfd: /var/etc/rfd.conf wird aus der persistenten /etc/config/rfd.conf
+        # generiert; das Template greift nur bei der Ersteinrichtung
+        patch_traffic_log /etc/config_templates/rfd.conf
+        sync
+        mount -o remount,ro / 2>/dev/null
+    fi
+
+    # rfd-Konfiguration liegt auf der persistenten Partition (kein remount
+    # noetig, ueberlebt Firmware-Updates)
+    patch_traffic_log /etc/config/rfd.conf
+}
+
 case "$1" in
+  init)
+    # Boot-Hook (S55InitAddons, laeuft vor S60multimacd/S61rfd): nach einem
+    # Firmware-Update Binaries/Libraries/Templates wiederherstellen
+    sync_system_files
+    ;;
   ""|start|stop|restart)
-    # rein passives Web-Addon (CGI + statische Seite) - kein Dienst noetig
+    # kein eigener Dienst - die Web-UI ist rein passiv (CGI + statische Seite)
     ;;
   info)
     echo "Info: <b>AskSinAnalyzer CCU</b><br>"
     echo "Info: Logging und grafische Auswertung aller BidCos-/HmIP-Funktelegramme direkt auf der CCU,<br>"
-    echo "Info: inkl. Telegrammen ueber Funk-LAN-Gateways. Bringt multimacd/rfd mit TrafficLogger mit<br>"
-    echo "Info: und aktiviert 'Traffic Log = 1' in multimacd.conf/rfd.conf automatisch."
+    echo "Info: inkl. Telegrammen ueber Funk-LAN-Gateways. Bringt multimacd/rfd mit TrafficLogger mit,<br>"
+    echo "Info: aktiviert 'Traffic Log = 1' automatisch und repariert sich nach Firmware-Updates beim Boot selbst."
     echo "Name: AskSinAnalyzer CCU"
     echo "Version: $(cat ${ADDON_DIR}/VERSION 2>/dev/null || echo unbekannt)"
     echo "Operations: uninstall"
@@ -47,11 +157,13 @@ case "$1" in
     for f in ${BINARIES}; do
       if [ -f "/bin/${f}.pre-${ADDON_NAME}" ]; then
         mv -f "/bin/${f}.pre-${ADDON_NAME}" "/bin/${f}"
+        chmod 755 "/bin/${f}"
       fi
     done
     for f in ${LIBS}; do
       if [ -f "/lib/${f}.pre-${ADDON_NAME}" ]; then
         mv -f "/lib/${f}.pre-${ADDON_NAME}" "/lib/${f}"
+        chmod 755 "/lib/${f}"
       fi
     done
     unpatch_traffic_log /etc/config_templates/multimacd.conf
@@ -66,7 +178,7 @@ case "$1" in
     rm -f ${RCD_FILE}
     ;;
   *)
-    echo "Usage: $0 {start|stop|restart|info|uninstall}" >&2
+    echo "Usage: $0 {init|start|stop|restart|info|uninstall}" >&2
     exit 1
     ;;
 esac

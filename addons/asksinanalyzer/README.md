@@ -59,7 +59,26 @@ Das Paket über die WebUI installieren: *Einstellungen → Systemsteuerung →
 Zusatzsoftware → Datei auswählen → Installieren*. Das Addon erscheint danach
 in der Zusatzsoftware-Liste (mit Uninstall und Link zur UI).
 Paketinhalt: `update_script` (Installer), `rc.d/asksinanalyzer`
-(WebUI-Integration: info/uninstall), `asksinanalyzer/` (Payload).
+(WebUI-Integration: info/uninstall), `asksinanalyzer/` (Payload inkl.
+Binaries/Libraries für x86_64).
+
+Der Installer bringt **multimacd und rfd mit TrafficLogger samt der
+benötigten Libraries mit** (derzeit nur x86_64, z. B. OVA-CCU) und
+installiert sie nach `/bin` bzw. `/lib`; die Originale werden einmalig als
+`*.pre-asksinanalyzer` gesichert und beim Uninstall wiederhergestellt.
+Außerdem werden die Parameter `Traffic Log = 1` und
+`Traffic Log Directory = /var/log` automatisch ergänzt, sofern noch nicht
+vorhanden: in `/etc/config_templates/multimacd.conf` (daraus wird
+`/var/etc/multimacd.conf` bei jedem Start generiert),
+`/etc/config_templates/rfd.conf` (greift bei Ersteinrichtung) und der
+persistenten `/etc/config/rfd.conf` — jeweils in der globalen Sektion vor
+der ersten `[Interface]`-Sektion. Der Uninstall entfernt nur Einträge, die
+das Addon selbst gesetzt hat (erkennbar an einer Marker-Kommentarzeile).
+Nach der Installation startet die CCU neu (Standardverhalten des
+Addon-Installers); erst danach sind Binaries und Logging aktiv. Auf
+anderen Architekturen wird nur das Web-Addon installiert und ein Hinweis
+ausgegeben. **Achtung:** Firmware-Updates überschreiben `/bin`, `/lib` und
+die Templates — danach das Addon einfach erneut installieren.
 
 ### Variante 2: manuell per SSH
 

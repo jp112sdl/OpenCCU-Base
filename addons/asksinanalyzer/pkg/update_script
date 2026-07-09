@@ -1,13 +1,23 @@
 #!/bin/sh
 # AskSinAnalyzer CCU - Addon-Installation
 # Wird vom WebUI-Addon-Installer nach dem Entpacken des tar.gz aufgerufen.
-# $1 = Plattform (CCU2, CCU3, HM-RASPBERRYMATIC, ...) - keine binaeren
-# Bestandteile, daher plattformunabhaengig.
+# $1 = Plattform (CCU2, CCU3, HM-RASPBERRYMATIC, ...)
+#
+# Installiert neben dem Web-Addon auch multimacd/rfd mit TrafficLogger
+# (inkl. benoetigter Libraries) und ergaenzt die Traffic-Log-Parameter in
+# den Konfigurationsdateien, sofern sie dort noch fehlen. Die Originale
+# werden als *.pre-asksinanalyzer gesichert. Nach der Installation startet
+# die CCU neu (Standardverhalten des Addon-Installers), wodurch die neuen
+# Binaries und die Konfiguration aktiv werden.
 
 ADDON_NAME=asksinanalyzer
 ADDONS_DIR=/usr/local/addons
 WWW_DIR=/usr/local/etc/config/addons/www
 RCD_DIR=/usr/local/etc/config/rc.d
+
+BINARIES="multimacd rfd"
+LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDeviceUtils.so libelvutils.so"
+MARKER="# added by asksinanalyzer addon"
 
 # /usr/local beschreibbar mounten (aeltere CCU-Firmware)
 mount | grep -q "/usr/local" || mount /usr/local
@@ -27,6 +37,86 @@ ln -sfn ${ADDONS_DIR}/${ADDON_NAME}/www ${WWW_DIR}/${ADDON_NAME}
 mkdir -p ${RCD_DIR}
 cp -af rc.d/${ADDON_NAME} ${RCD_DIR}/
 chmod 755 ${RCD_DIR}/${ADDON_NAME}
+
+# ---------------------------------------------------------------------------
+# "Traffic Log"-Parameter ergaenzen, sofern noch nicht vorhanden.
+# $1 = Konfigurationsdatei. Die Zeilen muessen in der globalen Sektion
+# stehen, deshalb werden sie vor der ersten [Interface]-Sektion eingefuegt
+# (bzw. angehaengt, wenn es keine Sektionen gibt, wie in der multimacd.conf).
+patch_traffic_log() {
+    cfg="$1"
+    [ -f "${cfg}" ] || return 0
+    if grep -q '^Traffic Log[[:space:]]*=' "${cfg}"; then
+        return 0
+    fi
+    tmp="${cfg}.tmp-${ADDON_NAME}"
+    awk -v marker="${MARKER}" '
+        BEGIN { done = 0 }
+        /^\[/ && !done {
+            print marker
+            print "Traffic Log = 1"
+            print "Traffic Log Directory = /var/log"
+            print ""
+            done = 1
+        }
+        { print }
+        END {
+            if (!done) {
+                print ""
+                print marker
+                print "Traffic Log = 1"
+                print "Traffic Log Directory = /var/log"
+            }
+        }
+    ' "${cfg}" > "${tmp}" && cat "${tmp}" > "${cfg}"
+    rm -f "${tmp}"
+    echo "${ADDON_NAME}: Traffic Log in ${cfg} aktiviert"
+}
+
+# ---------------------------------------------------------------------------
+# multimacd/rfd samt Libraries installieren (nur wenn Binaries fuer die
+# Architektur im Paket enthalten sind; Originale werden einmalig gesichert)
+ARCH_DIR=${ADDONS_DIR}/${ADDON_NAME}/$(uname -m)-linux-gnu
+if [ -d "${ARCH_DIR}" ]; then
+    mount -o remount,rw / 2>/dev/null
+
+    for f in ${BINARIES}; do
+        if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/bin/${f}" ]; then
+            if ! cmp -s "${ARCH_DIR}/${f}" "/bin/${f}"; then
+                [ -f "/bin/${f}.pre-${ADDON_NAME}" ] || cp -a "/bin/${f}" "/bin/${f}.pre-${ADDON_NAME}"
+                cp -f "${ARCH_DIR}/${f}" "/bin/${f}"
+                chmod 755 "/bin/${f}"
+                echo "${ADDON_NAME}: /bin/${f} aktualisiert"
+            fi
+        fi
+    done
+    for f in ${LIBS}; do
+        if [ -f "${ARCH_DIR}/${f}" ] && [ -f "/lib/${f}" ]; then
+            if ! cmp -s "${ARCH_DIR}/${f}" "/lib/${f}"; then
+                [ -f "/lib/${f}.pre-${ADDON_NAME}" ] || cp -a "/lib/${f}" "/lib/${f}.pre-${ADDON_NAME}"
+                cp -f "${ARCH_DIR}/${f}" "/lib/${f}"
+                chmod 755 "/lib/${f}"
+                echo "${ADDON_NAME}: /lib/${f} aktualisiert"
+            fi
+        fi
+    done
+
+    # multimacd: das Init-Script generiert /var/etc/multimacd.conf bei jedem
+    # Start aus dem Template -> Template anpassen
+    patch_traffic_log /etc/config_templates/multimacd.conf
+    # rfd: /var/etc/rfd.conf wird aus der persistenten /etc/config/rfd.conf
+    # generiert; das Template greift nur bei der Ersteinrichtung
+    patch_traffic_log /etc/config_templates/rfd.conf
+
+    sync
+    mount -o remount,ro / 2>/dev/null
+else
+    echo "${ADDON_NAME}: keine Binaries fuer $(uname -m) im Paket -" \
+         "multimacd/rfd mit TrafficLogger muessen manuell installiert werden"
+fi
+
+# rfd-Konfiguration liegt auf der persistenten Partition (kein remount noetig)
+patch_traffic_log /etc/config/rfd.conf
 
 sync
 exit 0

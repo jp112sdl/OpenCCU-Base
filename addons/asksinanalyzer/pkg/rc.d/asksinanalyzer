@@ -6,20 +6,60 @@ ADDON_DIR=/usr/local/addons/${ADDON_NAME}
 WWW_LINK=/usr/local/etc/config/addons/www/${ADDON_NAME}
 RCD_FILE=/usr/local/etc/config/rc.d/${ADDON_NAME}
 
+BINARIES="multimacd rfd"
+LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDeviceUtils.so libelvutils.so"
+MARKER="# added by asksinanalyzer addon"
+
+# vom Addon eingefuegte Traffic-Log-Zeilen wieder entfernen (nur wenn die
+# Datei unsere Marker-Zeile enthaelt, manuelle Konfiguration bleibt erhalten);
+# entfernt den Block samt der beim Patchen eingefuegten Folge-Leerzeile
+unpatch_traffic_log() {
+    cfg="$1"
+    [ -f "${cfg}" ] || return 0
+    grep -q "^${MARKER}\$" "${cfg}" || return 0
+    tmp="${cfg}.tmp-${ADDON_NAME}"
+    awk -v marker="${MARKER}" '
+        $0 == marker { inblock = 1; next }
+        inblock && /^Traffic Log( Directory)?[[:space:]]*=/ { next }
+        inblock && /^$/ { inblock = 0; next }
+        { inblock = 0; print }
+    ' "${cfg}" > "${tmp}" && cat "${tmp}" > "${cfg}"
+    rm -f "${tmp}"
+}
+
 case "$1" in
   ""|start|stop|restart)
     # rein passives Web-Addon (CGI + statische Seite) - kein Dienst noetig
     ;;
   info)
     echo "Info: <b>AskSinAnalyzer CCU</b><br>"
-    echo "Info: Logging und grafische Auswertung aller BidCos-/HmIP-Funktelegramme direkt auf der CCU.<br>"
-    echo "Info: Benoetigt multimacd mit TrafficLogger (OpenCCU) und 'Traffic Log = 1' in der multimacd.conf."
+    echo "Info: Logging und grafische Auswertung aller BidCos-/HmIP-Funktelegramme direkt auf der CCU,<br>"
+    echo "Info: inkl. Telegrammen ueber Funk-LAN-Gateways. Bringt multimacd/rfd mit TrafficLogger mit<br>"
+    echo "Info: und aktiviert 'Traffic Log = 1' in multimacd.conf/rfd.conf automatisch."
     echo "Name: AskSinAnalyzer CCU"
     echo "Version: $(cat ${ADDON_DIR}/VERSION 2>/dev/null || echo unbekannt)"
     echo "Operations: uninstall"
     echo "Config-Url: /addons/${ADDON_NAME}/"
     ;;
   uninstall)
+    # gesicherte Original-Binaries/-Libraries wiederherstellen
+    mount -o remount,rw / 2>/dev/null
+    for f in ${BINARIES}; do
+      if [ -f "/bin/${f}.pre-${ADDON_NAME}" ]; then
+        mv -f "/bin/${f}.pre-${ADDON_NAME}" "/bin/${f}"
+      fi
+    done
+    for f in ${LIBS}; do
+      if [ -f "/lib/${f}.pre-${ADDON_NAME}" ]; then
+        mv -f "/lib/${f}.pre-${ADDON_NAME}" "/lib/${f}"
+      fi
+    done
+    unpatch_traffic_log /etc/config_templates/multimacd.conf
+    unpatch_traffic_log /etc/config_templates/rfd.conf
+    sync
+    mount -o remount,ro / 2>/dev/null
+    unpatch_traffic_log /etc/config/rfd.conf
+    # Addon-Dateien entfernen
     rm -f ${WWW_LINK}
     rm -rf ${ADDON_DIR}
     rm -f /tmp/asksinanalyzer.devlist.json

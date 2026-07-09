@@ -1,31 +1,45 @@
 #!/bin/tclsh
 # AskSinAnalyzer CCU - API backend
-# Datenquelle: <Traffic Log Directory>/multimacd-traffic-YYYY-MM-DD.log (TrafficLogger
-# in multimacd; Verzeichnis aus /etc/config/multimacd.conf, Fallback /var/log)
+# Datenquellen:
+#   <Traffic Log Directory>/multimacd-traffic-YYYY-MM-DD.log (TrafficLogger in
+#     multimacd = Sicht des lokalen Funkmoduls; Verzeichnis aus
+#     /etc/config/multimacd.conf, Fallback /var/log)
+#   <Traffic Log Directory>/rfd-traffic-YYYY-MM-DD.log (TrafficLogger im rfd =
+#     Telegramme ueber Funk-LAN-Gateways, mit IFACE=<serial>; Verzeichnis aus
+#     /etc/config/rfd.conf, Fallback /var/log)
 # Kommandos:
-#   ?cmd=dates                     -> JSON: verfuegbare Log-Daten
-#   ?cmd=data&date=YYYY-MM-DD&offset=N -> text/plain: "OFFSET <n>\n" + neue Logzeilen ab Offset
+#   ?cmd=dates                     -> JSON: verfuegbare Log-Daten (beide Quellen vereinigt)
+#   ?cmd=data&date=YYYY-MM-DD&offset=N[&src=rfd] -> text/plain: "OFFSET <n>\n" + neue Logzeilen ab Offset
 #   ?cmd=devlist[&refresh=1]       -> JSON: Geraeteliste (RF-Adresse, Serial, Name, Typ)
 #                                     + hmip_central (HmIP-Funkadresse der Zentrale)
 #   ?cmd=version                   -> JSON: Addon-Version (aus ../VERSION)
 
 set LOGDIR "/var/log"
+set RFDLOGDIR "/var/log"
 set LOGPREFIX "multimacd-traffic-"
+set RFDLOGPREFIX "rfd-traffic-"
 set CONFFILE "/etc/config/multimacd.conf"
+set RFDCONFFILE "/etc/config/rfd.conf"
 set CACHEFILE "/tmp/asksinanalyzer.devlist.json"
 set CACHETTL 600
 
-# "Traffic Log Directory" aus der multimacd.conf uebernehmen (Fallback: /var/log)
-catch {
-    set fh [open $CONFFILE r]
-    set conf [read $fh]
-    close $fh
-    foreach line [split $conf "\n"] {
-        if {[regexp {^\s*Traffic Log Directory\s*=\s*(.*\S)\s*$} $line -> dir]} {
-            set LOGDIR $dir
+# "Traffic Log Directory" aus einer Konfigurationsdatei lesen (Fallback: /var/log)
+proc readTrafficLogDir {conffile} {
+    set dir "/var/log"
+    catch {
+        set fh [open $conffile r]
+        set conf [read $fh]
+        close $fh
+        foreach line [split $conf "\n"] {
+            if {[regexp {^\s*Traffic Log Directory\s*=\s*(.*\S)\s*$} $line -> d]} {
+                set dir $d
+            }
         }
     }
+    return $dir
 }
+set LOGDIR [readTrafficLogDir $CONFFILE]
+set RFDLOGDIR [readTrafficLogDir $RFDCONFFILE]
 
 # ---------- Helpers ----------
 
@@ -69,20 +83,26 @@ proc httpHeader {contentType} {
 # ---------- Kommandos ----------
 
 proc cmdDates {} {
-    global LOGDIR LOGPREFIX
-    set dates {}
-    foreach f [lsort [glob -nocomplain -directory $LOGDIR "${LOGPREFIX}*.log"]] {
-        set base [file tail $f]
-        if {[regexp "^${LOGPREFIX}(\\d{4}-\\d{2}-\\d{2})\\.log$" $base -> d]} {
-            lappend dates "\"$d\""
+    global LOGDIR LOGPREFIX RFDLOGDIR RFDLOGPREFIX
+    array set seen {}
+    foreach {dir prefix} [list $LOGDIR $LOGPREFIX $RFDLOGDIR $RFDLOGPREFIX] {
+        foreach f [glob -nocomplain -directory $dir "${prefix}*.log"] {
+            set base [file tail $f]
+            if {[regexp "^${prefix}(\\d{4}-\\d{2}-\\d{2})\\.log$" $base -> d]} {
+                set seen($d) 1
+            }
         }
+    }
+    set dates {}
+    foreach d [lsort [array names seen]] {
+        lappend dates "\"$d\""
     }
     httpHeader "application/json"
     puts "\[[join $dates ,]\]"
 }
 
 proc cmdData {params} {
-    global LOGDIR LOGPREFIX
+    global LOGDIR LOGPREFIX RFDLOGDIR RFDLOGPREFIX
     set date [expr {[dict exists $params date] ? [dict get $params date] : ""}]
     if {![regexp {^\d{4}-\d{2}-\d{2}$} $date]} {
         # default: heute
@@ -93,7 +113,12 @@ proc cmdData {params} {
         set o [dict get $params offset]
         if {[string is integer -strict $o] && $o >= 0} { set offset $o }
     }
-    set path [file join $LOGDIR "${LOGPREFIX}${date}.log"]
+    # Quelle: multimacd (default) oder rfd (Funk-LAN-Gateways)
+    if {[dict exists $params src] && [dict get $params src] eq "rfd"} {
+        set path [file join $RFDLOGDIR "${RFDLOGPREFIX}${date}.log"]
+    } else {
+        set path [file join $LOGDIR "${LOGPREFIX}${date}.log"]
+    }
     # Datei komplett lesen, bevor der Header geschrieben wird - so landet bei
     # I/O-Fehlern nie ein zweiter Header (JSON-Fehlerhandler) in der Antwort
     set chunk ""

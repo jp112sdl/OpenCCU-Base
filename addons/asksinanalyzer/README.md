@@ -7,20 +7,32 @@ inkl. RSSI, HmIP als Rohdaten) — ohne zusätzlichen Arduino-Sniffer.
 ## Architektur
 
 ```
-Funkmodul ⇄ multimacd (TrafficLogger)
-                │  schreibt /var/log/multimacd-traffic-YYYY-MM-DD.log
-                ▼
-        www/api.cgi (tclsh, lighttpd)
-                │  Offset-Tailing, Geräteliste (rfd-XML-RPC + ReGa)
-                ▼
-        www/index.html (Single-Page-UI, kein externes CDN)
+Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (TrafficLogger)
+                │  multimacd-traffic-YYYY-MM-DD.log        │  rfd-traffic-YYYY-MM-DD.log
+                │  (Sicht des lokalen Funkmoduls)          │  (nur nicht-lokale Interfaces,
+                │                                          │   mit IFACE=<Gateway-Serial>)
+                └────────────────┬─────────────────────────┘
+                                 ▼
+                    www/api.cgi (tclsh, lighttpd)
+                                 │  Offset-Tailing je Quelle, Geräteliste (ReGa)
+                                 ▼
+                    www/index.html (Single-Page-UI, kein externes CDN)
 ```
 
-- **Datenquelle** ist der `TrafficLogger` in `src/multimacd` (Konfig-Schalter
-  `Traffic Log = 1`, `Traffic Log Directory = /var/log` in der multimacd.conf
-  bzw. `/etc/config_templates/multimacd.conf`). `api.cgi` liest das
-  `Traffic Log Directory` aus `/etc/config/multimacd.conf` (Fallback `/var/log`),
-  ein geändertes Verzeichnis wird also automatisch übernommen.
+- **Datenquellen** sind die `TrafficLogger` in `src/multimacd` (lokales
+  Funkmodul, BidCos + HmIP) und `src/rfd` (Telegramme über Funk-LAN-Gateways,
+  nur BidCos, mit `IFACE=<Gateway-Serial>`). Beide werden gleich konfiguriert
+  (Konfig-Schalter `Traffic Log = 1`, optional `Traffic Log Directory = /var/log`
+  in der multimacd.conf bzw. rfd.conf) und schreiben bewusst in **getrennte**
+  Tagesdateien, damit sich keine zwei Prozesse eine Logdatei teilen. `api.cgi`
+  liest das jeweilige `Traffic Log Directory` aus `/etc/config/multimacd.conf`
+  bzw. `/etc/config/rfd.conf` (Fallback `/var/log`).
+- Die UI zeigt je Telegramm in der Spalte **„Via"**, ob es über das lokale
+  Funkmodul lief („direkt") oder über ein Funk-LAN-Gateway („via <Serial>"),
+  und bietet einen **Weg-Filter** (direkt / via LAN-Gateway / einzelnes
+  Gateway, sobald mehrere gesehen wurden). Achtung: Ein Telegramm, das sowohl
+  das lokale Modul als auch ein Gateway empfängt, erscheint als zwei Zeilen —
+  je Empfänger eine, mit dessen RSSI.
 - **`www/api.cgi`** — Endpunkte:
   - `?cmd=dates` — verfügbare Log-Tage (JSON)
   - `?cmd=data&date=YYYY-MM-DD&offset=N` — neue Logzeilen ab Datei-Offset (Live-Polling)

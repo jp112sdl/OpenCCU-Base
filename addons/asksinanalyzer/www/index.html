@@ -53,6 +53,8 @@
   .proto-HMIP .proto { color: var(--hmip); }
   .bcast-name { color: var(--hmip); }
   .bcast-hex { color: var(--hmip); font-weight: 700; text-decoration: underline dotted; cursor: help; }
+  .via-direkt { color: var(--fg-dim); font-size: 11.5px; }
+  .via-lgw { color: #d4b04f; font-weight: 600; font-size: 11.5px; }
   .devname { color: var(--fg); }
   .devaddr { color: var(--fg-dim); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
   .rssi-good { color: var(--rx); } .rssi-mid { color: var(--tx); } .rssi-bad { color: var(--warn); }
@@ -111,6 +113,11 @@
     <option value="BIDCOS">BidCos</option>
     <option value="HMIP">HmIP</option>
   </select>
+  <select id="fVia">
+    <option value="">Weg: alle</option>
+    <option value="direkt">direkt (Funkmodul)</option>
+    <option value="lgw">via LAN-Gateway</option>
+  </select>
   <select id="fType"><option value="">Typ: alle</option></select>
   <select id="fDev"><option value="">Ger&auml;t: alle</option></select>
   <label><input type="checkbox" id="fHideBcast"> Broadcasts ausblenden</label>
@@ -120,7 +127,8 @@
 <main id="viewTelegrams">
   <table>
     <thead><tr>
-      <th>Zeit</th><th></th><th>Proto</th><th>RSSI</th><th>Len</th><th>Cnt</th>
+      <th>Zeit</th><th></th><th>Proto</th><th title="direkt = lokales Funkmodul, via = Funk-LAN-Gateway">Via</th>
+      <th>RSSI</th><th>Len</th><th>Cnt</th>
       <th>Typ</th><th>Flags</th><th>Von</th><th>An</th><th>Payload</th>
     </tr></thead>
     <tbody id="tbody"></tbody>
@@ -255,7 +263,8 @@ function airtimeMs(len) { return (len + 13) * 0.8; }
 
 const state = {
   telegrams: [],          // chronologisch
-  offset: 0,
+  offsets: { mmd: 0, rfd: 0 },  // Datei-Offsets je Logquelle
+  ifaces: new Set(),      // gesehene Funk-LAN-Gateways (IFACE aus rfd-Log)
   date: null,             // ausgewaehltes Datum
   live: true,             // Datum == neueste Datei -> Polling
   paused: false,
@@ -298,6 +307,7 @@ function parseLine(line) {
       case "RSSI":  { const r = parseInt(v, 10); if (r !== 0) t.rssi = r; break; }
       case "PAYLOAD": t.payload = v; break;
       case "DATA":  t.payload = v; break;
+      case "IFACE": t.iface = v; break;   // Seriennummer des Funk-LAN-Gateways (rfd-Log)
     }
   }
   if (proto === "HMIP" && t.payload) t.bcast = scanHmipBcast(t.payload);
@@ -319,6 +329,7 @@ function ingest(text) {
       if (t.payload.length >= 14) state.hmipSeen.add(t.payload.substr(8, 6));
       if (t.payload.length >= 20) state.hmipSeen.add(t.payload.substr(14, 6));
     }
+    if (t.iface) state.ifaces.add(t.iface);
     if (t.dir === "TX" && t.proto === "BIDCOS" && t.from) state.centralAddr = t.from;
     added++;
   }
@@ -371,6 +382,7 @@ function getFilters() {
     search: $("fSearch").value.trim().toLowerCase(),
     dir: $("fDir").value,
     proto: $("fProto").value,
+    via: $("fVia").value,
     type: $("fType").value,
     dev: $("fDev").value,
     hideBcast: $("fHideBcast").checked
@@ -382,6 +394,9 @@ function filtered() {
   return state.telegrams.filter(t => {
     if (f.dir && t.dir !== f.dir) return false;
     if (f.proto && t.proto !== f.proto) return false;
+    if (f.via === "direkt" && t.iface) return false;
+    if (f.via === "lgw" && !t.iface) return false;
+    if (f.via && f.via !== "direkt" && f.via !== "lgw" && t.iface !== f.via) return false;
     if (f.hideBcast && (t.to === "000000" || t.bcast)) return false;
     if (f.type && (t.type === null || decodeType(t.type, t.payload) !== f.type)) return false;
     if (f.dev && t.from !== f.dev && t.to !== f.dev &&
@@ -407,6 +422,18 @@ function filtered() {
 }
 
 function rebuildFilterOptions() {
+  // einzelne Gateways nur anbieten, wenn es mehr als eines gibt -
+  // sonst reicht die statische Option "via LAN-Gateway"
+  const viaSel = $("fVia");
+  const curV = viaSel.value;
+  viaSel.length = 3;   // die 3 statischen Optionen behalten
+  if (state.ifaces.size > 1) {
+    for (const s of [...state.ifaces].sort())
+      viaSel.add(new Option("via " + s, s));
+  }
+  viaSel.value = curV;
+  if (viaSel.selectedIndex < 0) viaSel.value = "";
+
   const typeSel = $("fType"), devSel = $("fDev");
   const curT = typeSel.value, curD = devSel.value;
   typeSel.length = 1;
@@ -500,6 +527,9 @@ function renderTable() {
       `<td>${t.time}</td>` +
       `<td class="dir-${t.dir}">${t.dir}</td>` +
       `<td class="proto">${t.proto === "BIDCOS" ? "BidCos" : "HmIP"}</td>` +
+      `<td>${t.iface
+        ? `<span class="via-lgw" title="via Funk-LAN-Gateway ${esc(t.iface)}">via ${esc(t.iface)}</span>`
+        : `<span class="via-direkt">direkt</span>`}</td>` +
       `<td class="${rssiClass(t.rssi)}">${t.rssi === null ? "" : t.rssi}</td>` +
       `<td>${t.len}</td>` +
       `<td>${t.cnt === null ? "" : t.cnt.toString(16).padStart(2, "0").toUpperCase()}</td>` +
@@ -736,7 +766,7 @@ $("rssiChart").addEventListener("mouseleave", () => $("tooltip").style.display =
 
 function exportCsv() {
   const list = filtered();
-  const head = "tstamp;date;time;direction;protocol;rssi;len;cnt;type;flags;fromAddr;fromName;toAddr;toName;payload";
+  const head = "tstamp;date;time;direction;protocol;via;rssi;len;cnt;type;flags;fromAddr;fromName;toAddr;toName;payload";
   const lines = [head];
   for (const t of list) {
     const q = s => {
@@ -748,6 +778,7 @@ function exportCsv() {
     const hf = !t.from && hmipAddrAt(t, 8), ht = !t.to && hmipAddrAt(t, 14);
     lines.push([
       t.ts, new Date(t.ts).toISOString().slice(0, 10), t.time, t.dir, t.proto,
+      t.iface || "direkt",
       t.rssi == null ? "" : t.rssi, t.len,
       t.cnt == null ? "" : t.cnt,
       t.proto === "HMIP" ? "" : decodeType(t.type, t.payload),
@@ -774,6 +805,22 @@ function setStatus(cls, text) {
 
 let pollInFlight = false;
 
+// holt neue Logzeilen einer Quelle (mmd = multimacd/lokales Funkmodul,
+// rfd = Funk-LAN-Gateways) ab dem gemerkten Datei-Offset
+async function fetchChunk(src, date) {
+  const r = await fetch(`${API}?cmd=data&date=${date}&offset=${state.offsets[src]}` +
+    (src === "rfd" ? "&src=rfd" : ""));
+  const text = await r.text();
+  // Datum wurde waehrend des Requests gewechselt: Antwort verwerfen
+  if (date !== state.date) return 0;
+  const nl = text.indexOf("\n");
+  const newOffset = parseInt(text.slice(0, nl).replace("OFFSET ", ""), 10);
+  if (isNaN(newOffset)) return 0;
+  const added = ingest(text.slice(nl + 1));
+  state.offsets[src] = newOffset;
+  return added;
+}
+
 async function poll() {
   if (state.paused || !state.date) return;
   // nur ein Request gleichzeitig - sonst wird derselbe Offset-Bereich bei
@@ -782,20 +829,12 @@ async function poll() {
   pollInFlight = true;
   const date = state.date;
   try {
-    const r = await fetch(`${API}?cmd=data&date=${date}&offset=${state.offset}`);
-    const text = await r.text();
-    // Datum wurde waehrend des Requests gewechselt: Antwort verwerfen
-    if (date !== state.date) return;
-    const nl = text.indexOf("\n");
-    const first = text.slice(0, nl);
-    const newOffset = parseInt(first.replace("OFFSET ", ""), 10);
-    if (!isNaN(newOffset)) {
-      const added = ingest(text.slice(nl + 1));
-      state.offset = newOffset;
-      if (added > 0) {
-        rebuildFilterOptions();
-        render();
-      }
+    const added = (await fetchChunk("mmd", date)) + (await fetchChunk("rfd", date));
+    if (added > 0) {
+      // beide Quellen chronologisch mergen (stabiler Sort, Liste ist fast sortiert)
+      state.telegrams.sort((a, b) => a.ts - b.ts);
+      rebuildFilterOptions();
+      render();
     }
     setStatus(state.live ? "" : "paused",
       `<b>${state.telegrams.length}</b> Telegramme${state.live ? " · live" : ""}`);
@@ -822,10 +861,12 @@ async function loadDates(keepSelection) {
 function switchDate(date, latest) {
   state.date = date;
   state.live = (date === latest);
-  state.offset = 0;
+  state.offsets = { mmd: 0, rfd: 0 };
   state.telegrams = [];
   state.types.clear();
   state.addrs.clear();
+  state.hmipSeen.clear();
+  state.ifaces.clear();
   render();
   poll();
 }
@@ -858,7 +899,7 @@ $("dateSel").onchange = async () => {
   const dates = await loadDates(true);
   switchDate($("dateSel").value, dates[dates.length - 1]);
 };
-for (const id of ["fSearch", "fDir", "fProto", "fType", "fDev", "fHideBcast"]) {
+for (const id of ["fSearch", "fDir", "fProto", "fVia", "fType", "fDev", "fHideBcast"]) {
   $(id).addEventListener(id === "fSearch" ? "input" : "change", render);
 }
 window.addEventListener("resize", () => { if (state.tab === "stats") renderStats(); });

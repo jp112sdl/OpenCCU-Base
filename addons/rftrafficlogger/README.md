@@ -1,4 +1,4 @@
-# AskSinAnalyzer CCU
+# RFTrafficLogger
 
 Port des [AskSinAnalyzerXS](https://github.com/psi-4ward/AskSinAnalyzerXS) direkt auf die CCU:
 Logging und grafische Auswertung aller Homematic-Funktelegramme (BidCos RX/TX dekodiert
@@ -39,7 +39,7 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
   - `?cmd=devlist[&refresh=1]` — Geräteliste (BidCos **und** HmIP): RF-Adresse,
     Name und Typ via ReGa aus den `DEVDESC`-Metadaten (enthalten `RF_ADDRESS`
     auch für HmIP-Geräte; rfd auf Port 2001 kennt nur BidCos), dazu
-    `hmip_central`; Cache `/tmp/asksinanalyzer.devlist.json` (600 s)
+    `hmip_central`; Cache `/tmp/rftrafficlogger.devlist.json` (600 s)
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
   Geräte-Statistik mit DutyCycle-Schätzung), CSV-Export.
@@ -52,20 +52,20 @@ Voraussetzung: multimacd mit TrafficLogger (dieses Repo) und aktiviertem
 ### Variante 1: Addon-Paket (WebUI)
 
 ```sh
-./build-addon.sh        # erzeugt asksinanalyzer-<version>.tar.gz
+./build-addon.sh        # erzeugt rftrafficlogger-<version>.tar.gz
 ```
 
 Das Paket über die WebUI installieren: *Einstellungen → Systemsteuerung →
 Zusatzsoftware → Datei auswählen → Installieren*. Das Addon erscheint danach
 in der Zusatzsoftware-Liste (mit Uninstall und Link zur UI).
-Paketinhalt: `update_script` (Installer), `rc.d/asksinanalyzer`
-(WebUI-Integration: info/uninstall), `asksinanalyzer/` (Payload inkl.
+Paketinhalt: `update_script` (Installer), `rc.d/rftrafficlogger`
+(WebUI-Integration: info/uninstall), `rftrafficlogger/` (Payload inkl.
 Binaries/Libraries für x86_64).
 
 Der Installer bringt **multimacd und rfd mit TrafficLogger samt der
 benötigten Libraries mit** (derzeit nur x86_64, z. B. OVA-CCU) und
 installiert sie nach `/bin` bzw. `/lib`; die Originale werden einmalig als
-`*.pre-asksinanalyzer` gesichert und beim Uninstall wiederhergestellt.
+`*.pre-rftrafficlogger` gesichert und beim Uninstall wiederhergestellt.
 Außerdem werden die Parameter `Traffic Log = 1` und
 `Traffic Log Directory = /var/log` automatisch ergänzt, sofern noch nicht
 vorhanden: in `/etc/config_templates/multimacd.conf` (daraus wird
@@ -93,13 +93,13 @@ an (kein Remount, keine Schreibzugriffe).
 
 ```sh
 CCU=root@ccu
-ssh $CCU 'mkdir -p /usr/local/addons/asksinanalyzer/www'
-scp www/index.html www/api.cgi $CCU:/usr/local/addons/asksinanalyzer/www/
-ssh $CCU 'chmod 755 /usr/local/addons/asksinanalyzer /usr/local/addons/asksinanalyzer/www /usr/local/addons/asksinanalyzer/www/api.cgi
-          ln -sfn /usr/local/addons/asksinanalyzer/www /usr/local/etc/config/addons/www/asksinanalyzer'
+ssh $CCU 'mkdir -p /usr/local/addons/rftrafficlogger/www'
+scp www/index.html www/api.cgi $CCU:/usr/local/addons/rftrafficlogger/www/
+ssh $CCU 'chmod 755 /usr/local/addons/rftrafficlogger /usr/local/addons/rftrafficlogger/www /usr/local/addons/rftrafficlogger/www/api.cgi
+          ln -sfn /usr/local/addons/rftrafficlogger/www /usr/local/etc/config/addons/www/rftrafficlogger'
 ```
 
-Aufruf: `http://<ccu>/addons/asksinanalyzer/`
+Aufruf: `http://<ccu>/addons/rftrafficlogger/`
 
 ## Hinweise
 

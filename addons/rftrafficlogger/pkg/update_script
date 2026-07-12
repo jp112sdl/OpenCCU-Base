@@ -1,17 +1,17 @@
 #!/bin/sh
-# AskSinAnalyzer CCU - Addon-Installation
+# RFTrafficLogger - Addon-Installation
 # Wird vom WebUI-Addon-Installer nach dem Entpacken des tar.gz aufgerufen.
 # $1 = Plattform (CCU2, CCU3, HM-RASPBERRYMATIC, ...)
 #
 # Installiert das Web-Addon und ruft danach den init-Hook des rc.d-Scripts
 # auf. Dieser installiert multimacd/rfd mit TrafficLogger samt Libraries
-# (Originale werden als *.pre-asksinanalyzer gesichert) und ergaenzt die
+# (Originale werden als *.pre-rftrafficlogger gesichert) und ergaenzt die
 # Traffic-Log-Parameter in den Konfigurationsdateien. Derselbe Hook laeuft
 # bei jedem Boot (S55InitAddons) und stellt die Dateien nach einem
 # Firmware-Update automatisch wieder her. Nach der Installation startet
 # die CCU neu (Standardverhalten des Addon-Installers).
 
-ADDON_NAME=asksinanalyzer
+ADDON_NAME=rftrafficlogger
 ADDONS_DIR=/usr/local/addons
 WWW_DIR=/usr/local/etc/config/addons/www
 RCD_DIR=/usr/local/etc/config/rc.d
@@ -26,7 +26,7 @@ chmod 755 ${ADDONS_DIR}/${ADDON_NAME} ${ADDONS_DIR}/${ADDON_NAME}/www
 chmod 755 ${ADDONS_DIR}/${ADDON_NAME}/www/api.cgi
 chmod 644 ${ADDONS_DIR}/${ADDON_NAME}/www/index.html
 
-# Web-Verzeichnis verlinken -> http://<ccu>/addons/asksinanalyzer/
+# Web-Verzeichnis verlinken -> http://<ccu>/addons/rftrafficlogger/
 mkdir -p ${WWW_DIR}
 ln -sfn ${ADDONS_DIR}/${ADDON_NAME}/www ${WWW_DIR}/${ADDON_NAME}
 

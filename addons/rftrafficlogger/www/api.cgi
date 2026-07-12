@@ -1,5 +1,5 @@
 #!/bin/tclsh
-# AskSinAnalyzer CCU - API backend
+# RFTrafficLogger - API backend
 # Datenquellen:
 #   <Traffic Log Directory>/multimacd-traffic-YYYY-MM-DD.log (TrafficLogger in
 #     multimacd = Sicht des lokalen Funkmoduls; Verzeichnis aus
@@ -20,7 +20,7 @@ set LOGPREFIX "multimacd-traffic-"
 set RFDLOGPREFIX "rfd-traffic-"
 set CONFFILE "/etc/config/multimacd.conf"
 set RFDCONFFILE "/etc/config/rfd.conf"
-set CACHEFILE "/tmp/asksinanalyzer.devlist.json"
+set CACHEFILE "/tmp/rftrafficlogger.devlist.json"
 set CACHETTL 600
 
 # "Traffic Log Directory" aus einer Konfigurationsdatei lesen (Fallback: /var/log)

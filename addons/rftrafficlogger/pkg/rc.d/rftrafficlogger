@@ -1,5 +1,5 @@
 #!/bin/sh
-# AskSinAnalyzer CCU - rc.d-Script (WebUI Zusatzsoftware + Boot-Hook)
+# RFTrafficLogger - rc.d-Script (WebUI Zusatzsoftware + Boot-Hook)
 #
 # "init" wird bei jedem Boot von S55InitAddons aufgerufen - also VOR dem
 # Start von multimacd (S60) und rfd (S61) - und stellt sicher, dass die
@@ -8,14 +8,14 @@
 # /bin, /lib und /etc/config_templates ueberschreibt) repariert sich die
 # Installation damit beim naechsten Boot selbst.
 
-ADDON_NAME=asksinanalyzer
+ADDON_NAME=rftrafficlogger
 ADDON_DIR=/usr/local/addons/${ADDON_NAME}
 WWW_LINK=/usr/local/etc/config/addons/www/${ADDON_NAME}
 RCD_FILE=/usr/local/etc/config/rc.d/${ADDON_NAME}
 
 BINARIES="multimacd rfd"
 LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDeviceUtils.so libelvutils.so"
-MARKER="# added by asksinanalyzer addon"
+MARKER="# added by rftrafficlogger addon"
 ARCH_DIR=${ADDON_DIR}/$(uname -m)-linux-gnu
 
 # ---------------------------------------------------------------------------
@@ -142,11 +142,11 @@ case "$1" in
     # kein eigener Dienst - die Web-UI ist rein passiv (CGI + statische Seite)
     ;;
   info)
-    echo "Info: <b>AskSinAnalyzer CCU</b><br>"
+    echo "Info: <b>RFTrafficLogger</b><br>"
     echo "Info: Logging und grafische Auswertung aller BidCos-/HmIP-Funktelegramme direkt auf der CCU,<br>"
     echo "Info: inkl. Telegrammen ueber Funk-LAN-Gateways. Bringt multimacd/rfd mit TrafficLogger mit,<br>"
     echo "Info: aktiviert 'Traffic Log = 1' automatisch und repariert sich nach Firmware-Updates beim Boot selbst."
-    echo "Name: AskSinAnalyzer CCU"
+    echo "Name: RFTrafficLogger"
     echo "Version: $(cat ${ADDON_DIR}/VERSION 2>/dev/null || echo unbekannt)"
     echo "Operations: uninstall"
     echo "Config-Url: /addons/${ADDON_NAME}/"
@@ -174,7 +174,7 @@ case "$1" in
     # Addon-Dateien entfernen
     rm -f ${WWW_LINK}
     rm -rf ${ADDON_DIR}
-    rm -f /tmp/asksinanalyzer.devlist.json
+    rm -f /tmp/rftrafficlogger.devlist.json
     rm -f ${RCD_FILE}
     ;;
   *)

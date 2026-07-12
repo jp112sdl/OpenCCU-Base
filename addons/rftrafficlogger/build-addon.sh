@@ -1,11 +1,11 @@
 #!/bin/sh
-# Baut das installierbare CCU-Addon-Paket asksinanalyzer-<version>.tar.gz
+# Baut das installierbare CCU-Addon-Paket rftrafficlogger-<version>.tar.gz
 # (Installation ueber WebUI -> Systemsteuerung -> Zusatzsoftware)
 set -e
 cd "$(dirname "$0")"
 
 VERSION=$(cat VERSION)
-OUT="asksinanalyzer-${VERSION}.tar.gz"
+OUT="rftrafficlogger-${VERSION}.tar.gz"
 STAGE=$(mktemp -d)
 trap 'rm -rf "${STAGE}"' EXIT
 
@@ -19,24 +19,24 @@ LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDevi
 # Paketlayout: update_script im Archiv-Root, Payload darunter
 cp pkg/update_script "${STAGE}/"
 mkdir -p "${STAGE}/rc.d"
-cp pkg/rc.d/asksinanalyzer "${STAGE}/rc.d/"
-mkdir -p "${STAGE}/asksinanalyzer/www"
-cp VERSION "${STAGE}/asksinanalyzer/"
-cp www/index.html www/api.cgi "${STAGE}/asksinanalyzer/www/"
+cp pkg/rc.d/rftrafficlogger "${STAGE}/rc.d/"
+mkdir -p "${STAGE}/rftrafficlogger/www"
+cp VERSION "${STAGE}/rftrafficlogger/"
+cp www/index.html www/api.cgi "${STAGE}/rftrafficlogger/www/"
 
-mkdir -p "${STAGE}/asksinanalyzer/${ARCH}"
-cp "${BINDIR}/multimacd" "${BINDIR}/rfd" "${STAGE}/asksinanalyzer/${ARCH}/"
+mkdir -p "${STAGE}/rftrafficlogger/${ARCH}"
+cp "${BINDIR}/multimacd" "${BINDIR}/rfd" "${STAGE}/rftrafficlogger/${ARCH}/"
 for l in ${LIBS}; do
-    cp "${LIBDIR}/${l}" "${STAGE}/asksinanalyzer/${ARCH}/"
+    cp "${LIBDIR}/${l}" "${STAGE}/rftrafficlogger/${ARCH}/"
 done
 
-chmod 755 "${STAGE}/update_script" "${STAGE}/rc.d/asksinanalyzer" \
-          "${STAGE}/asksinanalyzer/www/api.cgi" \
-          "${STAGE}/asksinanalyzer/${ARCH}"/*
+chmod 755 "${STAGE}/update_script" "${STAGE}/rc.d/rftrafficlogger" \
+          "${STAGE}/rftrafficlogger/www/api.cgi" \
+          "${STAGE}/rftrafficlogger/${ARCH}"/*
 
 tar -czf "${OUT}" -C "${STAGE}" \
     --owner=root --group=root --numeric-owner \
-    update_script rc.d asksinanalyzer
+    update_script rc.d rftrafficlogger
 
 echo "erstellt: $(pwd)/${OUT}"
 tar -tzf "${OUT}"

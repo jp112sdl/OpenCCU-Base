@@ -11,6 +11,7 @@
 #include "SubsystemBidcos.h"
 #include "SubsystemHmIp.h"
 #include "SerialFrame/SerialFrame.h"
+#include "TrafficLogger.h"
 #include <Logger.h>
 #include "Sysutils.h"
 #ifndef WIN32
@@ -87,6 +88,7 @@ bool SubsystemManager::Stop()
 
 void SubsystemManager::OnUpstreamFrame( SerialFrame* frame )
 {
+	TrafficLogger::Instance().OnUpstreamFrame( *frame );
 	_incomingQueue.Add( frame );
 }
 

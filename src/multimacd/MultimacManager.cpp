@@ -7,6 +7,7 @@
 */
 
 #include "MultimacManager.h"
+#include "TrafficLogger.h"
 
 #ifndef WIN32
 #include <OSCompat.h>
@@ -56,6 +57,8 @@ bool MultimacManager::Run( const PropertyMap& config )
 
 	_configuration = config;
 	_run = true;
+
+	TrafficLogger::Instance().Configure( config.GetIntValue("Traffic Log") != 0, config.GetStringValue("Traffic Log Directory") );
 
 	_subsystemManager.SetDownstreamFrameSink( _macController );
 	_macController.SetUpstreamFrameSink( _subsystemManager );

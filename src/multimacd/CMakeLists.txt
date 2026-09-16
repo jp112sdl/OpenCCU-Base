@@ -4,10 +4,6 @@ file(GLOB_RECURSE MULTIMACD_SOURCES CONFIGURE_DEPENDS
 
 add_custom_command(
   OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated-multimacd-version.h"
-<<<<<<< HEAD
-  COMMAND "${CMAKE_COMMAND}" -E env sh "${CMAKE_CURRENT_SOURCE_DIR}/version.sh" > /tmp/openccu-multimacd-version.txt
-  COMMAND "${CMAKE_COMMAND}" -DINPUT=/tmp/openccu-multimacd-version.txt "-DOUTPUT=${CMAKE_CURRENT_BINARY_DIR}/generated-multimacd-version.h" -DMACRO_NAME=MULTIMACD_VERSION -P "${CMAKE_SOURCE_DIR}/cmake/WriteVersionHeader.cmake"
-=======
   BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/multimacd-version.txt"
   COMMAND "${CMAKE_COMMAND}" -E env sh "${CMAKE_CURRENT_SOURCE_DIR}/version.sh"
     > "${CMAKE_CURRENT_BINARY_DIR}/multimacd-version.txt"
@@ -17,7 +13,6 @@ add_custom_command(
     -DMACRO_NAME=MULTIMACD_VERSION -P "${CMAKE_SOURCE_DIR}/cmake/WriteVersionHeader.cmake"
   DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.sh"
     "${CMAKE_SOURCE_DIR}/cmake/WriteVersionHeader.cmake"
->>>>>>> main
   VERBATIM
 )
 add_custom_target(multimacd-version-header DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/generated-multimacd-version.h")

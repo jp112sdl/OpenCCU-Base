@@ -5,8 +5,9 @@
 #
 # Installiert das Web-Addon und ruft danach den init-Hook des rc.d-Scripts
 # auf. Dieser installiert multimacd/rfd mit TrafficLogger samt Libraries
-# (Originale werden als *.pre-rftrafficlogger gesichert) und ergaenzt die
-# Traffic-Log-Parameter in den Konfigurationsdateien. Derselbe Hook laeuft
+# (Originale werden als *.pre-rftrafficlogger gesichert), ergaenzt die
+# Traffic-Log-Parameter in den Konfigurationsdateien und den Menueintrag in
+# der WebUI-Menuedefinition /www/webui/js/mainmenu/admin.js. Derselbe Hook laeuft
 # bei jedem Boot (S55InitAddons) und stellt die Dateien nach einem
 # Firmware-Update automatisch wieder her. Nach der Installation startet
 # die CCU neu (Standardverhalten des Addon-Installers).

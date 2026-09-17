@@ -3,10 +3,11 @@
 #
 # "init" wird bei jedem Boot von S55InitAddons aufgerufen - also VOR dem
 # Start von multimacd (S60) und rfd (S61) - und stellt sicher, dass die
-# TrafficLogger-Binaries/-Libraries aus dem Addon und die Traffic-Log-
-# Konfiguration im System aktuell sind. Nach einem Firmware-Update (das
-# /bin, /lib und /etc/config_templates ueberschreibt) repariert sich die
-# Installation damit beim naechsten Boot selbst.
+# TrafficLogger-Binaries/-Libraries aus dem Addon, die Traffic-Log-
+# Konfiguration und der WebUI-Menueintrag im System aktuell sind. Nach einem
+# Firmware-Update (das /bin, /lib, /etc/config_templates und /www
+# ueberschreibt) repariert sich die Installation damit beim naechsten Boot
+# selbst.
 
 ADDON_NAME=rftrafficlogger
 ADDON_DIR=/usr/local/addons/${ADDON_NAME}
@@ -17,6 +18,14 @@ BINARIES="multimacd rfd"
 LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDeviceUtils.so libelvutils.so"
 MARKER="# added by rftrafficlogger addon"
 ARCH_DIR=${ADDON_DIR}/$(uname -m)-linux-gnu
+
+# WebUI-Hauptmenue (Rootfs, wird von Firmware-Updates ueberschrieben)
+ADMIN_JS=/www/webui/js/mainmenu/admin.js
+# die Menue-ID ist gleichzeitig der Anzeigetext: translateKey() faellt fuer
+# unbekannte Keys auf den Key selbst zurueck
+MENU_ID="RFTrafficLogger"
+MENU_MARKER="// added by rftrafficlogger addon"
+MENU_ENTRY='  {id: "RFTrafficLogger", align: "right", action: function() { window.open("../addons/rftrafficlogger/index.html", "_blank").focus();  }, submenu: [ ]}, '
 
 # ---------------------------------------------------------------------------
 # "Traffic Log"-Parameter ergaenzen, sofern noch nicht vorhanden.
@@ -71,10 +80,66 @@ unpatch_traffic_log() {
 }
 
 # ---------------------------------------------------------------------------
+# Menueintrag in der WebUI-Hauptmenue-Definition ergaenzen. Die Datei ist
+# JavaScript (Array mit inline-Funktionen), der Eintrag wird vor dem letzten
+# Element "menuNewDevicesPage" eingefuegt und erscheint damit rechts zwischen
+# "Geraete anlernen" und "Hilfe". Die Marker-Kommentarzeile kennzeichnet die
+# Zeile fuer den Uninstall. Idempotent.
+patch_admin_menu() {
+    js="$1"
+    [ -f "${js}" ] || return 0
+    grep -Fq "${MENU_ID}" "${js}" && return 0
+    tmp="${js}.tmp-${ADDON_NAME}"
+    awk -v entry="${MENU_ENTRY}${MENU_MARKER}" '
+        !inserted && /\{[[:space:]]*id:[[:space:]]*"menuNewDevicesPage"/ {
+            print entry
+            inserted = 1
+        }
+        { print }
+        END { if (!inserted) exit 1 }
+    ' "${js}" > "${tmp}" || {
+        rm -f "${tmp}"
+        echo "${ADDON_NAME}: Ankerzeile in ${js} nicht gefunden -" \
+             "Menueintrag nicht ergaenzt"
+        return 0
+    }
+    cat "${tmp}" > "${js}"
+    rm -f "${tmp}"
+    echo "${ADDON_NAME}: Menueintrag in ${js} ergaenzt"
+}
+
+# vom Addon eingefuegte Menuezeile wieder entfernen (nur Zeilen mit unserem
+# Marker, ein manuell hinzugefuegter Eintrag bleibt erhalten)
+unpatch_admin_menu() {
+    js="$1"
+    [ -f "${js}" ] || return 0
+    grep -Fq "${MENU_MARKER}" "${js}" || return 0
+    tmp="${js}.tmp-${ADDON_NAME}"
+    grep -Fv "${MENU_MARKER}" "${js}" > "${tmp}" && cat "${tmp}" > "${js}"
+    rm -f "${tmp}"
+}
+
+# WebUI-Menueintrag abgleichen - unabhaengig von der Architektur, da hier nur
+# die Web-Oberflaeche betroffen ist. /www liegt im read-only Rootfs.
+sync_webui_menu() {
+    [ -f "${ADMIN_JS}" ] || return 0
+    grep -Fq "${MENU_ID}" "${ADMIN_JS}" && return 0
+    mount -o remount,rw / 2>/dev/null
+    # eine von einer aelteren Addon-Version eingefuegte Zeile (andere Menue-ID)
+    # zuerst entfernen, damit der Eintrag nicht doppelt erscheint
+    unpatch_admin_menu "${ADMIN_JS}"
+    patch_admin_menu "${ADMIN_JS}"
+    sync
+    mount -o remount,ro / 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
 # Binaries/Libraries und Konfiguration mit dem System abgleichen.
 # Wird bei der Addon-Installation (update_script) und bei jedem Boot (init)
 # aufgerufen; tut nichts, wenn alles bereits uebereinstimmt.
 sync_system_files() {
+    sync_webui_menu
+
     if [ ! -d "${ARCH_DIR}" ]; then
         echo "${ADDON_NAME}: keine Binaries fuer $(uname -m) im Addon -" \
              "multimacd/rfd mit TrafficLogger muessen manuell installiert werden"
@@ -168,6 +233,7 @@ case "$1" in
     done
     unpatch_traffic_log /etc/config_templates/multimacd.conf
     unpatch_traffic_log /etc/config_templates/rfd.conf
+    unpatch_admin_menu ${ADMIN_JS}
     sync
     mount -o remount,ro / 2>/dev/null
     unpatch_traffic_log /etc/config/rfd.conf

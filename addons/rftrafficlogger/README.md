@@ -79,6 +79,23 @@ Addon-Installers); erst danach sind Binaries und Logging aktiv. Auf
 anderen Architekturen wird nur das Web-Addon installiert und ein Hinweis
 ausgegeben.
 
+Zusätzlich ergänzt der Installer den **Menüeintrag „RFTrafficLogger" im
+WebUI-Hauptmenü** (`/www/webui/js/mainmenu/admin.js`, nur Administrator-Menü):
+Die Zeile wird vor dem letzten Element `menuNewDevicesPage` eingefügt und
+erscheint dadurch — die rechten Einträge sind `float: right` — zwischen
+„Geräte anlernen" und „Hilfe"; ein Klick öffnet die Addon-UI in einem neuen
+Tab. Der Menütext ist die Menü-ID selbst, weil `translateKey()` für unbekannte
+Keys auf den Key zurückfällt. Die Zeile trägt den Marker-Kommentar
+`// added by rftrafficlogger addon`, über den sie beim Uninstall wieder
+entfernt wird (der Rest der Datei bleibt byteweise unverändert) — und über den
+eine Zeile aus einer älteren Addon-Version vor dem Patchen ersetzt wird, damit
+der Eintrag nicht doppelt erscheint. Der Patch ist idempotent (er greift nur,
+wenn die Menü-ID noch nicht vorhanden ist) und wird übersprungen, falls die
+Ankerzeile in einer anderen Firmware fehlt — dann gibt es nur einen Hinweis
+im Log. Da die Menüdefinition im read-only Rootfs liegt, wird `/` für den
+Patch kurz `rw` gemountet; die Menüzeile ist unabhängig von der Architektur
+und wird auch dort gesetzt, wo das Addon keine Binaries mitbringt.
+
 **Selbstheilung nach Firmware-Updates:** Der `init`-Hook des rc.d-Scripts
 läuft bei jedem Boot (via `S55InitAddons`, also **vor** dem Start von
 multimacd/rfd) und vergleicht die System-Binaries/-Libraries mit den im
@@ -86,8 +103,9 @@ Addon hinterlegten Kopien. Weicht etwas ab — z. B. weil ein
 Firmware-Update `/bin`, `/lib` und die Templates überschrieben hat —
 werden die Dateien erneut installiert und die Traffic-Log-Parameter
 wieder ergänzt; noch im selben Bootvorgang starten multimacd/rfd dann
-mit den richtigen Binaries. Stimmt alles überein, fasst der Hook nichts
-an (kein Remount, keine Schreibzugriffe).
+mit den richtigen Binaries. Genauso wird der WebUI-Menüeintrag erneut
+gesetzt, wenn ein Firmware-Update `/www` überschrieben hat. Stimmt alles
+überein, fasst der Hook nichts an (kein Remount, keine Schreibzugriffe).
 
 ### Variante 2: manuell per SSH
 

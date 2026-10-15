@@ -28,6 +28,7 @@ namespace eval rftl {
         alarm_var      "RFTrafficLogger: Funkaufkommen"
         alarm_internal 0
         alarm_new_dev  0
+        known_only     1
         ignore_addrs   ""
         reset_at       0
         debug          0
@@ -42,7 +43,7 @@ namespace eval rftl {
         cooldown_min   0  10080
         interval_sec   30 3600
     }
-    variable flags {enabled alarm_internal alarm_new_dev debug}
+    variable flags {enabled alarm_internal alarm_new_dev known_only debug}
 }
 
 # Text entschaerfen, bevor er an triggerAlarm.tcl uebergeben wird.

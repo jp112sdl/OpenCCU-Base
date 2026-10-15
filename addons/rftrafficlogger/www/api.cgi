@@ -409,6 +409,7 @@ proc cmdAlarmState {params} {
 \"msg\":\"[jsonEscape [dictGetOr $info msg {}]]\"}"
     }
 
+    set knownDevs [dictGetOr $st known_devices ""]
     set lastCheck [dictGetOr $st last_check 0]
     # "frisch" heisst: der Dienst hat innerhalb der letzten drei Zyklen gelaufen
     set fresh [expr {$lastCheck > 0 && ($now - $lastCheck) < [dict get $c interval_sec] * 3}]
@@ -419,8 +420,9 @@ proc cmdAlarmState {params} {
 \"learn_need\":$needSec,\"learn_started\":[jsonNum [dictGetOr $st learn_started 0] %.0f],\
 \"baseline_at\":[jsonNum [dictGetOr $st baseline_at 0] %.0f],\
 \"last_check\":[jsonNum $lastCheck %.0f],\"window_sec\":$winSec,\
-\"recent_sec\":[jsonNum $recentSec %.0f],\"devices\":\[[join $devs ,]\],\
-\"alarms\":\[[join $alist ,]\]}"
+\"recent_sec\":[jsonNum $recentSec %.0f],\
+\"known_only\":[dict get $c known_only],\"known_devices\":[jsonNum $knownDevs %.0f],\
+\"devices\":\[[join $devs ,]\],\"alarms\":\[[join $alist ,]\]}"
 }
 
 # cmd=alarmreset verwirft die gelernten Werte. Der Dienst erkennt den

@@ -202,6 +202,15 @@
           <label><input type="checkbox" id="aEnabled"> aktiv</label>
         </div>
 
+        <label for="aKnownOnly">Umfang</label>
+        <div class="row">
+          <label><input type="checkbox" id="aKnownOnly">
+            nur Ger&auml;te, die auf der CCU angelernt sind</label>
+        </div>
+        <div class="hint">Ohne diese Einschr&auml;nkung wird jede Funkadresse
+          &uuml;berwacht, die im Log auftaucht &ndash; also auch Nachbarger&auml;te
+          und fremde Installationen in Funkreichweite.</div>
+
         <label for="aThreshold">Alarmschwelle</label>
         <div class="row">
           <span class="unit">Anstieg um mehr als</span>
@@ -257,6 +266,9 @@
           <label><input type="checkbox" id="aNewDev">
             auch alarmieren, wenn ein in der Lernphase unbekanntes Ger&auml;t sendet</label>
         </div>
+        <div class="hint">Gemeint sind Ger&auml;te ohne gelernten Vergleichswert &ndash;
+          z.&nbsp;B. neu angelernte oder solche, die w&auml;hrend der Lernphase
+          geschwiegen haben.</div>
 
         <label for="aIgnore">Ignorieren</label>
         <div class="row">
@@ -1046,7 +1058,8 @@ const ALARM_FIELDS = {
   aEnabled: "enabled", aThreshold: "threshold_pct", aWindow: "window_min",
   aMinPackets: "min_packets", aLearnHours: "learn_hours", aCooldown: "cooldown_min",
   aInterval: "interval_sec", aVar: "alarm_var", aInternal: "alarm_internal",
-  aNewDev: "alarm_new_dev", aIgnore: "ignore_addrs", aDebug: "debug"
+  aNewDev: "alarm_new_dev", aKnownOnly: "known_only", aIgnore: "ignore_addrs",
+  aDebug: "debug"
 };
 const ALARM_POLL_MS = 10000;
 const alarmUi = { cfg: null, st: null, sort: "pct", asc: false, loaded: false };
@@ -1147,6 +1160,8 @@ function renderAlarm() {
   const alarmed = st.devices.filter(d => d.alarm_ts).length;
   const cards = [
     [learning ? "Lernphase" : "&Uuml;berwachung", "Zustand"],
+    [st.known_only && st.known_devices !== null
+       ? st.known_devices : "alle", st.known_only ? "Ger&auml;te der CCU" : "Sender"],
     [st.devices.filter(d => d.base !== null).length || st.devices.length, "Sender erfasst"],
     [st.devices.filter(d => d.recent > 0).length, "aktiv im Fenster"],
     [st.alarms.length, "Alarme (7 Tage)"],
@@ -1181,6 +1196,11 @@ function renderAlarm() {
     cls = "warn";
   } else if (!enabled) {
     hint = "Die &Uuml;berwachung ist ausgeschaltet &ndash; es werden keine Daten gesammelt.";
+  } else if (st.known_only && st.known_devices === 0) {
+    hint = "Die Ger&auml;teliste der CCU konnte nicht gelesen werden &ndash; solange " +
+           "&bdquo;nur angelernte Ger&auml;te&ldquo; aktiv ist, wird nichts gez&auml;hlt. " +
+           "Der Dienst versucht es in jedem Zyklus erneut.";
+    cls = "warn";
   } else if (!st.fresh) {
     hint = "Der Dienst l&auml;uft, hat sich aber seit " + fmtAgo(st.now - st.last_check) +
            " nicht gemeldet.";
@@ -1269,10 +1289,14 @@ function renderAlarmDevs(learning) {
     else { alarmUi.sort = key; alarmUi.asc = key === "name" || key === "addr"; }
     renderAlarm();
   });
+  const scope = st.known_only
+    ? " &Uuml;berwacht werden nur die auf der CCU angelernten Ger&auml;te" +
+      (st.known_devices !== null ? ` (${st.known_devices})` : "") + "."
+    : " &Uuml;berwacht wird jede Funkadresse im Log, auch unbekannte.";
   $("alarmDevsInfo").innerHTML = st.devices.length
     ? `Angaben in Paketen/Stunde. ${st.devices.length} Sender erfasst` +
-      (st.devices.length > 60 ? ", die 60 obersten angezeigt." : ".")
-    : "Noch keine Daten &ndash; der Dienst sammelt ab dem ersten Telegramm.";
+      (st.devices.length > 60 ? ", die 60 obersten angezeigt." : ".") + scope
+    : "Noch keine Daten &ndash; der Dienst sammelt ab dem ersten Telegramm." + scope;
 }
 
 function renderAlarmLog() {

@@ -48,7 +48,7 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
     Funkaufkommen-Überwachung lesen bzw. schreiben; die Antwort enthält immer
     die tatsächlich gespeicherten (ggf. auf gültige Bereiche begrenzten) Werte
   - `?cmd=alarmstate` — Lernfortschritt, Baseline und aktuelle Rate je Sender,
-    ausgelöste Alarme
+    ausgelöste Alarme, Anzahl der bekannten Geräte
   - `?cmd=alarmreset` — gelernte Werte verwerfen, Lernphase neu beginnen
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
@@ -96,11 +96,24 @@ bei HmIP steht er an fester Position im Rohframe (Byte 4–6) — genau wie die
 Telegrammtabelle ihn auflöst. Gezählt werden RX **und** TX, der Absender einer
 TX-Zeile ist also die Zentrale selbst.
 
+Standardmäßig werden **nur Geräte überwacht, die auf der CCU angelernt sind**
+(`known_only`). Die Positivliste ist dieselbe Geräteliste, aus der auch die
+Namen für den Alarmtext kommen: ein ReGa-Script liest je Gerät die
+`RF_ADDRESS` aus den `DEVDESC`-Metadaten (für BidCos **und** HmIP), die Liste
+wird stündlich erneuert. Ohne diese Einschränkung zählt der Dienst jede
+Funkadresse im Log mit — also auch Nachbargeräte und fremde Installationen in
+Funkreichweite, die man in der Regel nicht überwachen will. Ist die Liste
+nicht lesbar (z. B. ReGa direkt nach dem Boot noch nicht bereit), wird bei
+aktiver Einschränkung **nichts** gezählt; der Dienst versucht es in jedem
+Zyklus erneut, schreibt eine Warnung ins Syslog (höchstens stündlich) und die
+Weboberfläche weist darauf hin.
+
 ### Einstellungen
 
 | Einstellung | Vorgabe | Bedeutung |
 |---|---|---|
 | Überwachung aktiv | aus | Schaltet die Datensammlung und die Alarme ein |
+| Umfang | nur angelernte Geräte | Beschränkt die Überwachung auf Geräte, die die CCU kennt; abgeschaltet wird jede Funkadresse im Log überwacht |
 | Alarmschwelle | 100 % | Anstieg gegenüber der Baseline, ab dem alarmiert wird |
 | Auswertefenster | 60 min | Zeitraum, dessen Aufkommen verglichen wird |
 | Mindestmenge | 20 Pakete | Darunter kein Alarm — schützt vor Fehlalarmen bei Geräten, die normalerweise kaum senden |
@@ -109,7 +122,7 @@ TX-Zeile ist also die Zentrale selbst.
 | Prüfintervall | 300 s | Abstand zweier Prüfungen |
 | Systemvariable | `RFTrafficLogger: Funkaufkommen` | Name der Alarmvariablen; das betroffene Gerät steht im Meldungstext |
 | intern | aus | Legt die Variable als interne Systemvariable an |
-| Neue Sender | aus | Alarmiert auch bei Geräten, die in der Lernphase nicht vorkamen |
+| Neue Sender | aus | Alarmiert auch bei Geräten ohne gelernten Vergleichswert (neu angelernt oder in der Lernphase stumm) |
 | Ignorieren | — | Funkadressen, die gar nicht betrachtet werden (kommagetrennt) |
 | Debug | aus | Zusätzliche Meldungen ins Syslog (`logger -t rftrafficwatch`) |
 

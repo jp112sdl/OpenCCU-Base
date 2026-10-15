@@ -43,6 +43,17 @@ proc logdbg {msg} {
     if {[dict exists $cfg debug] && [dict get $cfg debug]} { logmsg debug $msg }
 }
 
+# dieselbe Warnung hoechstens einmal pro Stunde ins Syslog, damit ein
+# Dauerzustand das Log nicht im Pruefintervall vollschreibt
+set warnAt {}
+proc warnOnce {msg} {
+    global warnAt
+    set now [clock seconds]
+    if {[dict exists $warnAt $msg] && $now - [dict get $warnAt $msg] < 3600} { return }
+    dict set warnAt $msg $now
+    logmsg warning $msg
+}
+
 # "Traffic Log Directory" aus einer multimacd-/rfd-Konfiguration lesen
 proc readTrafficLogDir {conffile} {
     set dir "/var/log"
@@ -58,22 +69,34 @@ proc readTrafficLogDir {conffile} {
 }
 
 # ---------------------------------------------------------------------------
-# Geraetenamen aus der ReGa (nur fuer den Alarmtext). Die Namen bleiben in
-# ihrer ISO-8859-1-Kodierung, weil triggerAlarm.tcl/ReGa damit arbeiten.
-set nameCache {}
-set nameCacheAt 0
+# Geraeteliste der CCU (Funkadresse -> Name) aus der ReGa. Sie hat zwei
+# Aufgaben: der Name landet im Alarmtext, und bei known_only entscheidet
+# sie, welche Absender ueberhaupt gezaehlt werden - sonst wuerde auch
+# fremder Funkverkehr (Nachbargeraete, andere Installationen) ueberwacht.
+# Die Namen bleiben in ihrer ISO-8859-1-Kodierung, weil
+# triggerAlarm.tcl/ReGa damit arbeiten.
+set devMap {}
+set devMapAt 0
+set DEVMAP_TTL 3600
 
+proc deviceKnown {addr} {
+    global devMap
+    return [dict exists $devMap $addr]
+}
 proc deviceName {addr} {
-    global nameCache nameCacheAt
-    if {[clock seconds] - $nameCacheAt > 3600} { refreshNames }
-    if {[dict exists $nameCache $addr]} { return [dict get $nameCache $addr] }
+    global devMap
+    if {[dict exists $devMap $addr]} { return [dict get $devMap $addr] }
     return ""
 }
 
-proc refreshNames {} {
-    global nameCache nameCacheAt
-    set nameCacheAt [clock seconds]
-    if {[catch {load tclrega.so}]} { return }
+# Geraeteliste bei Bedarf erneuern; liefert 1, wenn eine brauchbare Liste
+# vorliegt. Nur ein erfolgreicher Durchlauf setzt den Zeitstempel - ist die
+# ReGa noch nicht bereit (direkt nach dem Boot), wird es im naechsten
+# Zyklus erneut versucht statt eine Stunde lang mit leerer Liste zu laufen.
+proc refreshDevMap {} {
+    global devMap devMapAt DEVMAP_TTL
+    if {[dict size $devMap] && [clock seconds] - $devMapAt < $DEVMAP_TTL} { return 1 }
+    if {[catch {load tclrega.so}]} { return 0 }
     set names {}
     if {[catch {rega_script {
         string sDevId;
@@ -89,9 +112,9 @@ proc refreshNames {} {
             if ((rf != "") && (rf != "0")) { WriteLine(rf # "\t" # d.Name()); }
           }
         }
-    }} regaResult]} { return }
+    }} regaResult]} { return 0 }
     array set res $regaResult
-    if {![info exists res(STDOUT)]} { return }
+    if {![info exists res(STDOUT)]} { return 0 }
     foreach line [split $res(STDOUT) "\n"] {
         set parts [split $line "\t"]
         if {[llength $parts] < 2} { continue }
@@ -100,9 +123,16 @@ proc refreshNames {} {
         if {![string is integer -strict $rf]} { continue }
         set hex [format %06X $rf]
         set name [rftl::sanitize [string trim $name]]
-        if {$name ne "" && ![dict exists $names $hex]} { dict set names $hex $name }
+        # mehrere Geraete koennen dieselbe Funkadresse melden (z.B. HmIP-RCV-1
+        # und RPI-RF-MOD fuer die Zentrale) - der erste Eintrag gewinnt. Die
+        # Adresse wird auch ohne Namen aufgenommen, fuer den Filter zaehlt
+        # nur, dass das Geraet auf der CCU existiert.
+        if {![dict exists $names $hex]} { dict set names $hex $name }
     }
-    set nameCache $names
+    if {[dict size $names] == 0} { return 0 }
+    set devMap $names
+    set devMapAt [clock seconds]
+    return 1
 }
 
 # "Name (ADRESSE)" bzw. nur die Adresse, wenn das Geraet unbekannt ist
@@ -217,8 +247,10 @@ proc bucketOf {datestr timestr} {
     return [expr {($base + $sec) / $BUCKET_SEC}]
 }
 
-# zaehlt die Telegramme je Absender und Zeitbucket auf
-proc parseInto {text countsVar bucketsVar ignore learning} {
+# zaehlt die Telegramme je Absender und Zeitbucket auf.
+# knownOnly=1 beschraenkt die Zaehlung auf die Adressen in known (die
+# Geraeteliste der CCU) - fremder Funkverkehr wird dann ignoriert.
+proc parseInto {text countsVar bucketsVar ignore learning knownOnly known} {
     upvar 1 $countsVar counts
     upvar 1 $bucketsVar buckets
     set n 0
@@ -237,6 +269,7 @@ proc parseInto {text countsVar bucketsVar ignore learning} {
         set addr [string toupper $addr]
         if {$addr eq "" || $addr eq "000000"} { continue }
         if {[lsearch -exact $ignore $addr] >= 0} { continue }
+        if {$knownOnly && ![dict exists $known $addr]} { continue }
         set b [bucketOf $d $t]
         if {$b < 0} { continue }
         # die Lernzaehler laufen nur waehrend der Lernphase weiter, das
@@ -359,6 +392,12 @@ proc main {} {
             # keine veralteten Raten in der Oberflaeche stehen lassen
             dict set st recent {}
             dict set st recent_sec 0
+            # Geraeteanzahl trotzdem fuehren (die Liste ist eine Stunde
+            # gueltig, kostet also kaum ReGa-Aufrufe) - so sieht man schon
+            # vor dem Einschalten, wie viele Geraete ueberwacht wuerden
+            refreshDevMap
+            dict set st known_devices [dict size $::devMap]
+            dict set st known_only [dict get $cfg known_only]
         }
         rftl::writeState $st
 
@@ -374,11 +413,26 @@ proc cycle {cfg st bucketsVar runStart now} {
     set counts [dict get $st counts]
     set learning [expr {[dict get $st phase] eq "learning"}]
 
+    # Geraeteliste der CCU - Namen fuer den Alarmtext und, bei known_only,
+    # die Positivliste der zu ueberwachenden Absender
+    set knownOnly [dict get $cfg known_only]
+    set haveMap [refreshDevMap]
+    set known $::devMap
+    dict set st known_devices [dict size $known]
+    dict set st known_only $knownOnly
+    if {$knownOnly && !$haveMap} {
+        # ohne Geraeteliste wuerde nichts gezaehlt - das muss sichtbar sein
+        warnOnce "Geraeteliste der CCU nicht verfuegbar - es wird nichts\
+                  gezaehlt, solange \"nur bekannte Geraete\" aktiv ist"
+    }
+
     # neue Logzeilen beider Quellen einlesen und verbuchen
     set lines 0
     foreach {k conf prefix} [list mmd $MMDCONF $MMDPREFIX rfd $RFDCONF $RFDPREFIX] {
         set text [readNewLines $k [readTrafficLogDir $conf] $prefix st]
-        if {$text ne ""} { incr lines [parseInto $text counts buckets $ignore $learning] }
+        if {$text ne ""} {
+            incr lines [parseInto $text counts buckets $ignore $learning $knownOnly $known]
+        }
     }
     dict set st counts $counts
 

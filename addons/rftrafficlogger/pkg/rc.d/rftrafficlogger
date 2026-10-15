@@ -11,6 +11,14 @@
 
 ADDON_NAME=rftrafficlogger
 ADDON_DIR=/usr/local/addons/${ADDON_NAME}
+
+# Funkaufkommen-Ueberwachung: Hintergrunddienst, der die Traffic-Logs
+# mitliest und bei auffaellig viel Funkverkehr eines Geraetes ueber
+# /bin/triggerAlarm.tcl Alarm ausloest. Laeuft unabhaengig davon, ob die
+# Ueberwachung aktiviert ist - abgeschaltet haelt er nur die Lesezeiger
+# nach, damit das Einschalten ohne Neustart wirkt.
+WATCH_BIN=${ADDON_DIR}/bin/rftrafficwatch.tcl
+WATCH_PID=/var/run/rftrafficwatch.pid
 WWW_LINK=/usr/local/etc/config/addons/www/${ADDON_NAME}
 RCD_FILE=/usr/local/etc/config/rc.d/${ADDON_NAME}
 
@@ -197,26 +205,54 @@ sync_system_files() {
     patch_traffic_log /etc/config/rfd.conf
 }
 
+start_watch() {
+    [ -f "${WATCH_BIN}" ] || return 0
+    # laeuft er schon? (z.B. zweiter start-Aufruf)
+    if [ -f "${WATCH_PID}" ] && [ -d "/proc/$(cat "${WATCH_PID}" 2>/dev/null)" ]; then
+        return 0
+    fi
+    start-stop-daemon -S -q -b -m -p "${WATCH_PID}" --exec /bin/tclsh -- "${WATCH_BIN}"
+    echo "${ADDON_NAME}: Funkaufkommen-Ueberwachung gestartet"
+}
+
+stop_watch() {
+    [ -f "${WATCH_PID}" ] || return 0
+    start-stop-daemon -K -q -p "${WATCH_PID}"
+    rm -f "${WATCH_PID}"
+}
+
 case "$1" in
   init)
     # Boot-Hook (S55InitAddons, laeuft vor S60multimacd/S61rfd): nach einem
     # Firmware-Update Binaries/Libraries/Templates wiederherstellen
     sync_system_files
     ;;
-  ""|start|stop|restart)
-    # kein eigener Dienst - die Web-UI ist rein passiv (CGI + statische Seite)
+  ""|start)
+    # die Web-UI selbst ist passiv (CGI + statische Seite); gestartet wird
+    # nur die Funkaufkommen-Ueberwachung
+    start_watch
+    ;;
+  stop)
+    stop_watch
+    ;;
+  restart)
+    stop_watch
+    start_watch
     ;;
   info)
     echo "Info: <b>RFTrafficLogger</b><br>"
     echo "Info: Logging und grafische Auswertung aller BidCos-/HmIP-Funktelegramme direkt auf der CCU,<br>"
     echo "Info: inkl. Telegrammen ueber Funk-LAN-Gateways. Bringt multimacd/rfd mit TrafficLogger mit,<br>"
-    echo "Info: aktiviert 'Traffic Log = 1' automatisch und repariert sich nach Firmware-Updates beim Boot selbst."
+    echo "Info: aktiviert 'Traffic Log = 1' automatisch und repariert sich nach Firmware-Updates beim Boot selbst.<br>"
+    echo "Info: Optional ueberwacht es das Funkaufkommen je Geraet und loest bei ungewoehnlich vielen"
+    echo "Info: Telegrammen einen Alarm in einer Systemvariablen aus (Reiter 'Alarm')."
     echo "Name: RFTrafficLogger"
     echo "Version: $(cat ${ADDON_DIR}/VERSION 2>/dev/null || echo unbekannt)"
     echo "Operations: uninstall"
     echo "Config-Url: /addons/${ADDON_NAME}/"
     ;;
   uninstall)
+    stop_watch
     # gesicherte Original-Binaries/-Libraries wiederherstellen
     mount -o remount,rw / 2>/dev/null
     for f in ${BINARIES}; do

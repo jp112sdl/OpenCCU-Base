@@ -20,9 +20,14 @@ LIBS="libhsscomm.so libxmlparser.so libXmlRpc.so libUnifiedLanComm.so libLanDevi
 cp pkg/update_script "${STAGE}/"
 mkdir -p "${STAGE}/rc.d"
 cp pkg/rc.d/rftrafficlogger "${STAGE}/rc.d/"
-mkdir -p "${STAGE}/rftrafficlogger/www"
+mkdir -p "${STAGE}/rftrafficlogger/www" "${STAGE}/rftrafficlogger/bin" \
+         "${STAGE}/rftrafficlogger/lib"
 cp VERSION "${STAGE}/rftrafficlogger/"
 cp www/index.html www/api.cgi "${STAGE}/rftrafficlogger/www/"
+# Funkaufkommen-Ueberwachung: Hintergrunddienst + gemeinsame Bibliothek
+# (api.cgi und der Dienst teilen sich Konfiguration und Zustandsformat)
+cp bin/rftrafficwatch.tcl "${STAGE}/rftrafficlogger/bin/"
+cp lib/rftl_alarm.tcl "${STAGE}/rftrafficlogger/lib/"
 
 mkdir -p "${STAGE}/rftrafficlogger/${ARCH}"
 cp "${BINDIR}/multimacd" "${BINDIR}/rfd" "${STAGE}/rftrafficlogger/${ARCH}/"
@@ -32,6 +37,7 @@ done
 
 chmod 755 "${STAGE}/update_script" "${STAGE}/rc.d/rftrafficlogger" \
           "${STAGE}/rftrafficlogger/www/api.cgi" \
+          "${STAGE}/rftrafficlogger/bin/rftrafficwatch.tcl" \
           "${STAGE}/rftrafficlogger/${ARCH}"/*
 
 tar -czf "${OUT}" -C "${STAGE}" \

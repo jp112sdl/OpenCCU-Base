@@ -3,8 +3,9 @@
 # Wird vom WebUI-Addon-Installer nach dem Entpacken des tar.gz aufgerufen.
 # $1 = Plattform (CCU2, CCU3, HM-RASPBERRYMATIC, ...)
 #
-# Installiert das Web-Addon und ruft danach den init-Hook des rc.d-Scripts
-# auf. Dieser installiert multimacd/rfd mit TrafficLogger samt Libraries
+# Installiert das Web-Addon samt Funkaufkommen-Ueberwachung und ruft danach
+# den init-Hook des rc.d-Scripts auf. Dieser installiert multimacd/rfd mit
+# TrafficLogger samt Libraries
 # (Originale werden als *.pre-rftrafficlogger gesichert), ergaenzt die
 # Traffic-Log-Parameter in den Konfigurationsdateien und den Menueintrag in
 # der WebUI-Menuedefinition /www/webui/js/mainmenu/admin.js. Derselbe Hook laeuft
@@ -20,12 +21,22 @@ RCD_DIR=/usr/local/etc/config/rc.d
 # /usr/local beschreibbar mounten (aeltere CCU-Firmware)
 mount | grep -q "/usr/local" || mount /usr/local
 
-# Addon-Dateien installieren
+# einen noch laufenden Ueberwachungsdienst einer frueheren Version beenden,
+# bevor seine Dateien ersetzt werden
+[ -x ${RCD_DIR}/${ADDON_NAME} ] && /bin/sh ${RCD_DIR}/${ADDON_NAME} stop
+
+# Addon-Dateien installieren. Bereits vorhandene alarm.conf/alarm.state
+# bleiben erhalten - gelernte Werte ueberleben ein Addon-Update.
 mkdir -p ${ADDONS_DIR}/${ADDON_NAME}
 cp -af ${ADDON_NAME}/* ${ADDONS_DIR}/${ADDON_NAME}/
 chmod 755 ${ADDONS_DIR}/${ADDON_NAME} ${ADDONS_DIR}/${ADDON_NAME}/www
 chmod 755 ${ADDONS_DIR}/${ADDON_NAME}/www/api.cgi
 chmod 644 ${ADDONS_DIR}/${ADDON_NAME}/www/index.html
+[ -d ${ADDONS_DIR}/${ADDON_NAME}/bin ] && \
+    chmod 755 ${ADDONS_DIR}/${ADDON_NAME}/bin ${ADDONS_DIR}/${ADDON_NAME}/bin/*
+[ -d ${ADDONS_DIR}/${ADDON_NAME}/lib ] && \
+    chmod 755 ${ADDONS_DIR}/${ADDON_NAME}/lib && \
+    chmod 644 ${ADDONS_DIR}/${ADDON_NAME}/lib/*
 
 # Web-Verzeichnis verlinken -> http://<ccu>/addons/rftrafficlogger/
 mkdir -p ${WWW_DIR}
@@ -38,6 +49,10 @@ chmod 755 ${RCD_DIR}/${ADDON_NAME}
 
 # Binaries/Libraries installieren und Traffic-Log-Konfiguration ergaenzen
 /bin/sh ${RCD_DIR}/${ADDON_NAME} init
+
+# Ueberwachungsdienst starten (nach einem Reboot uebernimmt das
+# S98StartAddons; so laeuft er auch ohne Neustart sofort)
+/bin/sh ${RCD_DIR}/${ADDON_NAME} start
 
 sync
 exit 0

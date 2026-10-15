@@ -12,11 +12,15 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
                 │  (Sicht des lokalen Funkmoduls)          │  (nur nicht-lokale Interfaces,
                 │                                          │   mit IFACE=<Gateway-Serial>)
                 └────────────────┬─────────────────────────┘
-                                 ▼
-                    www/api.cgi (tclsh, lighttpd)
-                                 │  Offset-Tailing je Quelle, Geräteliste (ReGa)
-                                 ▼
-                    www/index.html (Single-Page-UI, kein externes CDN)
+                   ┌─────────────┴──────────────┐
+                   ▼                            ▼
+      www/api.cgi (tclsh, lighttpd)   bin/rftrafficwatch.tcl (Daemon)
+                   │  Offset-Tailing,           │  Lernphase → Baseline →
+                   │  Geräteliste (ReGa)        │  Überwachung
+                   │                            ▼
+                   │                  /bin/triggerAlarm.tcl → Alarm-Systemvariable
+                   ▼
+      www/index.html (Single-Page-UI, kein externes CDN)
 ```
 
 - **Datenquellen** sind die `TrafficLogger` in `src/multimacd` (lokales
@@ -40,9 +44,94 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
     Name und Typ via ReGa aus den `DEVDESC`-Metadaten (enthalten `RF_ADDRESS`
     auch für HmIP-Geräte; rfd auf Port 2001 kennt nur BidCos), dazu
     `hmip_central`; Cache `/tmp/rftrafficlogger.devlist.json` (600 s)
+  - `?cmd=alarmcfg[&set=1&<key>=<wert>…]` — Konfiguration der
+    Funkaufkommen-Überwachung lesen bzw. schreiben; die Antwort enthält immer
+    die tatsächlich gespeicherten (ggf. auf gültige Bereiche begrenzten) Werte
+  - `?cmd=alarmstate` — Lernfortschritt, Baseline und aktuelle Rate je Sender,
+    ausgelöste Alarme
+  - `?cmd=alarmreset` — gelernte Werte verwerfen, Lernphase neu beginnen
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
-  Geräte-Statistik mit DutyCycle-Schätzung), CSV-Export.
+  Geräte-Statistik mit DutyCycle-Schätzung), Alarm-Tab
+  (Funkaufkommen-Überwachung), CSV-Export.
+- **`bin/rftrafficwatch.tcl`** — Hintergrunddienst der
+  Funkaufkommen-Überwachung (siehe unten).
+- **`lib/rftl_alarm.tcl`** — gemeinsame Basis von `api.cgi` und Dienst:
+  Vorgaben, Wertebereiche und Dateiformate stehen nur an einer Stelle.
+
+## Funkaufkommen-Überwachung (Reiter „Alarm")
+
+Erkennt Geräte, die deutlich mehr senden als üblich, und löst dann einen Alarm
+in einer Systemvariablen der ReGa aus — über `/bin/triggerAlarm.tcl`, also
+dieselbe Mechanik, die auch `monit` für seine Watchdog-Meldungen nutzt. Die
+Variable wird beim ersten Alarm automatisch als Alarmvariable angelegt.
+
+Die Erkennung läuft als **Hintergrunddienst** (`bin/rftrafficwatch.tcl`), nicht
+im Browser: sie arbeitet also auch bei geschlossener Weboberfläche. Gestartet
+und gestoppt wird er vom rc.d-Script (`start`/`stop`), beim Boot über
+`S98StartAddons` — und damit **nach** multimacd/rfd, sodass die Logs schon
+geschrieben werden.
+
+### Ablauf
+
+1. **Lernphase** (Vorgabe 48 h): Der Dienst liest die Traffic-Logs mit und
+   zählt je Absender die Telegramme. Angerechnet wird nur Zeit, in der er
+   tatsächlich gelaufen ist (gedeckelt auf das Dreifache des Prüfintervalls) —
+   eine Ausfallzeit verwässert die gelernten Werte also nicht. Beim Start und
+   nach einem Reset wird an das aktuelle Ende der Logdateien gesprungen: schon
+   geschriebene Telegramme nachträglich einzulesen würde Pakete zählen, für die
+   keine Messdauer läuft, und die gelernte Rate massiv zu hoch ansetzen.
+2. **Baseline**: Nach Ablauf der Lernphase wird je Absender die übliche Rate in
+   **Paketen/Stunde** berechnet (flacher Mittelwert über die gesamte Lernphase)
+   und eingefroren — bis zum nächsten Reset. Danach laufen die Lernzähler nicht
+   weiter, „gelernt aus N Paketen" bleibt also eine ehrliche Angabe.
+3. **Überwachung**: In jedem Prüfintervall wird das Aufkommen im
+   Auswertefenster (Vorgabe 60 min) mit der Baseline verglichen. Liegt es um
+   mehr als die Alarmschwelle darüber (Vorgabe 100 %, also mehr als das
+   Doppelte), gibt es Alarm. Nach einem Neustart des Dienstes wird erst
+   alarmiert, wenn das Auswertefenster einmal vollständig gefüllt ist.
+
+Erfasst werden **BidCos und HmIP**: bei BidCos ist der Absender das `FROM`-Feld,
+bei HmIP steht er an fester Position im Rohframe (Byte 4–6) — genau wie die
+Telegrammtabelle ihn auflöst. Gezählt werden RX **und** TX, der Absender einer
+TX-Zeile ist also die Zentrale selbst.
+
+### Einstellungen
+
+| Einstellung | Vorgabe | Bedeutung |
+|---|---|---|
+| Überwachung aktiv | aus | Schaltet die Datensammlung und die Alarme ein |
+| Alarmschwelle | 100 % | Anstieg gegenüber der Baseline, ab dem alarmiert wird |
+| Auswertefenster | 60 min | Zeitraum, dessen Aufkommen verglichen wird |
+| Mindestmenge | 20 Pakete | Darunter kein Alarm — schützt vor Fehlalarmen bei Geräten, die normalerweise kaum senden |
+| Lernphase | 48 h | Dauer der Datensammlung vor der ersten Überwachung |
+| Sperrzeit | 60 min | Mindestabstand zwischen zwei Alarmen desselben Geräts |
+| Prüfintervall | 300 s | Abstand zweier Prüfungen |
+| Systemvariable | `RFTrafficLogger: Funkaufkommen` | Name der Alarmvariablen; das betroffene Gerät steht im Meldungstext |
+| intern | aus | Legt die Variable als interne Systemvariable an |
+| Neue Sender | aus | Alarmiert auch bei Geräten, die in der Lernphase nicht vorkamen |
+| Ignorieren | — | Funkadressen, die gar nicht betrachtet werden (kommagetrennt) |
+| Debug | aus | Zusätzliche Meldungen ins Syslog (`logger -t rftrafficwatch`) |
+
+Der Dienst liest die Konfiguration in **jedem Zyklus neu** — Änderungen greifen
+ohne Neustart. Alle Werte werden serverseitig auf gültige Bereiche begrenzt
+(`lib/rftl_alarm.tcl`); der Variablenname wird zusätzlich von
+Anführungszeichen, Backslashes und Steuerzeichen befreit, weil
+`triggerAlarm.tcl` ihn in ein ReGa-Script einsetzt.
+
+Mit **„Lernphase zurücksetzen"** werden Baseline, Zähler und Alarmhistorie
+verworfen und die Sammlung beginnt von vorn.
+
+### Dateien
+
+Beide liegen unter `/usr/local/addons/rftrafficlogger/`, also auf der
+persistenten Partition — der Lernfortschritt übersteht Reboots, Firmware- und
+Addon-Updates (das `update_script` lässt sie unangetastet):
+
+- `alarm.conf` — Konfiguration als `key=value`, von der Weboberfläche
+  geschrieben
+- `alarm.state` — Phase, erfasste Zeit, Zähler, Baseline, Datei-Lesezeiger und
+  Alarmhistorie (Tcl-Dict, vom Dienst geschrieben)
 
 ## Installation auf der CCU
 
@@ -59,8 +148,9 @@ Das Paket über die WebUI installieren: *Einstellungen → Systemsteuerung →
 Zusatzsoftware → Datei auswählen → Installieren*. Das Addon erscheint danach
 in der Zusatzsoftware-Liste (mit Uninstall und Link zur UI).
 Paketinhalt: `update_script` (Installer), `rc.d/rftrafficlogger`
-(WebUI-Integration: info/uninstall), `rftrafficlogger/` (Payload inkl.
-Binaries/Libraries für x86_64).
+(WebUI-Integration: info/uninstall, Boot-Hook: init, Dienst: start/stop),
+`rftrafficlogger/` (Payload inkl. Binaries/Libraries für x86_64 sowie
+`bin/`+`lib/` der Funkaufkommen-Überwachung).
 
 Der Installer bringt **multimacd und rfd mit TrafficLogger samt der
 benötigten Libraries mit** (derzeit nur x86_64, z. B. OVA-CCU) und
@@ -117,10 +207,27 @@ ssh $CCU 'chmod 755 /usr/local/addons/rftrafficlogger /usr/local/addons/rftraffi
           ln -sfn /usr/local/addons/rftrafficlogger/www /usr/local/etc/config/addons/www/rftrafficlogger'
 ```
 
+Für die Funkaufkommen-Überwachung zusätzlich:
+
+```sh
+ssh $CCU 'mkdir -p /usr/local/addons/rftrafficlogger/bin /usr/local/addons/rftrafficlogger/lib'
+scp bin/rftrafficwatch.tcl $CCU:/usr/local/addons/rftrafficlogger/bin/
+scp lib/rftl_alarm.tcl     $CCU:/usr/local/addons/rftrafficlogger/lib/
+scp pkg/rc.d/rftrafficlogger $CCU:/usr/local/etc/config/rc.d/
+ssh $CCU 'chmod 755 /usr/local/addons/rftrafficlogger/bin/rftrafficwatch.tcl \
+                    /usr/local/etc/config/rc.d/rftrafficlogger
+          /usr/local/etc/config/rc.d/rftrafficlogger start'
+```
+
 Aufruf: `http://<ccu>/addons/rftrafficlogger/`
 
 ## Hinweise
 
+- Die Funkaufkommen-Überwachung braucht die Logdateien nur im laufenden
+  Betrieb: ihre Zähler und die Baseline liegen in `alarm.state` auf der
+  persistenten Partition und überleben einen Reboot, auch wenn `/var/log`
+  dabei geleert wird. Nach einem Reboot muss sich lediglich das
+  Auswertefenster neu füllen.
 - `/var/log` ist tmpfs: Logs sind nach einem Reboot weg (~5–10 MB/Tag).
   Optionale Bereinigung alter Tageslogs per Cron:
   `10 0 * * * find /var/log -name "multimacd-traffic-*.log" -mtime +7 -delete`

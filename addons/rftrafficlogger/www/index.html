@@ -26,10 +26,11 @@
   .dot.off { background: var(--warn); }
   .dot.paused { background: var(--tx); }
   .spacer { flex: 1; }
-  select, input[type=text], button {
+  select, input[type=text], input[type=number], button {
     background: var(--bg3); color: var(--fg); border: 1px solid var(--border);
     border-radius: 4px; padding: 4px 8px; font: inherit; }
   input[type=text] { width: 190px; }
+  input[type=number] { width: 90px; }
   button { cursor: pointer; }
   button:hover { border-color: var(--accent); }
   button.active { background: var(--accent); color: #10131a; border-color: var(--accent); font-weight: 600; }
@@ -79,6 +80,29 @@
   .bar-rx { background: var(--rx); } .bar-tx { background: var(--tx); }
   .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px; color: var(--fg-dim); }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  /* Alarm */
+  .form { display: grid; grid-template-columns: max-content auto; gap: 9px 14px; align-items: center; }
+  .form > label { color: var(--fg-dim); }
+  .form .hint { grid-column: 1 / -1; color: var(--fg-dim); font-size: 11.5px;
+    margin: -4px 0 4px; }
+  .form .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .form .unit { color: var(--fg-dim); font-size: 11.5px; }
+  .form .actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center;
+    margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .form input[type=text].wide { width: 280px; }
+  .progress { background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden;
+    min-width: 160px; flex: 1; max-width: 420px; }
+  .progress > div { background: var(--accent); height: 100%; transition: width .4s; }
+  .badge { display: inline-block; border-radius: 3px; padding: 1px 7px; font-size: 11px;
+    font-weight: 600; }
+  .badge.ok { background: #1e3a28; color: var(--rx); }
+  .badge.warn { background: #3d2320; color: var(--warn); }
+  .badge.learn { background: #1f3350; color: var(--accent); }
+  .badge.idle { background: var(--bg3); color: var(--fg-dim); }
+  .pct-up { color: var(--warn); font-weight: 600; }
+  .pct-dn { color: var(--rx); }
+  .alarmrow td { background: #2b1d1d; }
+  .saved { color: var(--rx); font-size: 11.5px; }
   #tooltip { position: fixed; pointer-events: none; background: #0d0f13ee; border: 1px solid var(--border);
     border-radius: 4px; padding: 6px 9px; font-size: 11.5px; display: none; z-index: 10; white-space: pre; }
 </style>
@@ -90,6 +114,7 @@
   <div class="tabs">
     <button id="tabTelegrams" class="active">Telegramme</button>
     <button id="tabStats">Analyse</button>
+    <button id="tabAlarm">Alarm</button>
   </div>
   <span class="status" id="status"><span class="dot off"></span>verbinde&hellip;</span>
   <div class="spacer"></div>
@@ -152,6 +177,118 @@
       <h2>Telegramme pro Ger&auml;t</h2>
       <table class="devtable" id="devStats"></table>
     </div>
+  </div>
+</main>
+
+<main id="viewAlarm" style="display:none">
+  <div class="stats-wrap">
+
+    <div class="panel">
+      <h2>Funkaufkommen-&Uuml;berwachung</h2>
+      <div class="cards" id="alarmCards"></div>
+      <div class="row" id="alarmProgressRow"
+           style="display:flex;align-items:center;gap:10px;margin-top:12px">
+        <div class="progress"><div id="alarmProgress" style="width:0"></div></div>
+        <span class="status" id="alarmProgressText"></span>
+      </div>
+      <div class="status" id="alarmHint" style="margin-top:10px"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Einstellungen</h2>
+      <div class="form">
+        <label for="aEnabled">&Uuml;berwachung</label>
+        <div class="row">
+          <label><input type="checkbox" id="aEnabled"> aktiv</label>
+        </div>
+
+        <label for="aThreshold">Alarmschwelle</label>
+        <div class="row">
+          <span class="unit">Anstieg um mehr als</span>
+          <input type="number" id="aThreshold" min="1" max="100000" step="10">
+          <span class="unit">% gegen&uuml;ber dem gelernten Wert</span>
+        </div>
+        <div class="hint">100 % bedeutet: Alarm, sobald ein Ger&auml;t mehr als doppelt
+          so viel sendet wie &uuml;blich.</div>
+
+        <label for="aWindow">Auswertefenster</label>
+        <div class="row">
+          <input type="number" id="aWindow" min="1" max="1440">
+          <span class="unit">Minuten &ndash; so lang wird zur&uuml;ckgeschaut</span>
+        </div>
+
+        <label for="aMinPackets">Mindestmenge</label>
+        <div class="row">
+          <input type="number" id="aMinPackets" min="1" max="1000000">
+          <span class="unit">Pakete im Fenster, sonst kein Alarm</span>
+        </div>
+        <div class="hint">Verhindert Fehlalarme bei Ger&auml;ten, die normalerweise
+          kaum senden &ndash; dort sind 100 % schnell erreicht.</div>
+
+        <label for="aLearnHours">Lernphase</label>
+        <div class="row">
+          <input type="number" id="aLearnHours" min="1" max="720">
+          <span class="unit">Stunden Datensammlung, bevor &uuml;berwacht wird</span>
+        </div>
+
+        <label for="aCooldown">Sperrzeit</label>
+        <div class="row">
+          <input type="number" id="aCooldown" min="0" max="10080">
+          <span class="unit">Minuten, bevor dasselbe Ger&auml;t erneut Alarm ausl&ouml;st</span>
+        </div>
+
+        <label for="aInterval">Pr&uuml;fintervall</label>
+        <div class="row">
+          <input type="number" id="aInterval" min="30" max="3600" step="30">
+          <span class="unit">Sekunden zwischen zwei Pr&uuml;fungen</span>
+        </div>
+
+        <label for="aVar">Systemvariable</label>
+        <div class="row">
+          <input type="text" id="aVar" class="wide" maxlength="60">
+          <label><input type="checkbox" id="aInternal"> intern</label>
+        </div>
+        <div class="hint">Wird beim ersten Alarm automatisch als Alarmvariable angelegt
+          (&uuml;ber <code>/bin/triggerAlarm.tcl</code>). Das betroffene Ger&auml;t steht
+          im Meldungstext der Variablen.</div>
+
+        <label for="aNewDev">Neue Sender</label>
+        <div class="row">
+          <label><input type="checkbox" id="aNewDev">
+            auch alarmieren, wenn ein in der Lernphase unbekanntes Ger&auml;t sendet</label>
+        </div>
+
+        <label for="aIgnore">Ignorieren</label>
+        <div class="row">
+          <input type="text" id="aIgnore" class="wide"
+                 placeholder="z.B. 4E9505, F36101">
+          <span class="unit">Funkadressen, kommagetrennt</span>
+        </div>
+
+        <label for="aDebug">Protokoll</label>
+        <div class="row">
+          <label><input type="checkbox" id="aDebug"> Debug-Meldungen ins Syslog</label>
+        </div>
+
+        <div class="actions">
+          <button id="aSave" class="active">Speichern</button>
+          <button id="aReset" title="Gelernte Werte verwerfen und neu sammeln">Lernphase zur&uuml;cksetzen</button>
+          <span class="saved" id="aSaved"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Funkaufkommen je Ger&auml;t</h2>
+      <table class="devtable" id="alarmDevs"></table>
+      <div class="status" id="alarmDevsInfo" style="margin-top:8px"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Ausgel&ouml;ste Alarme</h2>
+      <table class="devtable" id="alarmLog"></table>
+    </div>
+
   </div>
 </main>
 
@@ -875,21 +1012,294 @@ function switchDate(date, latest) {
 }
 
 function render() {
-  if (state.tab === "telegrams") renderTable(); else renderStats();
+  if (state.tab === "telegrams") renderTable();
+  else if (state.tab === "stats") renderStats();
+  // der Alarm-Reiter haengt nicht an den Telegrammen im Speicher, sondern
+  // am Zustand des Hintergrunddienstes (refreshAlarmState)
 }
 
 function switchTab(tab) {
   state.tab = tab;
-  $("tabTelegrams").classList.toggle("active", tab === "telegrams");
-  $("tabStats").classList.toggle("active", tab === "stats");
+  for (const [id, name] of [["tabTelegrams", "telegrams"], ["tabStats", "stats"],
+                            ["tabAlarm", "alarm"]])
+    $(id).classList.toggle("active", tab === name);
   $("viewTelegrams").style.display = tab === "telegrams" ? "" : "none";
   $("viewStats").style.display = tab === "stats" ? "" : "none";
+  $("viewAlarm").style.display = tab === "alarm" ? "" : "none";
+  // die Telegrammfilter gelten nicht fuer die Ueberwachung
+  $("filterBar").style.display = tab === "alarm" ? "none" : "";
+  if (tab === "alarm") {
+    if (!alarmUi.loaded) { alarmUi.loaded = true; loadAlarmCfg(); }
+    refreshAlarmState();
+  }
   render();
+}
+
+/* ------------------------------------------------- Alarm: Funkaufkommen
+
+   Die eigentliche Erkennung laeuft im Hintergrunddienst auf der CCU
+   (bin/rftrafficwatch.tcl) - diese Seite stellt nur Konfiguration und
+   Zustand dar. Deshalb wirkt alles auch dann, wenn der Browser zu ist. */
+
+// Formularfeld -> Schluessel in alarm.conf
+const ALARM_FIELDS = {
+  aEnabled: "enabled", aThreshold: "threshold_pct", aWindow: "window_min",
+  aMinPackets: "min_packets", aLearnHours: "learn_hours", aCooldown: "cooldown_min",
+  aInterval: "interval_sec", aVar: "alarm_var", aInternal: "alarm_internal",
+  aNewDev: "alarm_new_dev", aIgnore: "ignore_addrs", aDebug: "debug"
+};
+const ALARM_POLL_MS = 10000;
+const alarmUi = { cfg: null, st: null, sort: "pct", asc: false, loaded: false };
+
+function fmtTs(ts) {
+  if (!ts) return "–";
+  const d = new Date(ts * 1000);
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}. ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fmtAgo(sec) {
+  if (sec < 0) sec = 0;
+  if (sec < 90) return `vor ${Math.round(sec)} s`;
+  if (sec < 5400) return `vor ${Math.round(sec / 60)} min`;
+  if (sec < 172800) return `vor ${(sec / 3600).toFixed(1)} h`;
+  return `vor ${Math.round(sec / 86400)} Tagen`;
+}
+function fmtDur(sec) {
+  if (sec < 3600) return `${Math.round(sec / 60)} min`;
+  return `${(sec / 3600).toFixed(1)} h`;
+}
+function num(v, dec) { return v === null || v === undefined ? "–" : v.toFixed(dec); }
+
+function fillAlarmForm(cfg) {
+  alarmUi.cfg = cfg;
+  for (const [id, key] of Object.entries(ALARM_FIELDS)) {
+    const el = $(id);
+    if (el.type === "checkbox") el.checked = cfg[key] == 1;
+    else el.value = cfg[key];
+  }
+}
+
+async function loadAlarmCfg() {
+  try {
+    const cfg = await (await fetch(API + "?cmd=alarmcfg")).json();
+    if (cfg.error) { $("alarmHint").textContent = cfg.error; return; }
+    fillAlarmForm(cfg);
+  } catch (e) { console.warn("alarmcfg:", e); }
+}
+
+async function saveAlarmCfg() {
+  const parts = ["cmd=alarmcfg", "set=1"];
+  for (const [id, key] of Object.entries(ALARM_FIELDS)) {
+    const el = $(id);
+    const v = el.type === "checkbox" ? (el.checked ? 1 : 0) : el.value;
+    parts.push(`${key}=${encodeURIComponent(v)}`);
+  }
+  try {
+    const cfg = await (await fetch(API + "?" + parts.join("&"))).json();
+    if (cfg.error) { flashSaved(cfg.error, true); return; }
+    // die Antwort enthaelt die tatsaechlich gespeicherten (ggf. begrenzten)
+    // Werte - zurueckschreiben, damit die Anzeige nicht luegt
+    fillAlarmForm(cfg);
+    flashSaved("gespeichert");
+    refreshAlarmState();
+  } catch (e) { flashSaved("Fehler beim Speichern", true); }
+}
+
+function flashSaved(text, isErr) {
+  const el = $("aSaved");
+  el.textContent = text;
+  el.style.color = isErr ? "var(--warn)" : "var(--rx)";
+  clearTimeout(flashSaved.t);
+  flashSaved.t = setTimeout(() => { el.textContent = ""; }, 4000);
+}
+
+async function resetAlarmLearning() {
+  if (!confirm("Alle gelernten Werte verwerfen und die Lernphase neu beginnen?")) return;
+  try {
+    const r = await (await fetch(API + "?cmd=alarmreset")).json();
+    if (r.error) { flashSaved(r.error, true); return; }
+    flashSaved("Lernphase neu gestartet");
+    await loadAlarmCfg();
+    refreshAlarmState();
+  } catch (e) { flashSaved("Fehler beim Zuruecksetzen", true); }
+}
+
+async function refreshAlarmState() {
+  try {
+    const st = await (await fetch(API + "?cmd=alarmstate")).json();
+    if (st.error) { $("alarmHint").textContent = st.error; return; }
+    // gegen unvollstaendige Antworten absichern - die Zustandsdatei schreibt
+    // ein anderer Prozess, da darf ein halber Zustand die Seite nicht lahmlegen
+    if (!Array.isArray(st.devices)) st.devices = [];
+    if (!Array.isArray(st.alarms)) st.alarms = [];
+    alarmUi.st = st;
+    renderAlarm();
+  } catch (e) { console.warn("alarmstate:", e); }
+}
+
+function renderAlarm() {
+  const st = alarmUi.st, cfg = alarmUi.cfg;
+  if (!st) return;
+  const learning = st.phase !== "monitoring";
+  const enabled = cfg && cfg.enabled == 1;
+
+  // --- Kennzahlen
+  const alarmed = st.devices.filter(d => d.alarm_ts).length;
+  const cards = [
+    [learning ? "Lernphase" : "&Uuml;berwachung", "Zustand"],
+    [st.devices.filter(d => d.base !== null).length || st.devices.length, "Sender erfasst"],
+    [st.devices.filter(d => d.recent > 0).length, "aktiv im Fenster"],
+    [st.alarms.length, "Alarme (7 Tage)"],
+    [st.last_check ? fmtAgo(st.now - st.last_check) : "–", "letzte Pr&uuml;fung"]
+  ];
+  $("alarmCards").innerHTML = cards.map(([n, l]) =>
+    `<div class="card"><div class="num" style="font-size:${String(n).length > 8 ? 15 : 20}px">${n}</div>` +
+    `<div class="lbl">${l}</div></div>`).join("");
+
+  // --- Fortschritt der Lernphase
+  if (learning) {
+    const pct = st.learn_need > 0 ? Math.min(100, (st.learn_sec / st.learn_need) * 100) : 0;
+    $("alarmProgress").style.width = pct.toFixed(1) + "%";
+    $("alarmProgressText").innerHTML =
+      `<b>${pct.toFixed(0)} %</b> &middot; ${fmtDur(st.learn_sec)} von ${fmtDur(st.learn_need)} gesammelt` +
+      (enabled && st.learn_need > st.learn_sec
+        ? ` &middot; fertig ${fmtTs(st.now + (st.learn_need - st.learn_sec))}` : "");
+    $("alarmProgressRow").style.display = "";
+  } else {
+    $("alarmProgress").style.width = "100%";
+    $("alarmProgressText").innerHTML =
+      `Baseline gelernt am <b>${fmtTs(st.baseline_at)}</b> &middot; ` +
+      `Fenster ${fmtDur(st.window_sec)}`;
+    $("alarmProgressRow").style.display = "";
+  }
+
+  // --- Hinweiszeile: der haeufigste Stolperstein zuerst
+  let hint, cls = "";
+  if (!st.running) {
+    hint = "Der Hintergrunddienst l&auml;uft nicht. Addon neu installieren oder " +
+           "<code>/usr/local/etc/config/rc.d/rftrafficlogger start</code> ausf&uuml;hren.";
+    cls = "warn";
+  } else if (!enabled) {
+    hint = "Die &Uuml;berwachung ist ausgeschaltet &ndash; es werden keine Daten gesammelt.";
+  } else if (!st.fresh) {
+    hint = "Der Dienst l&auml;uft, hat sich aber seit " + fmtAgo(st.now - st.last_check) +
+           " nicht gemeldet.";
+    cls = "warn";
+  } else if (learning) {
+    hint = "Daten werden gesammelt. Alarme werden erst nach Ablauf der Lernphase ausgel&ouml;st.";
+  } else if (st.recent_sec < st.window_sec) {
+    hint = "&Uuml;berwachung aktiv &ndash; das Auswertefenster f&uuml;llt sich noch (" +
+           fmtDur(st.recent_sec) + " von " + fmtDur(st.window_sec) + ").";
+  } else {
+    hint = "&Uuml;berwachung aktiv. Auff&auml;llige Ger&auml;te werden unten rot markiert" +
+           (alarmed ? " – aktuell " + alarmed + "." : ".");
+  }
+  $("alarmHint").innerHTML = cls === "warn"
+    ? `<span class="badge warn">Achtung</span> ${hint}` : hint;
+
+  renderAlarmDevs(learning);
+  renderAlarmLog();
+}
+
+function renderAlarmDevs(learning) {
+  const st = alarmUi.st;
+  const rows = st.devices.map(d => ({
+    addr: d.addr,
+    name: devLabel(d.addr),
+    base: learning ? d.learn_rate : d.base,
+    rate: d.rate,
+    pct: d.pct,
+    recent: d.recent,
+    alarm: !!d.alarm_ts,
+    alarmTs: d.alarm_ts
+  }));
+  const k = alarmUi.sort;
+  rows.sort((a, b) => {
+    let va = a[k], vb = b[k];
+    if (typeof va === "string") { va = va.toLowerCase(); vb = (vb || "").toLowerCase(); }
+    if (va === null || va === undefined) va = -Infinity;
+    if (vb === null || vb === undefined) vb = -Infinity;
+    return (va < vb ? -1 : va > vb ? 1 : 0) * (alarmUi.asc ? 1 : -1);
+  });
+
+  const arrow = key => alarmUi.sort === key ? (alarmUi.asc ? " ▲" : " ▼") : "";
+  const baseHead = learning ? "bisher gelernt" : "&uuml;blich";
+  const html = [`<tr>
+    <th data-k="name">Ger&auml;t${arrow("name")}</th>
+    <th data-k="addr">Adresse${arrow("addr")}</th>
+    <th data-k="base" title="gelerntes Funkaufkommen">${baseHead}${arrow("base")}</th>
+    <th data-k="rate" title="Rate im aktuellen Auswertefenster">aktuell${arrow("rate")}</th>
+    <th data-k="recent" title="Pakete im aktuellen Auswertefenster">Pakete${arrow("recent")}</th>
+    <th data-k="pct" title="Abweichung gegen&uuml;ber dem gelernten Wert">Abweichung${arrow("pct")}</th>
+    <th>Status</th>
+  </tr>`];
+
+  const thr = alarmUi.cfg ? Number(alarmUi.cfg.threshold_pct) : 100;
+  for (const r of rows.slice(0, 60)) {
+    let pctCell = "–", status = `<span class="badge idle">–</span>`;
+    if (r.pct !== null && r.pct !== undefined) {
+      pctCell = `<span class="${r.pct > 0 ? "pct-up" : "pct-dn"}">${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)} %</span>`;
+    }
+    if (r.alarm) {
+      status = `<span class="badge warn" title="Alarm ${fmtTs(r.alarmTs)}">Alarm</span>`;
+    } else if (learning) {
+      status = `<span class="badge learn">lernt</span>`;
+    } else if (r.base === null || r.base === undefined) {
+      status = `<span class="badge learn" title="in der Lernphase nicht gesehen">neu</span>`;
+    } else if (r.pct !== null && r.pct > thr) {
+      status = `<span class="badge warn" title="&uuml;ber der Schwelle, aber Mindestmenge oder Sperrzeit greift">auff&auml;llig</span>`;
+    } else if (r.recent > 0) {
+      status = `<span class="badge ok">ok</span>`;
+    }
+    html.push(`<tr${r.alarm ? ' class="alarmrow"' : ""}>
+      <td>${esc(r.name)}</td>
+      <td class="mono devaddr">${r.addr}</td>
+      <td>${num(r.base, 1)}</td>
+      <td>${num(r.rate, 1)}</td>
+      <td>${r.recent}</td>
+      <td>${pctCell}</td>
+      <td>${status}</td>
+    </tr>`);
+  }
+  const tbl = $("alarmDevs");
+  tbl.innerHTML = html.join("");
+  tbl.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+    const key = th.dataset.k;
+    if (alarmUi.sort === key) alarmUi.asc = !alarmUi.asc;
+    else { alarmUi.sort = key; alarmUi.asc = key === "name" || key === "addr"; }
+    renderAlarm();
+  });
+  $("alarmDevsInfo").innerHTML = st.devices.length
+    ? `Angaben in Paketen/Stunde. ${st.devices.length} Sender erfasst` +
+      (st.devices.length > 60 ? ", die 60 obersten angezeigt." : ".")
+    : "Noch keine Daten &ndash; der Dienst sammelt ab dem ersten Telegramm.";
+}
+
+function renderAlarmLog() {
+  const st = alarmUi.st;
+  if (!st.alarms.length) {
+    $("alarmLog").innerHTML =
+      `<tr><td class="lbl" style="color:var(--fg-dim)">Keine Alarme in den letzten 7 Tagen.</td></tr>`;
+    return;
+  }
+  const rows = st.alarms.slice().sort((a, b) => b.ts - a.ts);
+  const html = [`<tr><th>Zeitpunkt</th><th>Ger&auml;t</th><th>Meldung</th></tr>`];
+  for (const a of rows) {
+    html.push(`<tr>
+      <td>${fmtTs(a.ts)}</td>
+      <td>${esc(devLabel(a.addr))}</td>
+      <td style="white-space:normal">${esc(a.msg)}</td>
+    </tr>`);
+  }
+  $("alarmLog").innerHTML = html.join("");
 }
 
 /* --- Events --- */
 $("tabTelegrams").onclick = () => switchTab("telegrams");
 $("tabStats").onclick = () => switchTab("stats");
+$("tabAlarm").onclick = () => switchTab("alarm");
+$("aSave").onclick = saveAlarmCfg;
+$("aReset").onclick = resetAlarmLearning;
 $("pauseBtn").onclick = () => {
   state.paused = !state.paused;
   $("pauseBtn").innerHTML = state.paused ? "&#9654; Weiter" : "&#10074;&#10074; Pause";
@@ -906,6 +1316,7 @@ for (const id of ["fSearch", "fDir", "fProto", "fVia", "fType", "fDev", "fHideBc
   $(id).addEventListener(id === "fSearch" ? "input" : "change", render);
 }
 window.addEventListener("resize", () => { if (state.tab === "stats") renderStats(); });
+setInterval(() => { if (state.tab === "alarm") refreshAlarmState(); }, ALARM_POLL_MS);
 
 /* --- Init --- */
 (async function init() {

@@ -47,8 +47,9 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
   - `?cmd=alarmcfg[&set=1&<key>=<wert>…]` — Konfiguration der
     Funkaufkommen-Überwachung lesen bzw. schreiben; die Antwort enthält immer
     die tatsächlich gespeicherten (ggf. auf gültige Bereiche begrenzten) Werte
-  - `?cmd=alarmstate` — Lernfortschritt, Baseline und aktuelle Rate je Sender,
-    ausgelöste Alarme, Anzahl der bekannten Geräte
+  - `?cmd=alarmstate` — Lernfortschritt, Vergleichswert (`base`), Mittelwert
+    (`mean`), Stundenspitze (`peak`) und aktuelle Rate je Sender, ausgelöste
+    Alarme, Anzahl der bekannten Geräte
   - `?cmd=alarmreset` — gelernte Werte verwerfen, Lernphase neu beginnen
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
@@ -81,15 +82,39 @@ geschrieben werden.
    nach einem Reset wird an das aktuelle Ende der Logdateien gesprungen: schon
    geschriebene Telegramme nachträglich einzulesen würde Pakete zählen, für die
    keine Messdauer läuft, und die gelernte Rate massiv zu hoch ansetzen.
-2. **Baseline**: Nach Ablauf der Lernphase wird je Absender die übliche Rate in
-   **Paketen/Stunde** berechnet (flacher Mittelwert über die gesamte Lernphase)
-   und eingefroren — bis zum nächsten Reset. Danach laufen die Lernzähler nicht
-   weiter, „gelernt aus N Paketen" bleibt also eine ehrliche Angabe.
+2. **Vergleichswert**: Nach Ablauf der Lernphase werden je Absender zwei
+   Kennzahlen eingefroren — bis zum nächsten Reset: der **Mittelwert** in
+   Paketen/Stunde über die gesamte Lernphase und die **höchste Stundenrate**,
+   also die Telegrammzahl der stärksten vollen Stunde. Danach laufen die
+   Lernzähler nicht weiter, „gelernt aus N Paketen" bleibt also eine ehrliche
+   Angabe.
 3. **Überwachung**: In jedem Prüfintervall wird das Aufkommen im
-   Auswertefenster (Vorgabe 60 min) mit der Baseline verglichen. Liegt es um
-   mehr als die Alarmschwelle darüber (Vorgabe 100 %, also mehr als das
-   Doppelte), gibt es Alarm. Nach einem Neustart des Dienstes wird erst
-   alarmiert, wenn das Auswertefenster einmal vollständig gefüllt ist.
+   Auswertefenster (Vorgabe 60 min) mit dem Vergleichswert verglichen. Liegt es
+   um mehr als die Alarmschwelle darüber, gibt es Alarm. Nach einem Neustart
+   des Dienstes wird erst alarmiert, wenn das Auswertefenster einmal
+   vollständig gefüllt ist.
+
+### Warum die Stundenspitze und nicht der Mittelwert
+
+Der flache Mittelwert ist für Geräte mit **Tagesrhythmus** der falsche Bezug.
+Ein HM-ES-TX-WM etwa sendet proportional zum Stromverbrauch: nachts ~50
+Telegramme/h, nachmittags 100–145. Der 48-Stunden-Mittelwert landet dann bei
+~68/h — also *unter* dem normalen Tagesniveau — und jeder etwas kräftigere
+Nachmittag reißt die 100-%-Schwelle. Auf einer realen Installation lagen so
+8 von 87 Geräten über der Schwelle, drei davon über der Mindestmenge.
+
+Die **höchste Stundenrate** ist davon unabhängig und bedeutet schlicht
+„sendet mehr als je in einer Stunde der Lernphase". Sie kostet nur eine Zahl
+je Gerät und erlaubt eine schärfere Schwelle: gegen die Spitze gemessen ist
+bereits +50 % ein deutliches Signal. Der Mittelwert bleibt als Alternative
+wählbar (`ref_mode = mean`) und greift automatisch für Geräte, für die keine
+volle Stunde erfasst wurde.
+
+Gewertet wird nur eine Stunde, die der Dienst **von Anfang bis Ende**
+beobachtet hat — die Stunde, in der er gestartet ist, ist angebrochen und
+würde die Spitze zu niedrig ansetzen. Ist das Auswertefenster kürzer als eine
+Stunde, kann die hochgerechnete Rate naturgemäß über jedem
+Stundendurchschnitt liegen; das fängt die Schwelle ab.
 
 Erfasst werden **BidCos und HmIP**: bei BidCos ist der Absender das `FROM`-Feld,
 bei HmIP steht er an fester Position im Rohframe (Byte 4–6) — genau wie die
@@ -114,7 +139,8 @@ Weboberfläche weist darauf hin.
 |---|---|---|
 | Überwachung aktiv | aus | Schaltet die Datensammlung und die Alarme ein |
 | Umfang | nur angelernte Geräte | Beschränkt die Überwachung auf Geräte, die die CCU kennt; abgeschaltet wird jede Funkadresse im Log überwacht |
-| Alarmschwelle | 100 % | Anstieg gegenüber der Baseline, ab dem alarmiert wird |
+| Vergleichswert | höchste Stundenrate | Woran gemessen wird: Stundenspitze der Lernphase oder deren Mittelwert |
+| Alarmschwelle | 100 % | Anstieg gegenüber dem Vergleichswert, ab dem alarmiert wird |
 | Auswertefenster | 60 min | Zeitraum, dessen Aufkommen verglichen wird |
 | Mindestmenge | 20 Pakete | Darunter kein Alarm — schützt vor Fehlalarmen bei Geräten, die normalerweise kaum senden |
 | Lernphase | 48 h | Dauer der Datensammlung vor der ersten Überwachung |
@@ -143,8 +169,10 @@ Addon-Updates (das `update_script` lässt sie unangetastet):
 
 - `alarm.conf` — Konfiguration als `key=value`, von der Weboberfläche
   geschrieben
-- `alarm.state` — Phase, erfasste Zeit, Zähler, Baseline, Datei-Lesezeiger und
-  Alarmhistorie (Tcl-Dict, vom Dienst geschrieben)
+- `alarm.state` — Phase, erfasste Zeit, Zähler, Mittelwerte, Stundenspitzen,
+  Datei-Lesezeiger und Alarmhistorie (Tcl-Dict, vom Dienst geschrieben).
+  Zustandsdateien älterer Versionen ohne Stundenspitzen werden übernommen; bis
+  zum nächsten Reset greift dann geräteweise der Mittelwert.
 
 ## Installation auf der CCU
 

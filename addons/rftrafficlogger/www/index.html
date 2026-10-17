@@ -211,14 +211,29 @@
           &uuml;berwacht, die im Log auftaucht &ndash; also auch Nachbarger&auml;te
           und fremde Installationen in Funkreichweite.</div>
 
+        <label for="aRefMode">Vergleichswert</label>
+        <div class="row">
+          <select id="aRefMode">
+            <option value="peak">h&ouml;chste Stundenrate der Lernphase</option>
+            <option value="mean">Mittelwert &uuml;ber die Lernphase</option>
+          </select>
+        </div>
+        <div class="hint">Woran die aktuelle Rate gemessen wird. Der
+          <b>Mittelwert</b> liegt bei Ger&auml;ten mit Tagesrhythmus &ndash; etwa
+          Energiez&auml;hlern, deren Senderate am Verbrauch h&auml;ngt &ndash; unter
+          dem normalen Tagesniveau; dann l&ouml;st jeder kr&auml;ftigere Nachmittag
+          aus. Die <b>Stundenspitze</b> ist davon unabh&auml;ngig und bedeutet
+          &bdquo;sendet mehr als je in einer Stunde der Lernphase&ldquo;.</div>
+
         <label for="aThreshold">Alarmschwelle</label>
         <div class="row">
           <span class="unit">Anstieg um mehr als</span>
           <input type="number" id="aThreshold" min="1" max="100000" step="10">
-          <span class="unit">% gegen&uuml;ber dem gelernten Wert</span>
+          <span class="unit">% gegen&uuml;ber dem Vergleichswert</span>
         </div>
-        <div class="hint">100 % bedeutet: Alarm, sobald ein Ger&auml;t mehr als doppelt
-          so viel sendet wie &uuml;blich.</div>
+        <div class="hint">Gegen die Stundenspitze gemessen ist bereits ein Wert um
+          50 % deutlich; gegen den Mittelwert braucht es erfahrungsgem&auml;&szlig;
+          mehr.</div>
 
         <label for="aWindow">Auswertefenster</label>
         <div class="row">
@@ -1055,7 +1070,8 @@ function switchTab(tab) {
 
 // Formularfeld -> Schluessel in alarm.conf
 const ALARM_FIELDS = {
-  aEnabled: "enabled", aThreshold: "threshold_pct", aWindow: "window_min",
+  aEnabled: "enabled", aRefMode: "ref_mode", aThreshold: "threshold_pct",
+  aWindow: "window_min",
   aMinPackets: "min_packets", aLearnHours: "learn_hours", aCooldown: "cooldown_min",
   aInterval: "interval_sec", aVar: "alarm_var", aInternal: "alarm_internal",
   aNewDev: "alarm_new_dev", aKnownOnly: "known_only", aIgnore: "ignore_addrs",
@@ -1227,6 +1243,8 @@ function renderAlarmDevs(learning) {
     addr: d.addr,
     name: devLabel(d.addr),
     base: learning ? d.learn_rate : d.base,
+    mean: d.mean,
+    peak: d.peak,
     rate: d.rate,
     pct: d.pct,
     recent: d.recent,
@@ -1243,7 +1261,9 @@ function renderAlarmDevs(learning) {
   });
 
   const arrow = key => alarmUi.sort === key ? (alarmUi.asc ? " ▲" : " ▼") : "";
-  const baseHead = learning ? "bisher gelernt" : "&uuml;blich";
+  const peakMode = st.ref_mode === "peak";
+  const baseHead = learning ? "bisher gelernt"
+                 : peakMode ? "Stundenspitze" : "Mittelwert";
   const html = [`<tr>
     <th data-k="name">Ger&auml;t${arrow("name")}</th>
     <th data-k="addr">Adresse${arrow("addr")}</th>
@@ -1274,7 +1294,9 @@ function renderAlarmDevs(learning) {
     html.push(`<tr${r.alarm ? ' class="alarmrow"' : ""}>
       <td>${esc(r.name)}</td>
       <td class="mono devaddr">${r.addr}</td>
-      <td>${num(r.base, 1)}</td>
+      <td title="${r.mean === null || r.mean === undefined ? ""
+            : `Mittelwert ${r.mean.toFixed(1)}`}${r.peak ? ` \u00b7 Stundenspitze ${r.peak}` : ""}"
+          >${num(r.base, 1)}</td>
       <td>${num(r.rate, 1)}</td>
       <td>${r.recent}</td>
       <td>${pctCell}</td>
@@ -1289,13 +1311,17 @@ function renderAlarmDevs(learning) {
     else { alarmUi.sort = key; alarmUi.asc = key === "name" || key === "addr"; }
     renderAlarm();
   });
+  const refTxt = learning ? ""
+    : st.ref_mode === "peak"
+      ? " Verglichen wird mit der h&ouml;chsten Stundenrate der Lernphase."
+      : " Verglichen wird mit dem Mittelwert der Lernphase.";
   const scope = st.known_only
     ? " &Uuml;berwacht werden nur die auf der CCU angelernten Ger&auml;te" +
       (st.known_devices !== null ? ` (${st.known_devices})` : "") + "."
     : " &Uuml;berwacht wird jede Funkadresse im Log, auch unbekannte.";
   $("alarmDevsInfo").innerHTML = st.devices.length
     ? `Angaben in Paketen/Stunde. ${st.devices.length} Sender erfasst` +
-      (st.devices.length > 60 ? ", die 60 obersten angezeigt." : ".") + scope
+      (st.devices.length > 60 ? ", die 60 obersten angezeigt." : ".") + refTxt + scope
     : "Noch keine Daten &ndash; der Dienst sammelt ab dem ersten Telegramm." + scope;
 }
 

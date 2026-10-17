@@ -20,6 +20,7 @@ namespace eval rftl {
     variable defaults {
         enabled        0
         learn_hours    48
+        ref_mode       peak
         threshold_pct  100
         window_min     60
         min_packets    20
@@ -44,6 +45,15 @@ namespace eval rftl {
         interval_sec   30 3600
     }
     variable flags {enabled alarm_internal alarm_new_dev known_only debug}
+
+    # Vergleichswert, gegen den die aktuelle Rate geprueft wird:
+    #   peak = hoechste Stundenrate der Lernphase ("mehr als je gesehen")
+    #   mean = flacher Mittelwert ueber die Lernphase
+    # peak ist die Vorgabe, weil der Mittelwert bei Geraeten mit
+    # Tagesrhythmus (z.B. Energiezaehler, deren Senderate am Verbrauch
+    # haengt) unter dem normalen Tagesniveau liegt und jeder etwas
+    # kraeftigere Nachmittag die Schwelle reisst.
+    variable ref_modes {peak mean}
 }
 
 # Text entschaerfen, bevor er an triggerAlarm.tcl uebergeben wird.
@@ -86,6 +96,11 @@ proc rftl::clampConfig {c} {
         dict set out $k [expr {[string tolower [dict get $out $k]] in {1 true yes on} ? 1 : 0}]
     }
     if {![string is wideinteger -strict [dict get $out reset_at]]} { dict set out reset_at 0 }
+
+    variable ref_modes
+    if {[dict get $out ref_mode] ni $ref_modes} {
+        dict set out ref_mode [lindex $ref_modes 0]
+    }
 
     set var [rftl::sanitize [dict get $out alarm_var]]
     if {$var eq ""} { set var [dict get $defaults alarm_var] }

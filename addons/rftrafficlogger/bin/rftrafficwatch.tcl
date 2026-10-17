@@ -43,6 +43,12 @@ proc logdbg {msg} {
     if {[dict exists $cfg debug] && [dict get $cfg debug]} { logmsg debug $msg }
 }
 
+# Zustandsfeld mit Vorgabewert lesen - der Zustand kann aus einer aelteren
+# Version stammen und einzelne Felder noch nicht kennen
+proc stGet {st key def} {
+    return [expr {[dict exists $st $key] ? [dict get $st $key] : $def}]
+}
+
 # dieselbe Warnung hoechstens einmal pro Stunde ins Syslog, damit ein
 # Dauerzustand das Log nicht im Pruefintervall vollschreibt
 set warnAt {}
@@ -250,9 +256,12 @@ proc bucketOf {datestr timestr} {
 # zaehlt die Telegramme je Absender und Zeitbucket auf.
 # knownOnly=1 beschraenkt die Zaehlung auf die Adressen in known (die
 # Geraeteliste der CCU) - fremder Funkverkehr wird dann ignoriert.
-proc parseInto {text countsVar bucketsVar ignore learning knownOnly known} {
+proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly known} {
     upvar 1 $countsVar counts
     upvar 1 $bucketsVar buckets
+    upvar 1 $hcountsVar hcounts
+    # der Aufrufer darf die Stundenzaehler noch nicht angelegt haben
+    if {![info exists hcounts]} { set hcounts {} }
     set n 0
     foreach line [split $text "\n"] {
         if {[string length $line] < 30} { continue }
@@ -274,12 +283,43 @@ proc parseInto {text countsVar bucketsVar ignore learning knownOnly known} {
         if {$b < 0} { continue }
         # die Lernzaehler laufen nur waehrend der Lernphase weiter, das
         # Kurzzeitfenster immer
-        if {$learning} { dict incr counts $addr }
+        if {$learning} {
+            dict incr counts $addr
+            # zusaetzlich je voller Stunde zaehlen - daraus wird spaeter die
+            # hoechste Stundenrate (Vergleichswert "Spitze")
+            set hb [expr {$b / 60}]
+            dict set hcounts $addr $hb [expr {([dict exists $hcounts $addr $hb]
+                                               ? [dict get $hcounts $addr $hb] : 0) + 1}]
+        }
         dict set buckets $addr $b [expr {([dict exists $buckets $addr $b]
                                           ? [dict get $buckets $addr $b] : 0) + 1}]
         incr n
     }
     return $n
+}
+
+# Abgeschlossene Stunden aus den Stundenzaehlern in die Spitzenwerte
+# uebernehmen. Gewertet wird nur eine Stunde, die wir von Anfang bis Ende
+# beobachtet haben: die Stunde, in der der Dienst gestartet ist, ist
+# angebrochen und wuerde die Spitze zu niedrig ansetzen.
+proc commitHours {hcountsVar peaksVar obsHour curHour} {
+    upvar 1 $hcountsVar hcounts
+    upvar 1 $peaksVar peaks
+    set rest {}
+    dict for {addr hl} $hcounts {
+        set open {}
+        dict for {hb c} $hl {
+            if {$hb >= $curHour} {
+                dict set open $hb $c
+            } elseif {$hb > $obsHour} {
+                if {![dict exists $peaks $addr] || $c > [dict get $peaks $addr]} {
+                    dict set peaks $addr $c
+                }
+            }
+        }
+        if {[dict size $open]} { dict set rest $addr $open }
+    }
+    set hcounts $rest
 }
 
 # Buckets aelter als das Auswertefenster verwerfen
@@ -338,6 +378,7 @@ proc resetState {cfg reason} {
         learn_sec 0 \
         counts {} \
         baseline {} \
+        peaks {} \
         baseline_at 0 \
         offsets {} \
         alarms {} \
@@ -354,7 +395,13 @@ proc main {} {
         [dict get $st version] ne "1"} {
         set st [resetState $cfg "Erststart"]
     }
-    logmsg notice "gestartet (Phase [dict get $st phase], aktiv=[dict get $cfg enabled])"
+    # Zustandsdateien aelterer Versionen kennen die Stundenspitzen noch
+    # nicht. Sie bleiben dann leer, und der Vergleich faellt geraeteweise
+    # auf den Mittelwert zurueck, bis einmal neu gelernt wurde.
+    if {![dict exists $st peaks]} { dict set st peaks {} }
+
+    logmsg notice "gestartet (Phase [dict get $st phase], aktiv=[dict get $cfg enabled],\
+                   Vergleich [dict get $cfg ref_mode])"
 
     # Lesezeiger auf das aktuelle Dateiende setzen und die Uhr der erfassten
     # Zeit neu stellen - erst ab jetzt sehen wir den Funkverkehr wieder
@@ -366,7 +413,11 @@ proc main {} {
     # Kurzzeitstatistik lebt nur im Speicher; nach einem Neustart muss sich
     # das Auswertefenster erst wieder fuellen, bevor Alarme sinnvoll sind
     set buckets {}
+    set hcounts {}
     set runStart [clock seconds]
+    # die Stunde, in der wir angefangen haben zu beobachten, ist angebrochen
+    # und darf nicht als Stundenspitze gewertet werden
+    set obsHour [expr {$runStart / 3600}]
 
     while {1} {
         set cfg [rftl::readConfig]
@@ -376,11 +427,13 @@ proc main {} {
         if {[dict get $cfg reset_at] ne [dict get $st reset_at]} {
             set st [resetState $cfg "Anforderung ueber die Weboberflaeche"]
             set buckets {}
+            set hcounts {}
             set runStart $now
+            set obsHour [expr {$now / 3600}]
         }
 
         if {[dict get $cfg enabled]} {
-            set st [cycle $cfg $st buckets $runStart $now]
+            set st [cycle $cfg $st buckets hcounts $runStart $obsHour $now]
         } else {
             # im ausgeschalteten Zustand nur den Dateizeiger nachfuehren,
             # damit nach dem Einschalten keine alten Zeilen nachlaufen
@@ -405,8 +458,9 @@ proc main {} {
     }
 }
 
-proc cycle {cfg st bucketsVar runStart now} {
+proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
     upvar 1 $bucketsVar buckets
+    upvar 1 $hcountsVar hcounts
     global MMDCONF RFDCONF MMDPREFIX RFDPREFIX BUCKET_SEC
 
     set ignore [split [dict get $cfg ignore_addrs] ","]
@@ -431,10 +485,18 @@ proc cycle {cfg st bucketsVar runStart now} {
     foreach {k conf prefix} [list mmd $MMDCONF $MMDPREFIX rfd $RFDCONF $RFDPREFIX] {
         set text [readNewLines $k [readTrafficLogDir $conf] $prefix st]
         if {$text ne ""} {
-            incr lines [parseInto $text counts buckets $ignore $learning $knownOnly $known]
+            incr lines [parseInto $text counts buckets hcounts $ignore $learning \
+                                  $knownOnly $known]
         }
     }
     dict set st counts $counts
+
+    # abgeschlossene Stunden in die Spitzenwerte uebernehmen
+    if {$learning} {
+        set peaks [stGet $st peaks {}]
+        commitHours hcounts peaks $obsHour [expr {$now / 3600}]
+        dict set st peaks $peaks
+    }
 
     # erfasste Zeit fortschreiben. Nur die tatsaechlich gelaufene Zeit zaehlt
     # (gedeckelt), sonst wuerde eine Ausfallzeit die Baseline verwaessern.
@@ -468,7 +530,15 @@ proc cycle {cfg st bucketsVar runStart now} {
             dict set st baseline $bl
             dict set st baseline_at $now
             dict set st phase monitoring
-            logmsg notice "Lernphase beendet - Baseline fuer [dict size $bl] Sender uebernommen"
+            # auch die angebrochene letzte Stunde noch werten: ihr Zaehler
+            # ist immer kleiner als der einer vollen Stunde waere, taugt
+            # also als Untergrenze und kann die Spitze nicht ueberhoehen
+            set peaks [stGet $st peaks {}]
+            commitHours hcounts peaks $obsHour [expr {$now / 3600 + 1}]
+            dict set st peaks $peaks
+            logmsg notice "Lernphase beendet - Vergleichswerte fuer [dict size $bl]\
+                           Sender uebernommen ([dict size $peaks] mit Stundenspitze,\
+                           Modus [dict get $cfg ref_mode])"
         }
     }
 
@@ -487,6 +557,8 @@ proc evaluate {cfg st recent runStart now winSec} {
     if {$now - $runStart < $winSec} { return $st }
 
     set baseline [dict get $st baseline]
+    set peaks    [stGet $st peaks {}]
+    set refMode  [dict get $cfg ref_mode]
     set alarms   [dict get $st alarms]
     set thr      [expr {1.0 + [dict get $cfg threshold_pct] / 100.0}]
     set minPk    [dict get $cfg min_packets]
@@ -495,10 +567,26 @@ proc evaluate {cfg st recent runStart now winSec} {
 
     dict for {addr actual} $recent {
         if {$actual < $minPk} { continue }
-        set known [dict exists $baseline $addr]
-        set expected [expr {$known ? [dict get $baseline $addr] * $winH : 0.0}]
+        set seen [dict exists $baseline $addr]
 
-        if {!$known || $expected <= 0} {
+        # Vergleichswert bestimmen. "peak" nimmt die hoechste Stundenrate der
+        # Lernphase - der Mittelwert liegt bei Geraeten mit Tagesrhythmus
+        # unter dem normalen Tagesniveau und wuerde staendig ausloesen.
+        # Fehlt eine Stundenspitze (das Geraet sendete nur in der
+        # angebrochenen Startstunde), faellt es auf den Mittelwert zurueck.
+        set refRate 0.0
+        set refKind "Mittelwert"
+        if {$refMode eq "peak" && [dict exists $peaks $addr] &&
+            [dict get $peaks $addr] > 0} {
+            # Telegramme in der staerksten Stunde = Pakete/h
+            set refRate [expr {double([dict get $peaks $addr])}]
+            set refKind "Spitze"
+        } elseif {$seen} {
+            set refRate [dict get $baseline $addr]
+        }
+        set expected [expr {$refRate * $winH}]
+
+        if {!$seen || $expected <= 0} {
             if {![dict get $cfg alarm_new_dev]} { continue }
             set reason "neu"
         } elseif {$actual > $expected * $thr} {
@@ -514,19 +602,24 @@ proc evaluate {cfg st recent runStart now winSec} {
         }
 
         set rateNow [expr {$actual / $winH}]
-        set rateBase [expr {$known ? [dict get $baseline $addr] : 0.0}]
         if {$reason eq "neu"} {
             set msg "[deviceLabel $addr] sendet [format %.0f $rateNow] Pakete/h -\
                      waehrend der Lernphase nicht gesehen"
         } else {
             set pct [expr {($actual / $expected - 1.0) * 100.0}]
-            set msg "[deviceLabel $addr] sendet [format %.0f $rateNow] Pakete/h statt\
-                     ueblich [format %.0f $rateBase] Pakete/h (+[format %.0f $pct] %)"
+            if {$refKind eq "Spitze"} {
+                set msg "[deviceLabel $addr] sendet [format %.0f $rateNow] Pakete/h -\
+                         mehr als in der staerksten Stunde der Lernphase mit\
+                         [format %.0f $refRate] Pakete/h (+[format %.0f $pct] %)"
+            } else {
+                set msg "[deviceLabel $addr] sendet [format %.0f $rateNow] Pakete/h statt\
+                         ueblich [format %.0f $refRate] Pakete/h (+[format %.0f $pct] %)"
+            }
         }
         if {[fireAlarm $cfg $msg]} {
             dict set alarms $addr [dict create ts $now actual $actual \
-                expected [format %.1f $rateBase] rate [format %.1f $rateNow] \
-                reason $reason msg $msg]
+                expected [format %.1f $refRate] rate [format %.1f $rateNow] \
+                ref $refKind reason $reason msg $msg]
         }
     }
     # Alarme aelter als eine Woche nicht ewig mitschleppen

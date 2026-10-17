@@ -316,7 +316,7 @@ proc alarmUnavailable {} {
 proc alarmCfgJson {c} {
     set parts {}
     dict for {k v} $c {
-        if {$k in {alarm_var ignore_addrs}} {
+        if {$k in {alarm_var ignore_addrs ref_mode}} {
             lappend parts "\"$k\":\"[jsonEscape $v]\""
         } else {
             lappend parts "\"$k\":$v"
@@ -365,6 +365,8 @@ proc cmdAlarmState {params} {
     set winSec    [dictGetOr $st window_sec [expr {[dict get $c window_min] * 60}]]
     set recentSec [dictGetOr $st recent_sec 0]
     set baseline  [dictGetOr $st baseline {}]
+    set peaks     [dictGetOr $st peaks {}]
+    set refMode   [dict get $c ref_mode]
     set recent    [dictGetOr $st recent {}]
     set counts    [dictGetOr $st counts {}]
     set alarms    [dictGetOr $st alarms {}]
@@ -382,7 +384,16 @@ proc cmdAlarmState {params} {
 
     set devs {}
     dict for {a dummy} $addrs {
-        set base   [expr {[dict exists $baseline $a] ? [dict get $baseline $a] : ""}]
+        set mean   [expr {[dict exists $baseline $a] ? [dict get $baseline $a] : ""}]
+        set peak   [expr {[dict exists $peaks $a] ? [dict get $peaks $a] : ""}]
+        # "base" ist der tatsaechlich verwendete Vergleichswert - bei
+        # ref_mode=peak die Stundenspitze, sonst (oder wenn keine Spitze
+        # vorliegt) der Mittelwert
+        if {$refMode eq "peak" && [string is double -strict $peak] && $peak > 0} {
+            set base $peak
+        } else {
+            set base $mean
+        }
         set rec    [dictGetOr $recent $a 0]
         set cnt    [dictGetOr $counts $a 0]
         set rate   [expr {$rec / $winH}]
@@ -396,6 +407,7 @@ proc cmdAlarmState {params} {
             set al [dictGetOr [dict get $alarms $a] ts 0]
         }
         lappend devs "{\"addr\":\"[jsonEscape $a]\",\"base\":[jsonNum $base],\
+\"mean\":[jsonNum $mean],\"peak\":[jsonNum $peak %.0f],\
 \"learn_count\":[jsonNum $cnt %.0f],\"learn_rate\":[jsonNum $lrate],\
 \"recent\":[jsonNum $rec %.0f],\"rate\":[jsonNum $rate],\"pct\":[jsonNum $pct %.1f],\
 \"alarm_ts\":$al}"
@@ -405,6 +417,7 @@ proc cmdAlarmState {params} {
     dict for {a info} $alarms {
         lappend alist "{\"addr\":\"[jsonEscape $a]\",\"ts\":[jsonNum [dictGetOr $info ts 0] %.0f],\
 \"reason\":\"[jsonEscape [dictGetOr $info reason {}]]\",\
+\"ref\":\"[jsonEscape [dictGetOr $info ref {}]]\",\
 \"rate\":[jsonNum [dictGetOr $info rate 0]],\"expected\":[jsonNum [dictGetOr $info expected 0]],\
 \"msg\":\"[jsonEscape [dictGetOr $info msg {}]]\"}"
     }
@@ -422,6 +435,7 @@ proc cmdAlarmState {params} {
 \"last_check\":[jsonNum $lastCheck %.0f],\"window_sec\":$winSec,\
 \"recent_sec\":[jsonNum $recentSec %.0f],\
 \"known_only\":[dict get $c known_only],\"known_devices\":[jsonNum $knownDevs %.0f],\
+\"ref_mode\":\"[jsonEscape $refMode]\",\
 \"devices\":\[[join $devs ,]\],\"alarms\":\[[join $alist ,]\]}"
 }
 

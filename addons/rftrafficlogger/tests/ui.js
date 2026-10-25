@@ -5,7 +5,11 @@
 const fs = require("fs"), vm = require("vm"), path = require("path");
 
 const html = fs.readFileSync(path.join(__dirname, "..", "www", "index.html"), "utf8");
-const script = html.split("<script>")[1].split("</script>")[0];
+// Die Seite hat mehrere <script>-Bloecke (u.a. den kurzen Thema-Init im Kopf);
+// geprueft wird der groesste, also die Anwendung selbst.
+const script = html.split("<script>").slice(1)
+  .map(x => x.split("</script>")[0])
+  .reduce((a, b) => (b.length > a.length ? b : a), "");
 
 const els = {};
 function mkEl(id) {
@@ -21,8 +25,14 @@ function mkEl(id) {
 }
 const $$ = id => (els[id] ||= mkEl(id));
 ["aEnabled", "aInternal", "aNewDev", "aKnownOnly", "aDebug"].forEach(i => ($$(i).type = "checkbox"));
+const docEl = { dataset: {} };
+// nur die Variablen, die themeColors liest
+const cssVars = { "--fg-dim": "#5c6675", "--grid": "#e4e9ef", "--rx": "#1f8a44",
+                  "--tx": "#b06a00", "--chart-muted": "#9aa4b2" };
 const sandbox = {
-  console, document: { getElementById: $$, createElement: () => mkEl("tmp") },
+  console, document: { getElementById: $$, createElement: () => mkEl("tmp"),
+                       documentElement: docEl },
+  getComputedStyle: () => ({ getPropertyValue: n => cssVars[n] || "" }),
   window: { addEventListener() {}, devicePixelRatio: 1 },
   setInterval() {}, setTimeout() {}, clearTimeout() {}, confirm: () => true,
   Blob: function () {}, URL: { createObjectURL: () => "", revokeObjectURL() {} },
@@ -128,6 +138,32 @@ ok("aeltere Stunde zaehlt nicht mit", dcOf("EEEE05") === 50, dcOf("EEEE05"));
 ok("staerkste Stunde trotzdem ausgewiesen",
   /staerkste Stunde im Zeitraum: 18\.0 s = 50 %/.test(rowFor("devStats", "EEEE05")),
   rowFor("devStats", "EEEE05"));
+
+/* ------------------------------------------------ Erscheinungsbild */
+console.log("--- Light/Dark-Umschaltung ---");
+delete docEl.dataset.theme;
+ok("ohne Wahl und ohne System = dunkel", sandbox.themeIsLight() === false);
+ok("dunkle Palette", sandbox.palette()[0] === "#4da3ff", sandbox.palette()[0]);
+docEl.dataset.theme = "light";
+ok("data-theme light erkannt", sandbox.themeIsLight() === true);
+ok("helle Palette", sandbox.palette()[0] === "#1a73c7", sandbox.palette()[0]);
+ok("beide Paletten gleich lang", sandbox.palette().length === 10);
+docEl.dataset.theme = "dark";
+ok("data-theme dark erkannt", sandbox.themeIsLight() === false);
+// Canvas-Farben kommen aus dem Stylesheet, nicht aus festen Werten
+const tcol = sandbox.themeColors();
+ok("Canvas liest --fg-dim", tcol.dim === "#5c6675", tcol);
+ok("Canvas liest --grid", tcol.grid === "#e4e9ef", tcol);
+ok("Canvas liest RX/TX", tcol.rx === "#1f8a44" && tcol.tx === "#b06a00", tcol);
+// Knopf zeigt, wohin der Klick fuehrt
+docEl.dataset.theme = "light";
+sandbox.updateThemeButton();
+ok("heller Zustand -> Mondsymbol", $$("themeBtn").innerHTML === "&#9790;", $$("themeBtn").innerHTML);
+ok("Titel nennt das Ziel", $$("themeBtn").title.includes("dunkles"), $$("themeBtn").title);
+docEl.dataset.theme = "dark";
+sandbox.updateThemeButton();
+ok("dunkler Zustand -> Sonnensymbol", $$("themeBtn").innerHTML === "&#9728;");
+ok("Titel nennt das Ziel", $$("themeBtn").title.includes("helles"));
 
 console.log("");
 if (fails.length) { console.log(`=== ${fails.length} FEHLER ===`); process.exitCode = 1; }

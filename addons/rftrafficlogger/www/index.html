@@ -5,81 +5,132 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RFTrafficLogger</title>
 <style>
+  /* Farben ausschliesslich ueber Variablen - die Umschaltung setzt
+     data-theme auf <html>, ohne data-theme entscheidet prefers-color-scheme.
+     Auch der Canvas-Code liest seine Farben hier heraus (themeColors). */
   :root {
-    --bg: #14171c; --bg2: #1c2027; --bg3: #242a33; --border: #333a45;
-    --fg: #d6dbe3; --fg-dim: #8a93a2; --accent: #4da3ff;
+    --bg: #15181d; --bg2: #1b1f26; --bg3: #232832; --bg-hover: #242b36;
+    --border: #333a45; --border-soft: #262c35;
+    --fg: #d8dde5; --fg-dim: #8b94a3;
+    --accent: #4da3ff; --accent-fg: #0e1218; --accent-soft: #1f3350;
     --rx: #58c470; --tx: #f0a04b; --hmip: #7f8fd4; --warn: #e05c5c;
+    --lgw: #d4b04f;
+    --grid: #272d37; --chart-muted: #5a636f;
+    --ok-bg: #1e3a28; --warn-bg: #3d2320; --learn-bg: #1f3350;
+    --row-alarm: #2b1d1d; --tooltip-bg: #0d0f13f2;
+    --shadow: 0 1px 2px rgba(0,0,0,.35);
+    --radius: 6px; --radius-lg: 10px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f3f5f8; --bg2: #ffffff; --bg3: #eef1f5; --bg-hover: #eaeef4;
+      --border: #d5dbe3; --border-soft: #e7ebf1;
+      --fg: #1e252f; --fg-dim: #5c6675;
+      --accent: #0a6ed1; --accent-fg: #ffffff; --accent-soft: #dbeafe;
+      --rx: #1f8a44; --tx: #b06a00; --hmip: #4a57a8; --warn: #c33a33;
+      --lgw: #8a6d00;
+      --grid: #e4e9ef; --chart-muted: #9aa4b2;
+      --ok-bg: #dcf3e4; --warn-bg: #fbe2e0; --learn-bg: #dbeafe;
+      --row-alarm: #fdeceb; --tooltip-bg: #1e252ff2;
+      --shadow: 0 1px 2px rgba(16,24,40,.08);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f5f8; --bg2: #ffffff; --bg3: #eef1f5; --bg-hover: #eaeef4;
+    --border: #d5dbe3; --border-soft: #e7ebf1;
+    --fg: #1e252f; --fg-dim: #5c6675;
+    --accent: #0a6ed1; --accent-fg: #ffffff; --accent-soft: #dbeafe;
+    --rx: #1f8a44; --tx: #b06a00; --hmip: #4a57a8; --warn: #c33a33;
+    --lgw: #8a6d00;
+    --grid: #e4e9ef; --chart-muted: #9aa4b2;
+    --ok-bg: #dcf3e4; --warn-bg: #fbe2e0; --learn-bg: #dbeafe;
+    --row-alarm: #fdeceb; --tooltip-bg: #1e252ff2;
+    --shadow: 0 1px 2px rgba(16,24,40,.08);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
   body { background: var(--bg); color: var(--fg);
-    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 14px; padding: 8px 14px;
-    background: var(--bg2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+    font: 13px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased; }
+  header { display: flex; align-items: center; gap: 12px; padding: 9px 16px;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; box-shadow: var(--shadow); position: relative; z-index: 2; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: -.01em; }
   header h1 span { color: var(--accent); }
   .status { color: var(--fg-dim); font-size: 12px; }
   .status b { color: var(--fg); }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-    background: var(--rx); margin-right: 4px; vertical-align: baseline; }
+    background: var(--rx); margin-right: 5px; vertical-align: baseline; }
   .dot.off { background: var(--warn); }
   .dot.paused { background: var(--tx); }
   .spacer { flex: 1; }
   select, input[type=text], input[type=number], button {
     background: var(--bg3); color: var(--fg); border: 1px solid var(--border);
-    border-radius: 4px; padding: 4px 8px; font: inherit; }
+    border-radius: var(--radius); padding: 5px 9px; font: inherit;
+    transition: border-color .12s, background-color .12s; }
   input[type=text] { width: 190px; }
   input[type=number] { width: 90px; }
   button { cursor: pointer; }
-  button:hover { border-color: var(--accent); }
-  button.active { background: var(--accent); color: #10131a; border-color: var(--accent); font-weight: 600; }
-  .tabs { display: flex; gap: 4px; }
-  .filters { display: flex; gap: 8px; padding: 8px 14px; background: var(--bg2);
+  button:hover, select:hover { border-color: var(--accent); }
+  select:focus-visible, input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.active { background: var(--accent); color: var(--accent-fg);
+    border-color: var(--accent); font-weight: 600; }
+  .tabs { display: flex; gap: 3px; background: var(--bg3); padding: 3px;
+    border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  .tabs button { background: transparent; border: none; padding: 4px 12px;
+    border-radius: 7px; color: var(--fg-dim); }
+  .tabs button:hover { color: var(--fg); background: var(--bg-hover); }
+  .tabs button.active { background: var(--bg2); color: var(--accent);
+    box-shadow: var(--shadow); }
+  .filters { display: flex; gap: 8px; padding: 9px 16px; background: var(--bg2);
     border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
   .filters label { color: var(--fg-dim); font-size: 12px; }
   main { flex: 1; overflow: auto; }
   /* Tabelle */
   table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  thead th { position: sticky; top: 0; background: var(--bg3); text-align: left;
-    padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap;
-    cursor: default; z-index: 1; }
-  tbody td { padding: 3px 8px; border-bottom: 1px solid #20252d; white-space: nowrap;
-    font-variant-numeric: tabular-nums; }
-  tbody tr:hover { background: #232936; }
+  thead th { position: sticky; top: 0; background: var(--bg2); text-align: left;
+    padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
+    cursor: default; z-index: 1; font-weight: 600; color: var(--fg-dim);
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+  tbody td { padding: 4px 10px; border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--bg-hover); }
   td.payload, td.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11.5px; }
   .dir-RX { color: var(--rx); font-weight: 600; }
   .dir-TX { color: var(--tx); font-weight: 600; }
-  .proto-HMIP td { opacity: .75; }
+  .proto-HMIP td { opacity: .72; }
   .proto-HMIP .proto { color: var(--hmip); }
   .bcast-name { color: var(--hmip); }
   .bcast-hex { color: var(--hmip); font-weight: 700; text-decoration: underline dotted; cursor: help; }
   .via-direkt { color: var(--fg-dim); font-size: 11.5px; }
-  .via-lgw { color: #d4b04f; font-weight: 600; font-size: 11.5px; }
+  .via-lgw { color: var(--lgw); font-weight: 600; font-size: 11.5px; }
   .devname { color: var(--fg); }
   .devaddr { color: var(--fg-dim); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; }
   .rssi-good { color: var(--rx); } .rssi-mid { color: var(--tx); } .rssi-bad { color: var(--warn); }
   .flags, .typename { font-size: 11.5px; }
   .typename { color: var(--accent); }
-  .more { padding: 10px 14px; color: var(--fg-dim); }
+  .more { padding: 12px 16px; color: var(--fg-dim); }
   /* Analyse */
-  .stats-wrap { padding: 14px; display: flex; flex-direction: column; gap: 16px; max-width: 1250px; }
+  .stats-wrap { padding: 16px; display: flex; flex-direction: column; gap: 16px; max-width: 1250px; }
   .cards { display: flex; gap: 10px; flex-wrap: wrap; }
-  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 10px 16px; min-width: 110px; }
-  .card .num { font-size: 20px; font-weight: 700; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 11px 16px; min-width: 110px; box-shadow: var(--shadow); }
+  .card .num { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
   .card .lbl { color: var(--fg-dim); font-size: 11.5px; }
-  .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
-  .panel h2 { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; color: var(--fg-dim);
-    text-transform: uppercase; letter-spacing: .04em; }
+  .panel { background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow); }
+  .panel h2 { margin: 0 0 12px; font-size: 11.5px; font-weight: 600; color: var(--fg-dim);
+    text-transform: uppercase; letter-spacing: .05em; }
   canvas { width: 100%; display: block; }
-  .devtable td, .devtable th { padding: 4px 10px; }
+  .devtable td, .devtable th { padding: 5px 10px; }
   .devtable th { cursor: pointer; user-select: none; }
-  .bar-bg { background: var(--bg3); border-radius: 3px; height: 10px; min-width: 120px; position: relative; overflow: hidden; }
+  .bar-bg { background: var(--bg3); border-radius: 3px; height: 9px; min-width: 120px; position: relative; overflow: hidden; }
   .bar-rx, .bar-tx { position: absolute; top: 0; bottom: 0; }
   .bar-rx { background: var(--rx); } .bar-tx { background: var(--tx); }
-  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px; color: var(--fg-dim); }
-  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; color: var(--fg-dim); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
   /* Alarm */
   /* Zweispaltiges Formular: Beschriftung links, Bedienelement rechts, der
      Hinweis darunter in derselben Spalte. Die zweite Spalte ist
@@ -106,23 +157,35 @@
     .form > label { margin-top: 10px; }
     .form .hint { grid-column: 1; margin: 2px 0 0; }
   }
+  .past { color: var(--fg-dim); font-size: 11px; white-space: nowrap; }
   .progress { background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden;
     min-width: 160px; flex: 1; max-width: 420px; }
   .progress > div { background: var(--accent); height: 100%; transition: width .4s; }
-  .badge { display: inline-block; border-radius: 3px; padding: 1px 7px; font-size: 11px;
+  .badge { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 11px;
     font-weight: 600; }
-  .badge.ok { background: #1e3a28; color: var(--rx); }
-  .badge.warn { background: #3d2320; color: var(--warn); }
-  .badge.learn { background: #1f3350; color: var(--accent); }
+  .badge.ok { background: var(--ok-bg); color: var(--rx); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.learn { background: var(--learn-bg); color: var(--accent); }
   .badge.idle { background: var(--bg3); color: var(--fg-dim); }
-  .past { color: var(--fg-dim); font-size: 11px; white-space: nowrap; }
   .pct-up { color: var(--warn); font-weight: 600; }
   .pct-dn { color: var(--rx); }
-  .alarmrow td { background: #2b1d1d; }
+  .alarmrow td { background: var(--row-alarm); }
   .saved { color: var(--rx); font-size: 11.5px; }
-  #tooltip { position: fixed; pointer-events: none; background: #0d0f13ee; border: 1px solid var(--border);
-    border-radius: 4px; padding: 6px 9px; font-size: 11.5px; display: none; z-index: 10; white-space: pre; }
+  #tooltip { position: fixed; pointer-events: none; background: var(--tooltip-bg);
+    border: 1px solid var(--border); color: #fff;
+    border-radius: var(--radius); padding: 6px 9px; font-size: 11.5px; display: none;
+    z-index: 10; white-space: pre; box-shadow: var(--shadow); }
+  :root[data-theme="light"] #tooltip { color: #fff; }
 </style>
+<script>
+  /* Thema setzen, bevor der Body gezeichnet wird - sonst blitzt kurz das
+     falsche auf. Ohne gespeicherte Wahl entscheidet prefers-color-scheme
+     (siehe CSS). localStorage kann in manchen Umgebungen werfen. */
+  try {
+    var t0 = localStorage.getItem("rftl.theme");
+    if (t0 === "light" || t0 === "dark") document.documentElement.dataset.theme = t0;
+  } catch (e) {}
+</script>
 </head>
 <body>
 <header>
@@ -141,6 +204,8 @@
   <button id="pauseBtn" title="Live-Aktualisierung anhalten">&#10074;&#10074; Pause</button>
   <button id="csvBtn" title="Gefilterte Telegramme als CSV exportieren">CSV</button>
   <button id="devBtn" title="Ger&auml;teliste neu laden">Ger&auml;te &#8635;</button>
+  <button id="themeBtn" title="Zwischen hellem und dunklem Erscheinungsbild wechseln"
+          aria-label="Erscheinungsbild wechseln"></button>
 </header>
 
 <div class="filters" id="filterBar">
@@ -731,8 +796,37 @@ function renderTable() {
 
 /* ------------------------------------------------- Analyse */
 
-const PALETTE = ["#4da3ff", "#58c470", "#f0a04b", "#d46bd4", "#4fc9c4",
-                 "#e05c5c", "#b8c44e", "#8f7ff0", "#d49a6b", "#6bd48f"];
+const PALETTE_DARK = ["#4da3ff", "#58c470", "#f0a04b", "#d46bd4", "#4fc9c4",
+                      "#e05c5c", "#b8c44e", "#8f7ff0", "#d49a6b", "#6bd48f"];
+// fuer helle Flaechen abgedunkelt, sonst sind die Punkte kaum zu erkennen
+const PALETTE_LIGHT = ["#1a73c7", "#1f8a44", "#b06a00", "#a63fa6", "#1b8f8a",
+                       "#c33a33", "#6f7a1c", "#5a4bc4", "#9a6b3d", "#2f9e5e"];
+
+// Welches Erscheinungsbild gilt gerade? Ohne eigene Wahl entscheidet das
+// System, genau wie im CSS.
+function themeIsLight() {
+  const de = document.documentElement;
+  const chosen = de && de.dataset ? de.dataset.theme : "";
+  if (chosen) return chosen === "light";
+  return typeof matchMedia === "function" &&
+         matchMedia("(prefers-color-scheme: light)").matches;
+}
+function palette() { return themeIsLight() ? PALETTE_LIGHT : PALETTE_DARK; }
+
+// Farben fuer die Canvas-Zeichnungen aus dem Stylesheet lesen, damit sie der
+// Umschaltung folgen. Ohne getComputedStyle (Testumgebung) greifen die
+// dunklen Vorgaben.
+function themeColors() {
+  const def = { dim: "#8b94a3", grid: "#272d37", rx: "#58c470", tx: "#f0a04b",
+                muted: "#5a636f" };
+  const de = document.documentElement;
+  if (typeof getComputedStyle !== "function" || !de) return def;
+  const cs = getComputedStyle(de);
+  const v = (n, d) => ((cs.getPropertyValue(n) || "").trim() || d);
+  return { dim: v("--fg-dim", def.dim), grid: v("--grid", def.grid),
+           rx: v("--rx", def.rx), tx: v("--tx", def.tx),
+           muted: v("--chart-muted", def.muted) };
+}
 
 function renderStats() {
   const list = filtered();
@@ -871,7 +965,8 @@ function setupCanvas(cv) {
   return { ctx, w, h };
 }
 function timeTicks(ctx, x0, x1, t0, t1, y, w) {
-  ctx.fillStyle = "#8a93a2"; ctx.font = "10px sans-serif"; ctx.textAlign = "center";
+  const tc = themeColors();
+  ctx.fillStyle = tc.dim; ctx.font = "10px sans-serif"; ctx.textAlign = "center";
   const span = t1 - t0;
   if (span <= 0) return;
   const stepMs = span > 6 * 3600e3 ? 3600e3 : span > 2 * 3600e3 ? 1800e3 : span > 30 * 60e3 ? 600e3 : 60e3;
@@ -879,7 +974,7 @@ function timeTicks(ctx, x0, x1, t0, t1, y, w) {
   for (; t <= t1; t += stepMs) {
     const x = x0 + ((t - t0) / span) * (x1 - x0);
     ctx.fillText(new Date(t).toTimeString().slice(0, 5), x, y);
-    ctx.strokeStyle = "#242a33"; ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, y - 10); ctx.stroke();
+    ctx.strokeStyle = tc.grid; ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, y - 10); ctx.stroke();
   }
 }
 
@@ -891,7 +986,8 @@ function drawRssiChart(data) {
   const { ctx, w, h } = setupCanvas(cv);
   rssiPoints = [];
   $("rssiLegend").innerHTML = "";
-  if (!data.length) { ctx.fillStyle = "#8a93a2"; ctx.fillText("keine Daten", 20, 30); return; }
+  const tc = themeColors(), pal = palette();
+  if (!data.length) { ctx.fillStyle = tc.dim; ctx.fillText("keine Daten", 20, 30); return; }
 
   const padL = 38, padR = 8, padT = 8, padB = 22;
   const t0 = data[0].ts, t1 = data[data.length - 1].ts || t0 + 1;
@@ -900,18 +996,18 @@ function drawRssiChart(data) {
   const y = r => padT + ((rMax - r) / (rMax - rMin)) * (h - padT - padB);
 
   // Y-Achse
-  ctx.fillStyle = "#8a93a2"; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
+  ctx.fillStyle = tc.dim; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
   for (let r = -20; r >= -110; r -= 20) {
     ctx.fillText(r, padL - 6, y(r) + 3);
-    ctx.strokeStyle = "#242a33"; ctx.beginPath(); ctx.moveTo(padL, y(r)); ctx.lineTo(w - padR, y(r)); ctx.stroke();
+    ctx.strokeStyle = tc.grid; ctx.beginPath(); ctx.moveTo(padL, y(r)); ctx.lineTo(w - padR, y(r)); ctx.stroke();
   }
   timeTicks(ctx, padL, w - padR, t0, t1, h - 6, w);
 
   // Top-Sender fuer Farben
   const cnt = new Map();
   for (const t of data) cnt.set(t.from, (cnt.get(t.from) || 0) + 1);
-  const top = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, PALETTE.length).map(e => e[0]);
-  const colorOf = a => { const i = top.indexOf(a); return i < 0 ? "#5a636f" : PALETTE[i]; };
+  const top = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, pal.length).map(e => e[0]);
+  const colorOf = a => { const i = top.indexOf(a); return i < 0 ? tc.muted : pal[i]; };
 
   for (const t of data) {
     const px = x(t.ts), py = y(Math.max(Math.min(t.rssi, rMax), rMin));
@@ -923,8 +1019,8 @@ function drawRssiChart(data) {
   ctx.globalAlpha = 1;
 
   $("rssiLegend").innerHTML = top.map((a, i) =>
-    `<span><i style="background:${PALETTE[i]}"></i>${esc(devLabel(a))}</span>`).join("") +
-    (cnt.size > top.length ? `<span><i style="background:#5a636f"></i>weitere</span>` : "");
+    `<span><i style="background:${pal[i]}"></i>${esc(devLabel(a))}</span>`).join("") +
+    (cnt.size > top.length ? `<span><i style="background:${tc.muted}"></i>weitere</span>` : "");
 }
 
 /* --- Raten-Chart --- */
@@ -945,19 +1041,20 @@ function drawRateChart(list) {
   const bw = (w - padL - padR) / nBuckets;
   const yv = v => padT + (1 - v / maxV) * (h - padT - padB);
 
-  ctx.fillStyle = "#8a93a2"; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
+  const tc = themeColors();
+  ctx.fillStyle = tc.dim; ctx.font = "10px sans-serif"; ctx.textAlign = "right";
   for (const v of [maxV, Math.round(maxV / 2)]) {
     ctx.fillText(v, padL - 6, yv(v) + 3);
-    ctx.strokeStyle = "#242a33"; ctx.beginPath(); ctx.moveTo(padL, yv(v)); ctx.lineTo(w - padR, yv(v)); ctx.stroke();
+    ctx.strokeStyle = tc.grid; ctx.beginPath(); ctx.moveTo(padL, yv(v)); ctx.lineTo(w - padR, yv(v)); ctx.stroke();
   }
   timeTicks(ctx, padL, w - padR, t0, t1, h - 6, w);
   for (let i = 0; i < nBuckets; i++) {
     const x = padL + i * bw;
     const hRx = (rxB[i] / maxV) * (h - padT - padB);
     const hTx = (txB[i] / maxV) * (h - padT - padB);
-    ctx.fillStyle = "#58c470";
+    ctx.fillStyle = tc.rx;
     ctx.fillRect(x, h - padB - hRx, Math.max(bw - 1, 1), hRx);
-    ctx.fillStyle = "#f0a04b";
+    ctx.fillStyle = tc.tx;
     ctx.fillRect(x, h - padB - hRx - hTx, Math.max(bw - 1, 1), hTx);
   }
 }
@@ -1419,6 +1516,35 @@ $("pauseBtn").onclick = () => {
   if (!state.paused) poll();
 };
 $("csvBtn").onclick = exportCsv;
+
+/* --- Erscheinungsbild --- */
+function updateThemeButton() {
+  const light = themeIsLight();
+  // Symbol zeigt, wohin der Klick fuehrt
+  $("themeBtn").innerHTML = light ? "&#9790;" : "&#9728;";
+  $("themeBtn").title = light ? "Auf dunkles Erscheinungsbild wechseln"
+                              : "Auf helles Erscheinungsbild wechseln";
+}
+$("themeBtn").onclick = () => {
+  const next = themeIsLight() ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("rftl.theme", next); } catch (e) {}
+  updateThemeButton();
+  // die Diagramme zeichnen mit festen Farben, also neu zeichnen
+  if (state.tab === "stats") renderStats();
+};
+// Folgt die Seite dem System (keine eigene Wahl), muss sie auf dessen
+// Wechsel reagieren - das CSS tut das von selbst, Knopf und Canvas nicht.
+if (typeof matchMedia === "function") {
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  const onSystemTheme = () => {
+    if (document.documentElement.dataset.theme) return;
+    updateThemeButton();
+    if (state.tab === "stats") renderStats();
+  };
+  if (mq.addEventListener) mq.addEventListener("change", onSystemTheme);
+  else if (mq.addListener) mq.addListener(onSystemTheme);
+}
 $("devBtn").onclick = () => loadDevList(true);
 $("dateSel").onchange = async () => {
   const dates = await loadDates(true);
@@ -1432,6 +1558,7 @@ setInterval(() => { if (state.tab === "alarm") refreshAlarmState(); }, ALARM_POL
 
 /* --- Init --- */
 (async function init() {
+  updateThemeButton();
   fetch(API + "?cmd=version").then(r => r.json())
     .then(j => { if (j.version) $("version").textContent = "v" + j.version; })
     .catch(() => {});

@@ -56,6 +56,17 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
   Geräte-Statistik mit DutyCycle gegen das 36-s-Budget), Alarm-Tab
   (Funkaufkommen-Überwachung), CSV-Export.
 
+  **Helles und dunkles Erscheinungsbild**, umschaltbar über den Knopf rechts
+  in der Kopfzeile (Sonne/Mond). Ohne eigene Wahl richtet sich die Seite nach
+  `prefers-color-scheme` und folgt einem Wechsel der Systemeinstellung im
+  laufenden Betrieb; die Wahl merkt sich `localStorage` unter `rftl.theme`.
+  Gesetzt wird sie als `data-theme` auf `<html>`, und zwar von einem kurzen
+  Script im `<head>` noch vor dem ersten Zeichnen — sonst blitzt beim Laden
+  das falsche Bild auf. Sämtliche Farben kommen aus CSS-Variablen; die
+  Diagramme zeichnen auf Canvas und lesen ihre Farben über `themeColors()`
+  aus demselben Variablensatz, die kategoriale Punktfarben-Palette gibt es in
+  einer dunklen und einer für helle Flächen abgedunkelten Fassung.
+
   Die **DutyCycle-Spalte** im Analyse-Tab zeigt, wie viel vom gesetzlichen
   Sendezeit-Budget des Geräts ausgeschöpft ist. Im 868-MHz-Band darf ein
   Gerät 1 % einer Stunde senden, also **36 s** — die Spalte setzt die

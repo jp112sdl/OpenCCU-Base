@@ -55,6 +55,18 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
   Geräte-Statistik mit DutyCycle-Schätzung), Alarm-Tab
   (Funkaufkommen-Überwachung), CSV-Export.
+
+  Die **DutyCycle-Spalte** im Analyse-Tab ist der Sendezeit-Anteil des
+  Geräts **selbst**: aggregiert wird nach Absender (`FROM`), aufsummiert wird
+  die geschätzte Airtime seiner eigenen Telegramme. ACKs, die die Zentrale an
+  das Gerät schickt, stehen dort nicht — sie landen in der Zeile der
+  Zentrale, die mit ihrer eigenen Funkadresse als Gerät erscheint. Drei
+  Einschränkungen: die Airtime ist geschätzt (`(LEN + 13) × 0,8 ms` bei
+  10 kbit/s inkl. Preamble/Sync/CRC), Bezugsgröße ist der **angezeigte**
+  Zeitraum und nicht eine rollierende Stunde (mit der 1-%-Grenze im
+  868-MHz-Band also nicht direkt vergleichbar), und mehrfach empfangene
+  Sendungen zählen nur einmal (siehe oben) — die Telegrammzahlen daneben
+  bleiben dagegen Logzeilen, damit sie zur Telegrammtabelle passen.
 - **`bin/rftrafficwatch.tcl`** — Hintergrunddienst der
   Funkaufkommen-Überwachung (siehe unten).
 - **`lib/rftl_alarm.tcl`** — gemeinsame Basis von `api.cgi` und Dienst:
@@ -134,6 +146,18 @@ beobachtet hat — die Stunde, in der er gestartet ist, ist angebrochen und
 würde die Spitze zu niedrig ansetzen. Ist das Auswertefenster kürzer als eine
 Stunde, kann die hochgerechnete Rate naturgemäß über jedem
 Stundendurchschnitt liegen; das fängt die Schwelle ab.
+
+Eine Sendung, die sowohl das lokale Funkmodul als auch ein Funk-LAN-Gateway
+hört, steht in **beiden** Logs. Für die Zählung gilt sie trotzdem nur einmal —
+das Gerät hat ja nur einmal gesendet. Schlüssel sind Absender, Sekunde und
+Nachrichtenzähler aus der Logzeile; die sind in beiden Quellen identisch,
+unabhängig davon, wann der Dienst sie liest. Auf einer Installation mit
+Gateway betraf das rund ein Fünftel aller Telegramme, bei einzelnen Geräten
+bis zur Hälfte. Ohne diese Entdopplung würde ein Gateway-Ausfall (oder seine
+Rückkehr) die beobachteten Raten um bis zu 1,5× springen lassen — genug für
+einen Fehlalarm. Eine Wiederholung in derselben Sekunde mit demselben Zähler
+fällt dabei mit der Erstsendung zusammen; das betrifft rund 0,5 % der
+Telegramme und liegt unter der Messgenauigkeit.
 
 Erfasst werden **BidCos und HmIP**: bei BidCos ist der Absender das `FROM`-Feld,
 bei HmIP steht er an fester Position im Rohframe (Byte 4–6) — genau wie die

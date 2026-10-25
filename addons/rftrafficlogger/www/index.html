@@ -764,12 +764,23 @@ let devSortKey = "total", devSortAsc = false;
 
 function renderDevStats(bidcos, spanSec) {
   const agg = new Map();
+  // Dieselbe Sendung protokollieren das lokale Funkmodul und ein
+  // Funk-LAN-Gateway getrennt - fuer die Sendezeit zaehlt sie nur einmal,
+  // das Geraet hat ja nur einmal gesendet. Schluessel: Absender, Sekunde
+  // und Nachrichtenzaehler. Die Telegrammzahlen bleiben bewusst
+  // Logzeilen, damit sie zur Telegrammtabelle passen.
+  const airSeen = new Set();
   for (const t of bidcos) {
     if (!t.from) continue;
     let a = agg.get(t.from);
-    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: null, air: 0 }; agg.set(t.from, a); }
+    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: null, air: 0, sends: 0 }; agg.set(t.from, a); }
     if (t.dir === "RX") a.rx++; else a.tx++;
-    a.air += airtimeMs(t.len);
+    const airKey = `${t.from}|${Math.floor(t.ts / 1000)}|${t.cnt}`;
+    if (!airSeen.has(airKey)) {
+      airSeen.add(airKey);
+      a.air += airtimeMs(t.len);
+      a.sends++;
+    }
     if (t.rssi !== null) {
       a.rssiSum += t.rssi; a.rssiN++;
       if (a.rssiMin === null || t.rssi < a.rssiMin) a.rssiMin = t.rssi;
@@ -800,7 +811,7 @@ function renderDevStats(bidcos, spanSec) {
     <th data-k="tx">TX${arrow("tx")}</th>
     <th data-k="rssiAvg">&Oslash; RSSI${arrow("rssiAvg")}</th>
     <th data-k="rssiMin">min. RSSI${arrow("rssiMin")}</th>
-    <th data-k="dc" title="geschaetzter Sendezeit-Anteil im gewaehlten Zeitraum">DutyCycle*${arrow("dc")}</th>
+    <th data-k="dc" title="Geschaetzter Anteil eigener Sendezeit am angezeigten Zeitraum.&#10;Airtime = (LEN + 13) * 0,8 ms bei 10 kbit/s.&#10;Mehrfach empfangene Sendungen zaehlen nur einmal.&#10;Bezugsgroesse ist der angezeigte Zeitraum, nicht eine rollierende Stunde.">DutyCycle*${arrow("dc")}</th>
   </tr>`];
   for (const r of rows.slice(0, 40)) {
     const wRx = (r.rx / maxTotal) * 100, wTx = (r.tx / maxTotal) * 100;
@@ -812,7 +823,7 @@ function renderDevStats(bidcos, spanSec) {
       <td>${r.rx}</td><td>${r.tx}</td>
       <td class="${rssiClass(r.rssiAvg)}">${r.rssiAvg === null ? "" : r.rssiAvg.toFixed(1)}</td>
       <td class="${rssiClass(r.rssiMin || null)}">${r.rssiN ? r.rssiMin : ""}</td>
-      <td>${r.dc.toFixed(3)} %</td>
+      <td title="${r.sends} eigene Sendung${r.sends === 1 ? "" : "en"} von ${r.total} Logzeile${r.total === 1 ? "" : "n"}">${r.dc.toFixed(3)} %</td>
     </tr>`);
   }
   const tbl = $("devStats");

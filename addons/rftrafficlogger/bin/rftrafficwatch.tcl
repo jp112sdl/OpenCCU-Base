@@ -275,11 +275,13 @@ proc bucketOf {datestr timestr now tolerance} {
 # zaehlt die Telegramme je Absender und Zeitbucket auf.
 # knownOnly=1 beschraenkt die Zaehlung auf die Adressen in known (die
 # Geraeteliste der CCU) - fremder Funkverkehr wird dann ignoriert.
-proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly known \
-                now tolerance} {
+proc parseInto {text countsVar bucketsVar hcountsVar dedupVar ignore learning knownOnly \
+                known now tolerance} {
     upvar 1 $countsVar counts
     upvar 1 $bucketsVar buckets
     upvar 1 $hcountsVar hcounts
+    upvar 1 $dedupVar dedup
+    if {![info exists dedup]} { set dedup {} }
     # der Aufrufer darf die Stundenzaehler noch nicht angelegt haben
     if {![info exists hcounts]} { set hcounts {} }
     set n 0
@@ -288,8 +290,10 @@ proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly k
         if {![regexp {^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})\.\d{3} (?:RX|TX) (BIDCOS|HMIP) (.*)$} \
                 $line -> d t proto rest]} { continue }
         set addr ""
+        set cnt ""
         if {$proto eq "BIDCOS"} {
             if {![regexp {(?:^| )FROM=([0-9A-Fa-f]{6})(?: |$)} $rest -> addr]} { continue }
+            regexp {(?:^| )CNT=([0-9A-Fa-f]+)(?: |$)} $rest -> cnt
         } else {
             if {![regexp {(?:^| )(?:DATA|PAYLOAD)=([0-9A-Fa-f]+)(?: |$)} $rest -> hex]} { continue }
             if {[string length $hex] < 14} { continue }
@@ -301,6 +305,20 @@ proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly k
         if {$knownOnly && ![dict exists $known $addr]} { continue }
         set b [bucketOf $d $t $now $tolerance]
         if {$b < 0} { continue }
+        # Dieselbe Sendung protokollieren das lokale Funkmodul und ein
+        # Funk-LAN-Gateway getrennt - sie darf trotzdem nur einmal zaehlen,
+        # das Geraet hat ja nur einmal gesendet. Schluessel sind Absender,
+        # Sekunde und Nachrichtenzaehler aus der Logzeile (identisch in
+        # beiden Quellen, unabhaengig davon wann wir sie lesen). Eine
+        # Wiederholung in derselben Sekunde mit demselben Zaehler faellt
+        # damit mit der Erstsendung zusammen - das betrifft rund 0,5 % der
+        # Telegramme und liegt unter der Messgenauigkeit. HmIP kommt nur
+        # ueber multimacd, dort gibt es nichts zu entdoppeln.
+        if {$cnt ne ""} {
+            set dkey "$addr|$d $t|$cnt"
+            if {[dict exists $dedup $dkey]} { continue }
+            dict set dedup $dkey $b
+        }
         # die Lernzaehler laufen nur waehrend der Lernphase weiter, das
         # Kurzzeitfenster immer
         if {$learning} {
@@ -434,6 +452,7 @@ proc main {} {
     # das Auswertefenster erst wieder fuellen, bevor Alarme sinnvoll sind
     set buckets {}
     set hcounts {}
+    set dedup {}
     set runStart [clock seconds]
     # die Stunde, in der wir angefangen haben zu beobachten, ist angebrochen
     # und darf nicht als Stundenspitze gewertet werden
@@ -448,12 +467,13 @@ proc main {} {
             set st [resetState $cfg "Anforderung ueber die Weboberflaeche"]
             set buckets {}
             set hcounts {}
+            set dedup {}
             set runStart $now
             set obsHour [expr {$now / 3600}]
         }
 
         if {[dict get $cfg enabled]} {
-            set st [cycle $cfg $st buckets hcounts $runStart $obsHour $now]
+            set st [cycle $cfg $st buckets hcounts dedup $runStart $obsHour $now]
         } else {
             # im ausgeschalteten Zustand nur den Dateizeiger nachfuehren,
             # damit nach dem Einschalten keine alten Zeilen nachlaufen
@@ -478,9 +498,10 @@ proc main {} {
     }
 }
 
-proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
+proc cycle {cfg st bucketsVar hcountsVar dedupVar runStart obsHour now} {
     upvar 1 $bucketsVar buckets
     upvar 1 $hcountsVar hcounts
+    upvar 1 $dedupVar dedup
     global MMDCONF RFDCONF MMDPREFIX RFDPREFIX BUCKET_SEC
 
     set ignore [split [dict get $cfg ignore_addrs] ","]
@@ -488,6 +509,12 @@ proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
     # Toleranz fuer den gelesenen Zeitstempel: normal liegt eine Zeile
     # hoechstens einen Lesezyklus zurueck, mit Reserve fuer Taktabweichungen
     set tsTol [expr {max([dict get $cfg interval_sec] * 2, 600)}]
+    # Entdopplungsfenster: so lange koennen sich die beiden Quellen
+    # unterscheiden, bis beide dieselbe Sendung geliefert haben
+    set dedMin [expr {($now - $tsTol * 2) / $BUCKET_SEC}]
+    set kept {}
+    dict for {dk db} $dedup { if {$db >= $dedMin} { dict set kept $dk $db } }
+    set dedup $kept
     set learning [expr {[dict get $st phase] eq "learning"}]
 
     # Geraeteliste der CCU - Namen fuer den Alarmtext und, bei known_only,
@@ -508,7 +535,7 @@ proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
     foreach {k conf prefix} [list mmd $MMDCONF $MMDPREFIX rfd $RFDCONF $RFDPREFIX] {
         set text [readNewLines $k [readTrafficLogDir $conf] $prefix st]
         if {$text ne ""} {
-            incr lines [parseInto $text counts buckets hcounts $ignore $learning \
+            incr lines [parseInto $text counts buckets hcounts dedup $ignore $learning \
                                   $knownOnly $known $now $tsTol]
         }
     }

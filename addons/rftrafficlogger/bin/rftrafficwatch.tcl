@@ -237,7 +237,24 @@ proc readChunk {path posVar} {
 #         wertet es die Weboberflaeche aus.
 set tsMemo {}
 
-proc bucketOf {datestr timestr} {
+# Zeitfach einer Logzeile. $now ist die Lesezeit (Epoche), gegen die der
+# gelesene Zeitstempel geprueft wird.
+#
+# Die Logs tragen lokale Zeitstempel, und die sind in der Nacht der
+# Zeitumstellung nicht eindeutig: bei der Rueckstellung laeuft die Stunde
+# vor 03:00 zweimal, und clock scan loest beide Durchlaeufe auf dieselbe
+# Sekunde auf (auf die zweite Instanz). Ohne Gegenmassnahme landen beide
+# Durchlaeufe in denselben Zeitfaechern, das Auswertefenster zaehlt die
+# Stunde doppelt, und die Raten aller Geraete steigen bis auf das Doppelte -
+# am 25.10.2026 hat das auf c2 17 Fehlalarme ausgeloest.
+#
+# Deshalb gilt der gelesene Zeitstempel nur, solange er plausibel zur
+# Lesezeit passt. Normal liegt er hoechstens einen Lesezyklus zurueck;
+# weicht er weiter ab, wird die Lesezeit genommen. Damit faellt der erste
+# Durchlauf (vom Parser eine Stunde in die Zukunft gelegt) auf seine echte
+# Zeit zurueck, der zweite behaelt seinen Stempel - die beiden ueberlagern
+# sich nicht mehr.
+proc bucketOf {datestr timestr now tolerance} {
     global tsMemo BUCKET_SEC
     # auf Minuten memoisieren, clock scan ist teuer
     set key "$datestr [string range $timestr 0 4]"
@@ -250,13 +267,16 @@ proc bucketOf {datestr timestr} {
     }
     set sec [scan [string range $timestr 6 7] %d]
     if {$sec eq ""} { set sec 0 }
-    return [expr {($base + $sec) / $BUCKET_SEC}]
+    set ts [expr {$base + $sec}]
+    if {abs($ts - $now) > $tolerance} { set ts $now }
+    return [expr {$ts / $BUCKET_SEC}]
 }
 
 # zaehlt die Telegramme je Absender und Zeitbucket auf.
 # knownOnly=1 beschraenkt die Zaehlung auf die Adressen in known (die
 # Geraeteliste der CCU) - fremder Funkverkehr wird dann ignoriert.
-proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly known} {
+proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly known \
+                now tolerance} {
     upvar 1 $countsVar counts
     upvar 1 $bucketsVar buckets
     upvar 1 $hcountsVar hcounts
@@ -279,7 +299,7 @@ proc parseInto {text countsVar bucketsVar hcountsVar ignore learning knownOnly k
         if {$addr eq "" || $addr eq "000000"} { continue }
         if {[lsearch -exact $ignore $addr] >= 0} { continue }
         if {$knownOnly && ![dict exists $known $addr]} { continue }
-        set b [bucketOf $d $t]
+        set b [bucketOf $d $t $now $tolerance]
         if {$b < 0} { continue }
         # die Lernzaehler laufen nur waehrend der Lernphase weiter, das
         # Kurzzeitfenster immer
@@ -465,6 +485,9 @@ proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
 
     set ignore [split [dict get $cfg ignore_addrs] ","]
     set counts [dict get $st counts]
+    # Toleranz fuer den gelesenen Zeitstempel: normal liegt eine Zeile
+    # hoechstens einen Lesezyklus zurueck, mit Reserve fuer Taktabweichungen
+    set tsTol [expr {max([dict get $cfg interval_sec] * 2, 600)}]
     set learning [expr {[dict get $st phase] eq "learning"}]
 
     # Geraeteliste der CCU - Namen fuer den Alarmtext und, bei known_only,
@@ -486,7 +509,7 @@ proc cycle {cfg st bucketsVar hcountsVar runStart obsHour now} {
         set text [readNewLines $k [readTrafficLogDir $conf] $prefix st]
         if {$text ne ""} {
             incr lines [parseInto $text counts buckets hcounts $ignore $learning \
-                                  $knownOnly $known]
+                                  $knownOnly $known $now $tsTol]
         }
     }
     dict set st counts $counts

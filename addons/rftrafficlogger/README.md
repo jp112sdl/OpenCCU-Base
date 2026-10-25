@@ -110,6 +110,25 @@ bereits +50 % ein deutliches Signal. Der Mittelwert bleibt als Alternative
 wählbar (`ref_mode = mean`) und greift automatisch für Geräte, für die keine
 volle Stunde erfasst wurde.
 
+### Zeitstempel und Zeitumstellung
+
+Die Traffic-Logs tragen **lokale** Zeitstempel, und die sind in der Nacht der
+Zeitumstellung nicht eindeutig: bei der Rückstellung läuft die Stunde vor
+03:00 zweimal, und `clock scan` löst beide Durchläufe auf dieselbe Sekunde auf
+(auf die zweite Instanz). Ohne Gegenmaßnahme landen beide Durchläufe in
+denselben Zeitfächern, das Auswertefenster zählt die Stunde doppelt und die
+Raten aller Geräte steigen im Lauf der Wiederholungsstunde bis auf das
+Doppelte — am 25.10.2026 hat das auf einer Installation 17 Fehlalarme
+ausgelöst, verteilt über 25 Minuten, alle mit +50 bis +57 %.
+
+Deshalb gilt der gelesene Zeitstempel nur, solange er plausibel zur **Lesezeit**
+passt (Toleranz: das Doppelte des Prüfintervalls, mindestens 600 s). Im
+Normalbetrieb liegt eine Zeile höchstens einen Lesezyklus zurück, der Stempel
+wird also verwendet und die Auflösung bleibt minutengenau. Weicht er weiter ab,
+zählt die Lesezeit — damit fällt der erste Durchlauf der Wiederholungsstunde
+(vom Parser eine Stunde in die Zukunft gelegt) auf seine echte Zeit zurück,
+der zweite behält seinen Stempel, und die beiden überlagern sich nicht mehr.
+
 Gewertet wird nur eine Stunde, die der Dienst **von Anfang bis Ende**
 beobachtet hat — die Stunde, in der er gestartet ist, ist angebrochen und
 würde die Spitze zu niedrig ansetzen. Ist das Auswertefenster kürzer als eine

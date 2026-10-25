@@ -115,6 +115,7 @@
   .badge.warn { background: #3d2320; color: var(--warn); }
   .badge.learn { background: #1f3350; color: var(--accent); }
   .badge.idle { background: var(--bg3); color: var(--fg-dim); }
+  .past { color: var(--fg-dim); font-size: 11px; white-space: nowrap; }
   .pct-up { color: var(--warn); font-weight: 600; }
   .pct-dn { color: var(--rx); }
   .alarmrow td { background: #2b1d1d; }
@@ -1189,7 +1190,9 @@ function renderAlarm() {
   const enabled = cfg && cfg.enabled == 1;
 
   // --- Kennzahlen
-  const alarmed = st.devices.filter(d => d.alarm_ts).length;
+  const thrNow = cfg ? Number(cfg.threshold_pct) : 100;
+  const overNow = st.devices.filter(d =>
+    d.base !== null && d.base !== undefined && d.pct !== null && d.pct > thrNow).length;
   const cards = [
     [learning ? "Lernphase" : "&Uuml;berwachung", "Zustand"],
     [st.known_only && st.known_devices !== null
@@ -1243,8 +1246,10 @@ function renderAlarm() {
     hint = "&Uuml;berwachung aktiv &ndash; das Auswertefenster f&uuml;llt sich noch (" +
            fmtDur(st.recent_sec) + " von " + fmtDur(st.window_sec) + ").";
   } else {
-    hint = "&Uuml;berwachung aktiv. Auff&auml;llige Ger&auml;te werden unten rot markiert" +
-           (alarmed ? " – aktuell " + alarmed + "." : ".");
+    hint = overNow
+      ? `&Uuml;berwachung aktiv – <b>${overNow}</b> Ger&auml;t${overNow === 1 ? "" : "e"} ` +
+        "liegen gerade &uuml;ber der Schwelle und sind unten rot markiert."
+      : "&Uuml;berwachung aktiv – derzeit liegt kein Ger&auml;t &uuml;ber der Schwelle.";
   }
   $("alarmHint").innerHTML = cls === "warn"
     ? `<span class="badge warn">Achtung</span> ${hint}` : hint;
@@ -1292,22 +1297,29 @@ function renderAlarmDevs(learning) {
 
   const thr = alarmUi.cfg ? Number(alarmUi.cfg.threshold_pct) : 100;
   for (const r of rows.slice(0, 60)) {
-    let pctCell = "–", status = `<span class="badge idle">–</span>`;
+    let pctCell = "–";
     if (r.pct !== null && r.pct !== undefined) {
       pctCell = `<span class="${r.pct > 0 ? "pct-up" : "pct-dn"}">${r.pct > 0 ? "+" : ""}${r.pct.toFixed(0)} %</span>`;
     }
-    if (r.alarm) {
-      status = `<span class="badge warn" title="Alarm ${fmtTs(r.alarmTs)}">Alarm</span>`;
-    } else if (learning) {
+    // Der Status beschreibt den JETZIGEN Messwert. Ein frueher ausgeloester
+    // Alarm steht daneben als eigener, gedaempfter Vermerk - sonst stuende
+    // stundenlang "Alarm" neben einer Abweichung von wenigen Prozent.
+    const over = !learning && r.base !== null && r.base !== undefined &&
+                 r.pct !== null && r.pct !== undefined && r.pct > thr;
+    let status = `<span class="badge idle">–</span>`;
+    if (learning) {
       status = `<span class="badge learn">lernt</span>`;
     } else if (r.base === null || r.base === undefined) {
       status = `<span class="badge learn" title="in der Lernphase nicht gesehen">neu</span>`;
-    } else if (r.pct !== null && r.pct > thr) {
-      status = `<span class="badge warn" title="&uuml;ber der Schwelle, aber Mindestmenge oder Sperrzeit greift">auff&auml;llig</span>`;
+    } else if (over) {
+      status = `<span class="badge warn" title="liegt gerade &uuml;ber der Alarmschwelle">&uuml;ber Schwelle</span>`;
     } else if (r.recent > 0) {
       status = `<span class="badge ok">ok</span>`;
     }
-    html.push(`<tr${r.alarm ? ' class="alarmrow"' : ""}>
+    if (r.alarmTs) {
+      status += ` <span class="past" title="zuletzt ausgel&ouml;ster Alarm">Alarm ${fmtTs(r.alarmTs)}</span>`;
+    }
+    html.push(`<tr${over ? ' class="alarmrow"' : ""}>
       <td>${esc(r.name)}</td>
       <td class="mono devaddr">${r.addr}</td>
       <td title="${r.mean === null || r.mean === undefined ? ""

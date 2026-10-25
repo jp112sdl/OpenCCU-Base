@@ -53,20 +53,34 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
   - `?cmd=alarmreset` — gelernte Werte verwerfen, Lernphase neu beginnen
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
-  Geräte-Statistik mit DutyCycle-Schätzung), Alarm-Tab
+  Geräte-Statistik mit DutyCycle gegen das 36-s-Budget), Alarm-Tab
   (Funkaufkommen-Überwachung), CSV-Export.
 
-  Die **DutyCycle-Spalte** im Analyse-Tab ist der Sendezeit-Anteil des
-  Geräts **selbst**: aggregiert wird nach Absender (`FROM`), aufsummiert wird
-  die geschätzte Airtime seiner eigenen Telegramme. ACKs, die die Zentrale an
-  das Gerät schickt, stehen dort nicht — sie landen in der Zeile der
-  Zentrale, die mit ihrer eigenen Funkadresse als Gerät erscheint. Drei
-  Einschränkungen: die Airtime ist geschätzt (`(LEN + 13) × 0,8 ms` bei
-  10 kbit/s inkl. Preamble/Sync/CRC), Bezugsgröße ist der **angezeigte**
-  Zeitraum und nicht eine rollierende Stunde (mit der 1-%-Grenze im
-  868-MHz-Band also nicht direkt vergleichbar), und mehrfach empfangene
-  Sendungen zählen nur einmal (siehe oben) — die Telegrammzahlen daneben
-  bleiben dagegen Logzeilen, damit sie zur Telegrammtabelle passen.
+  Die **DutyCycle-Spalte** im Analyse-Tab zeigt, wie viel vom gesetzlichen
+  Sendezeit-Budget des Geräts ausgeschöpft ist. Im 868-MHz-Band darf ein
+  Gerät 1 % einer Stunde senden, also **36 s** — die Spalte setzt die
+  gemessene Airtime dazu ins Verhältnis: 100 % heißt Grenzwert erreicht,
+  50 % heißt 18 s Airtime in der Stunde. Ab 70 % wird der Wert orange, ab
+  100 % rot.
+
+  Gezählt wird die Sendezeit des Geräts **selbst**: aggregiert wird nach
+  Absender (`FROM`), aufsummiert die Airtime seiner eigenen Telegramme. ACKs,
+  die die Zentrale an das Gerät schickt, stehen dort nicht — sie landen in
+  der Zeile der Zentrale, die mit ihrer eigenen Funkadresse als Gerät
+  erscheint.
+
+  Bezugsfenster ist die **letzte Stunde** der angezeigten Daten. Weil der
+  Grenzwert je Stunde gilt und beim Blick auf einen ganzen Tag ausgerechnet
+  die letzte Stunde wenig aussagt, nennt der Tooltip der Zelle zusätzlich die
+  **stärkste Stunde** des Zeitraums (gleitendes Fenster) sowie die absoluten
+  Sekunden. Umfasst der angezeigte Zeitraum weniger als eine Stunde, weist
+  der Tooltip darauf hin — der Wert fällt dann entsprechend niedriger aus.
+
+  Zwei Einschränkungen: die Airtime ist **geschätzt**
+  (`(LEN + 13) × 0,8 ms` bei 10 kbit/s inkl. Preamble/Sync/CRC), und mehrfach
+  empfangene Sendungen zählen nur einmal (siehe oben) — die Telegrammzahlen
+  daneben bleiben dagegen Logzeilen, damit sie zur Telegrammtabelle passen;
+  der Tooltip nennt beide Zahlen.
 - **`bin/rftrafficwatch.tcl`** — Hintergrunddienst der
   Funkaufkommen-Überwachung (siehe unten).
 - **`lib/rftl_alarm.tcl`** — gemeinsame Basis von `api.cgi` und Dienst:

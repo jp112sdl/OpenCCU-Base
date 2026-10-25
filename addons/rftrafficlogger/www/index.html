@@ -770,16 +770,20 @@ function renderDevStats(bidcos, spanSec) {
   // und Nachrichtenzaehler. Die Telegrammzahlen bleiben bewusst
   // Logzeilen, damit sie zur Telegrammtabelle passen.
   const airSeen = new Set();
+  let tEnd = null;
   for (const t of bidcos) {
     if (!t.from) continue;
     let a = agg.get(t.from);
-    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: null, air: 0, sends: 0 }; agg.set(t.from, a); }
+    if (!a) { a = { addr: t.from, rx: 0, tx: 0, rssiSum: 0, rssiN: 0, rssiMin: null, air: 0, sends: 0, samples: [] }; agg.set(t.from, a); }
     if (t.dir === "RX") a.rx++; else a.tx++;
+    if (tEnd === null || t.ts > tEnd) tEnd = t.ts;
     const airKey = `${t.from}|${Math.floor(t.ts / 1000)}|${t.cnt}`;
     if (!airSeen.has(airKey)) {
       airSeen.add(airKey);
-      a.air += airtimeMs(t.len);
+      const ms = airtimeMs(t.len);
+      a.air += ms;
       a.sends++;
+      a.samples.push([t.ts, ms]);
     }
     if (t.rssi !== null) {
       a.rssiSum += t.rssi; a.rssiN++;
@@ -787,11 +791,29 @@ function renderDevStats(bidcos, spanSec) {
     }
   }
   const rows = [...agg.values()];
+  // Im 868-MHz-Band darf ein Geraet 1 % einer Stunde senden, also 36 s.
+  // Die Spalte zeigt, wie viel von diesem Budget ausgeschoepft ist:
+  // 100 % sind genau die 36 s, 50 % waeren 18 s Airtime in der Stunde.
+  const BUDGET_MS = 36000, HOUR_MS = 3600000;
   for (const r of rows) {
     r.total = r.rx + r.tx;
     r.rssiAvg = r.rssiN ? r.rssiSum / r.rssiN : null;
-    // DutyCycle-Schaetzung: Anteil Sendezeit an Gesamtzeitraum
-    r.dc = spanSec > 0 ? (r.air / 1000 / spanSec) * 100 : 0;
+    // Sendezeit in der letzten Stunde der angezeigten Daten
+    let lastMs = 0;
+    for (const [ts, ms] of r.samples) if (ts > tEnd - HOUR_MS) lastMs += ms;
+    // und die staerkste Stunde im Zeitraum - gleitendes Fenster ueber die
+    // chronologisch vorliegenden Sendungen. Der Grenzwert gilt je Stunde,
+    // deshalb ist dieser Wert fuer die Beurteilung oft der sprechendere.
+    let maxMs = 0, sum = 0, lo = 0;
+    for (let hi = 0; hi < r.samples.length; hi++) {
+      sum += r.samples[hi][1];
+      while (r.samples[lo][0] <= r.samples[hi][0] - HOUR_MS) { sum -= r.samples[lo][1]; lo++; }
+      if (sum > maxMs) maxMs = sum;
+    }
+    r.dc = (lastMs / BUDGET_MS) * 100;
+    r.dcMax = (maxMs / BUDGET_MS) * 100;
+    r.airLastS = lastMs / 1000;
+    r.airMaxS = maxMs / 1000;
     r.name = devLabel(r.addr);
   }
   rows.sort((a, b) => {
@@ -811,7 +833,7 @@ function renderDevStats(bidcos, spanSec) {
     <th data-k="tx">TX${arrow("tx")}</th>
     <th data-k="rssiAvg">&Oslash; RSSI${arrow("rssiAvg")}</th>
     <th data-k="rssiMin">min. RSSI${arrow("rssiMin")}</th>
-    <th data-k="dc" title="Geschaetzter Anteil eigener Sendezeit am angezeigten Zeitraum.&#10;Airtime = (LEN + 13) * 0,8 ms bei 10 kbit/s.&#10;Mehrfach empfangene Sendungen zaehlen nur einmal.&#10;Bezugsgroesse ist der angezeigte Zeitraum, nicht eine rollierende Stunde.">DutyCycle*${arrow("dc")}</th>
+    <th data-k="dc" title="Ausgeschoepftes Sendezeit-Budget des Geraets: im 868-MHz-Band sind 1 % einer Stunde erlaubt, also 36 s.&#10;100 % = Grenzwert erreicht, 50 % = 18 s Airtime in der Stunde.&#10;Bezug ist die letzte Stunde der angezeigten Daten; die staerkste Stunde des Zeitraums steht im Tooltip der Zelle.&#10;Airtime geschaetzt als (LEN + 13) * 0,8 ms bei 10 kbit/s; mehrfach empfangene Sendungen zaehlen nur einmal.">DutyCycle*${arrow("dc")}</th>
   </tr>`];
   for (const r of rows.slice(0, 40)) {
     const wRx = (r.rx / maxTotal) * 100, wTx = (r.tx / maxTotal) * 100;
@@ -823,7 +845,8 @@ function renderDevStats(bidcos, spanSec) {
       <td>${r.rx}</td><td>${r.tx}</td>
       <td class="${rssiClass(r.rssiAvg)}">${r.rssiAvg === null ? "" : r.rssiAvg.toFixed(1)}</td>
       <td class="${rssiClass(r.rssiMin || null)}">${r.rssiN ? r.rssiMin : ""}</td>
-      <td title="${r.sends} eigene Sendung${r.sends === 1 ? "" : "en"} von ${r.total} Logzeile${r.total === 1 ? "" : "n"}">${r.dc.toFixed(3)} %</td>
+      <td class="${r.dc >= 100 ? "pct-up" : r.dc >= 70 ? "rssi-mid" : ""}"
+          title="${spanSec > 0 && spanSec < 3600 ? `angezeigter Zeitraum nur ${Math.round(spanSec / 60)} min&#10;` : ""}${r.airLastS.toFixed(1)} s Airtime in der letzten Stunde, erlaubt sind 36 s&#10;staerkste Stunde im Zeitraum: ${r.airMaxS.toFixed(1)} s = ${r.dcMax.toFixed(0)} %&#10;${r.sends} eigene Sendung${r.sends === 1 ? "" : "en"} von ${r.total} Logzeile${r.total === 1 ? "" : "n"}">${r.dc.toFixed(1)} %</td>
     </tr>`);
   }
   const tbl = $("devStats");

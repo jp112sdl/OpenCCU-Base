@@ -51,7 +51,7 @@ puts "--- Fenstersumme ueber die Umstellung (Ende-zu-Ende) ---"
 set buckets {}; set counts {}; set hc {}; set ded {}
 for {set i 0} {$i < 60} {incr i} {
     set real [expr {$tsCEST - 1800 + $i * 60}]
-    parseInto [tele $real $i A1B2C3] counts buckets hc ded {} 1 0 {} $real $TOL
+    parseInto [tele $real $i A1B2C3] counts buckets ded {} 1 0 {} $real $TOL
 }
 # zweiter Durchlauf: dieselben Wanduhrzeiten, eine Stunde spaeter real.
 # Das Entdopplungsfenster hat die alten Schluessel laengst verworfen.
@@ -59,7 +59,7 @@ set ded {}
 for {set i 0} {$i < 60} {incr i} {
     set real [expr {$tsCET - 1800 + $i * 60}]
     parseInto [tele [expr {$real - 3600}] [expr {$i + 100}] A1B2C3] \
-              counts buckets hc ded {} 1 0 {} $real $TOL
+              counts buckets ded {} 1 0 {} $real $TOL
 }
 set win [windowCounts $buckets [expr {(($tsCET + 1800) - 3600) / 60}]]
 ok {120 Telegramme gezaehlt} {[dict get $counts A1B2C3] == 120}
@@ -68,33 +68,33 @@ ok {Fenster haelt nur 60}    {[dict get $win A1B2C3] == 60}
 puts "--- Entdopplung: eine Sendung, zwei Empfaenger ---"
 set nowD [clock seconds]
 set dc {}; set db {}; set dh {}; set dd {}
-parseInto [tele $nowD 42 A1B2C3] dc db dh dd {} 1 0 {} $nowD $TOL
+parseInto [tele $nowD 42 A1B2C3] dc db dd {} 1 0 {} $nowD $TOL
 ok {erste Quelle zaehlt}        {[dict get $dc A1B2C3] == 1}
-parseInto [tele $nowD 42 A1B2C3] dc db dh dd {} 1 0 {} $nowD $TOL
+parseInto [tele $nowD 42 A1B2C3] dc db dd {} 1 0 {} $nowD $TOL
 ok {zweite Quelle zaehlt nicht} {[dict get $dc A1B2C3] == 1}
-parseInto [tele $nowD 43 A1B2C3] dc db dh dd {} 1 0 {} $nowD $TOL
+parseInto [tele $nowD 43 A1B2C3] dc db dd {} 1 0 {} $nowD $TOL
 ok {anderer CNT zaehlt}         {[dict get $dc A1B2C3] == 2}
-parseInto [tele [expr {$nowD + 1}] 42 A1B2C3] dc db dh dd {} 1 0 {} [expr {$nowD + 1}] $TOL
+parseInto [tele [expr {$nowD + 1}] 42 A1B2C3] dc db dd {} 1 0 {} [expr {$nowD + 1}] $TOL
 ok {andere Sekunde zaehlt}      {[dict get $dc A1B2C3] == 3}
-parseInto [tele $nowD 42 DDEEFF] dc db dh dd {} 1 0 {} $nowD $TOL
+parseInto [tele $nowD 42 DDEEFF] dc db dd {} 1 0 {} $nowD $TOL
 ok {anderer Absender zaehlt}    {[dict get $dc DDEEFF] == 1}
 set sumB 0
 dict for {bk bv} [dict get $db A1B2C3] { incr sumB $bv }
 ok {Fenster ebenfalls entdoppelt} {$sumB == [dict get $dc A1B2C3]}
 set dd {}
-parseInto [tele $nowD 42 A1B2C3] dc db dh dd {} 1 0 {} $nowD $TOL
+parseInto [tele $nowD 42 A1B2C3] dc db dd {} 1 0 {} $nowD $TOL
 ok {nach Pruning wieder zaehlbar} {[dict get $dc A1B2C3] == 4}
 
 puts "--- nur angelernte Geraete ---"
 set nw [clock seconds]
 set c {}; set b {}; set h {}; set dz {}
-parseInto "[tele $nw 1 4E9505][tele $nw 2 ABCDEF]" c b h dz {} 1 1 [dict create 4E9505 {Bad}] $nw $TOL
+parseInto "[tele $nw 1 4E9505][tele $nw 2 ABCDEF]" c b dz {} 1 1 [dict create 4E9505 {Bad}] $nw $TOL
 ok {fremde Adresse raus} {[dict exists $c 4E9505] && ![dict exists $c ABCDEF]}
 set c2 {}; set b2 {}; set h2 {}; set dz2 {}
-parseInto "[tele $nw 1 4E9505][tele $nw 2 ABCDEF]" c2 b2 h2 dz2 {} 1 0 {} $nw $TOL
+parseInto "[tele $nw 1 4E9505][tele $nw 2 ABCDEF]" c2 b2 dz2 {} 1 0 {} $nw $TOL
 ok {ohne Filter beide}   {[dict size $c2] == 2}
 set c3 {}; set b3 {}; set h3 {}; set dz3 {}
-parseInto "[tele $nw 1 4E9505]" c3 b3 h3 dz3 {} 1 1 {} $nw $TOL
+parseInto "[tele $nw 1 4E9505]" c3 b3 dz3 {} 1 1 {} $nw $TOL
 ok {leere Liste -> nichts} {[dict size $c3] == 0}
 
 puts "--- Vergleichswert Spitze vs. Mittelwert ---"
@@ -178,15 +178,22 @@ ok {quittierte Rate ist still}  {![dict exists [evaluate $cfgAck $stF {4E6AE9 13
 ok {deutlich darueber meldet}   {[dict exists [evaluate $cfgAck $stF {4E6AE9 210} $oldAck $nowAck 3600] alarms 4E6AE9]}
 file delete -force $::TRIGGER $rftl::ackfile
 
-puts "--- Stundenspitzen (commitHours) ---"
-set hcx [dict create A [dict create 100 999 101 30 102 55 103 40 104 7]]
-set pk {}
-commitHours hcx pk 100 104
-ok {Startstunde verworfen}  {[dict get $pk A] == 55}
-ok {laufende Stunde bleibt} {[dict get $hcx A 104] == 7}
-set hcy [dict create A [dict create 105 3]]
-commitHours hcy pk 100 106
-ok {Spitze sinkt nicht}     {[dict get $pk A] == 55}
+puts "--- Spitze kommt aus dem gleitenden Fenster ---"
+set stP [dict create phase learning peaks {} version 1]
+set stP [updatePeaks $stP {A 10 B 3}]
+ok {erste Werte uebernommen}  {[dict get $stP peaks A] == 10 && [dict get $stP peaks B] == 3}
+set stP [updatePeaks $stP {A 7}]
+ok {niedriger senkt nicht}    {[dict get $stP peaks A] == 10}
+set stP [updatePeaks $stP {A 25}]
+ok {hoeher hebt an}           {[dict get $stP peaks A] == 25}
+set stP [updatePeaks $stP {C 4}]
+ok {neues Geraet kommt dazu}  {[dict get $stP peaks C] == 4}
+ok {andere unberuehrt}        {[dict get $stP peaks A] == 25 && [dict get $stP peaks B] == 3}
+# ein Ausbruch ueber eine Stundengrenze hinweg zaehlt voll - genau das ging
+# mit der frueheren Zaehlung je Uhrzeit-Stunde verloren
+set stQ [dict create phase learning peaks {} version 1]
+foreach fenster {4 9 14 20 16 8} { set stQ [updatePeaks $stQ [dict create D $fenster]] }
+ok {Maximum des Verlaufs}     {[dict get $stQ peaks D] == 20}
 
 puts "--- Konfiguration ---"
 ok {ref_mode Vorgabe peak}  {[dict get $rftl::defaults ref_mode] eq "peak"}

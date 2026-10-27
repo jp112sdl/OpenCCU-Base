@@ -168,11 +168,16 @@ zählt die Lesezeit — damit fällt der erste Durchlauf der Wiederholungsstunde
 (vom Parser eine Stunde in die Zukunft gelegt) auf seine echte Zeit zurück,
 der zweite behält seinen Stempel, und die beiden überlagern sich nicht mehr.
 
-Gewertet wird nur eine Stunde, die der Dienst **von Anfang bis Ende**
-beobachtet hat — die Stunde, in der er gestartet ist, ist angebrochen und
-würde die Spitze zu niedrig ansetzen. Ist das Auswertefenster kürzer als eine
-Stunde, kann die hochgerechnete Rate naturgemäß über jedem
-Stundendurchschnitt liegen; das fängt die Schwelle ab.
+Gelernt wird mit **demselben gleitenden Fenster**, gegen das später geprüft
+wird: in jedem Prüfintervall wird das Aufkommen im Auswertefenster bestimmt,
+und die Spitze ist der höchste dabei je gesehene Wert. Bis Version 1.20 wurde
+stattdessen je Uhrzeit-Stunde gezählt — ein Ausbruch über eine Stundengrenze
+hinweg verteilte sich dabei auf zwei Fächer und zählte nie voll, während das
+gleitende Fenster ihn am Stück sieht. Der gelernte Wert fiel dadurch
+systematisch zu niedrig aus; auf einer Installation über 62 Geräte gemessen
+betrug der Faktor im Mittel 1,16 und im Extremfall 2,0. Bei einem Faktor ab
+1,5 reißt ein Gerät die 50-%-Schwelle, ohne irgendetwas Ungewöhnliches zu
+tun — das war dort die Ursache wiederkehrender Fehlalarme.
 
 Eine Sendung, die sowohl das lokale Funkmodul als auch ein Funk-LAN-Gateway
 hört, steht in **beiden** Logs. Für die Zählung gilt sie trotzdem nur einmal —
@@ -209,7 +214,7 @@ Weboberfläche weist darauf hin.
 |---|---|---|
 | Überwachung aktiv | aus | Schaltet die Datensammlung und die Alarme ein |
 | Umfang | nur angelernte Geräte | Beschränkt die Überwachung auf Geräte, die die CCU kennt; abgeschaltet wird jede Funkadresse im Log überwacht |
-| Vergleichswert | höchste Stundenrate | Woran gemessen wird: Stundenspitze der Lernphase oder deren Mittelwert |
+| Vergleichswert | höchste Stundenrate | Woran gemessen wird: höchster Fensterwert der Lernphase oder deren Mittelwert |
 | Alarmschwelle | 100 % | Anstieg gegenüber dem Vergleichswert, ab dem alarmiert wird |
 | Auswertefenster | 60 min | Zeitraum, dessen Aufkommen verglichen wird |
 | Mindestmenge | 20 Pakete | Darunter kein Alarm — schützt vor Fehlalarmen bei Geräten, die normalerweise kaum senden |

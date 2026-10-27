@@ -275,15 +275,12 @@ proc bucketOf {datestr timestr now tolerance} {
 # zaehlt die Telegramme je Absender und Zeitbucket auf.
 # knownOnly=1 beschraenkt die Zaehlung auf die Adressen in known (die
 # Geraeteliste der CCU) - fremder Funkverkehr wird dann ignoriert.
-proc parseInto {text countsVar bucketsVar hcountsVar dedupVar ignore learning knownOnly \
+proc parseInto {text countsVar bucketsVar dedupVar ignore learning knownOnly \
                 known now tolerance} {
     upvar 1 $countsVar counts
     upvar 1 $bucketsVar buckets
-    upvar 1 $hcountsVar hcounts
     upvar 1 $dedupVar dedup
     if {![info exists dedup]} { set dedup {} }
-    # der Aufrufer darf die Stundenzaehler noch nicht angelegt haben
-    if {![info exists hcounts]} { set hcounts {} }
     set n 0
     foreach line [split $text "\n"] {
         if {[string length $line] < 30} { continue }
@@ -321,14 +318,7 @@ proc parseInto {text countsVar bucketsVar hcountsVar dedupVar ignore learning kn
         }
         # die Lernzaehler laufen nur waehrend der Lernphase weiter, das
         # Kurzzeitfenster immer
-        if {$learning} {
-            dict incr counts $addr
-            # zusaetzlich je voller Stunde zaehlen - daraus wird spaeter die
-            # hoechste Stundenrate (Vergleichswert "Spitze")
-            set hb [expr {$b / 60}]
-            dict set hcounts $addr $hb [expr {([dict exists $hcounts $addr $hb]
-                                               ? [dict get $hcounts $addr $hb] : 0) + 1}]
-        }
+        if {$learning} { dict incr counts $addr }
         dict set buckets $addr $b [expr {([dict exists $buckets $addr $b]
                                           ? [dict get $buckets $addr $b] : 0) + 1}]
         incr n
@@ -336,28 +326,25 @@ proc parseInto {text countsVar bucketsVar hcountsVar dedupVar ignore learning kn
     return $n
 }
 
-# Abgeschlossene Stunden aus den Stundenzaehlern in die Spitzenwerte
-# uebernehmen. Gewertet wird nur eine Stunde, die wir von Anfang bis Ende
-# beobachtet haben: die Stunde, in der der Dienst gestartet ist, ist
-# angebrochen und wuerde die Spitze zu niedrig ansetzen.
-proc commitHours {hcountsVar peaksVar obsHour curHour} {
-    upvar 1 $hcountsVar hcounts
-    upvar 1 $peaksVar peaks
-    set rest {}
-    dict for {addr hl} $hcounts {
-        set open {}
-        dict for {hb c} $hl {
-            if {$hb >= $curHour} {
-                dict set open $hb $c
-            } elseif {$hb > $obsHour} {
-                if {![dict exists $peaks $addr] || $c > [dict get $peaks $addr]} {
-                    dict set peaks $addr $c
-                }
-            }
+# Waehrend der Lernphase ist die Spitze je Geraet der hoechste je gesehene
+# Wert des gleitenden Auswertefensters - also genau die Groesse, gegen die
+# spaeter geprueft wird.
+#
+# Frueher wurde je Uhrzeit-Stunde gezaehlt. Ein Ausbruch ueber eine
+# Stundengrenze hinweg wurde dabei auf zwei Faecher aufgeteilt und nie voll
+# gewertet, waehrend das gleitende Fenster ihn am Stueck sieht. Der gelernte
+# Wert fiel dadurch bis zur Haelfte zu niedrig aus (auf c2 ueber 62 Geraete
+# gemessen: Faktor im Mittel 1,16, im Extremfall 2,0), und Geraete meldeten
+# sich im Normalbetrieb.
+proc updatePeaks {st recent} {
+    set peaks [stGet $st peaks {}]
+    dict for {addr n} $recent {
+        if {![dict exists $peaks $addr] || $n > [dict get $peaks $addr]} {
+            dict set peaks $addr $n
         }
-        if {[dict size $open]} { dict set rest $addr $open }
     }
-    set hcounts $rest
+    dict set st peaks $peaks
+    return $st
 }
 
 # Buckets aelter als das Auswertefenster verwerfen
@@ -496,12 +483,8 @@ proc main {} {
     # Kurzzeitstatistik lebt nur im Speicher; nach einem Neustart muss sich
     # das Auswertefenster erst wieder fuellen, bevor Alarme sinnvoll sind
     set buckets {}
-    set hcounts {}
     set dedup {}
     set runStart [clock seconds]
-    # die Stunde, in der wir angefangen haben zu beobachten, ist angebrochen
-    # und darf nicht als Stundenspitze gewertet werden
-    set obsHour [expr {$runStart / 3600}]
 
     while {1} {
         set cfg [rftl::readConfig]
@@ -511,16 +494,14 @@ proc main {} {
         if {[dict get $cfg reset_at] ne [dict get $st reset_at]} {
             set st [resetState $cfg "Anforderung ueber die Weboberflaeche"]
             set buckets {}
-            set hcounts {}
-            set dedup {}
+                    set dedup {}
             set runStart $now
-            set obsHour [expr {$now / 3600}]
         }
 
         set st [applyAcks $st]
 
         if {[dict get $cfg enabled]} {
-            set st [cycle $cfg $st buckets hcounts dedup $runStart $obsHour $now]
+            set st [cycle $cfg $st buckets dedup $runStart $now]
         } else {
             # im ausgeschalteten Zustand nur den Dateizeiger nachfuehren,
             # damit nach dem Einschalten keine alten Zeilen nachlaufen
@@ -545,9 +526,8 @@ proc main {} {
     }
 }
 
-proc cycle {cfg st bucketsVar hcountsVar dedupVar runStart obsHour now} {
+proc cycle {cfg st bucketsVar dedupVar runStart now} {
     upvar 1 $bucketsVar buckets
-    upvar 1 $hcountsVar hcounts
     upvar 1 $dedupVar dedup
     global MMDCONF RFDCONF MMDPREFIX RFDPREFIX BUCKET_SEC
 
@@ -582,18 +562,11 @@ proc cycle {cfg st bucketsVar hcountsVar dedupVar runStart obsHour now} {
     foreach {k conf prefix} [list mmd $MMDCONF $MMDPREFIX rfd $RFDCONF $RFDPREFIX] {
         set text [readNewLines $k [readTrafficLogDir $conf] $prefix st]
         if {$text ne ""} {
-            incr lines [parseInto $text counts buckets hcounts dedup $ignore $learning \
+            incr lines [parseInto $text counts buckets dedup $ignore $learning \
                                   $knownOnly $known $now $tsTol]
         }
     }
     dict set st counts $counts
-
-    # abgeschlossene Stunden in die Spitzenwerte uebernehmen
-    if {$learning} {
-        set peaks [stGet $st peaks {}]
-        commitHours hcounts peaks $obsHour [expr {$now / 3600}]
-        dict set st peaks $peaks
-    }
 
     # erfasste Zeit fortschreiben. Nur die tatsaechlich gelaufene Zeit zaehlt
     # (gedeckelt), sonst wuerde eine Ausfallzeit die Baseline verwaessern.
@@ -617,6 +590,8 @@ proc cycle {cfg st bucketsVar hcountsVar dedupVar runStart obsHour now} {
     dict set st recent_sec [expr {min($now - $runStart, $winSec)}]
     dict set st window_sec $winSec
 
+    if {$learning} { set st [updatePeaks $st $recent] }
+
     # Lernphase abgeschlossen? -> Baseline einfrieren
     if {[dict get $st phase] eq "learning"} {
         set need [expr {[dict get $cfg learn_hours] * 3600}]
@@ -627,12 +602,6 @@ proc cycle {cfg st bucketsVar hcountsVar dedupVar runStart obsHour now} {
             dict set st baseline $bl
             dict set st baseline_at $now
             dict set st phase monitoring
-            # auch die angebrochene letzte Stunde noch werten: ihr Zaehler
-            # ist immer kleiner als der einer vollen Stunde waere, taugt
-            # also als Untergrenze und kann die Spitze nicht ueberhoehen
-            set peaks [stGet $st peaks {}]
-            commitHours hcounts peaks $obsHour [expr {$now / 3600 + 1}]
-            dict set st peaks $peaks
             logmsg notice "Lernphase beendet - Vergleichswerte fuer [dict size $bl]\
                            Sender uebernommen ([dict size $peaks] mit Stundenspitze,\
                            Modus [dict get $cfg ref_mode])"

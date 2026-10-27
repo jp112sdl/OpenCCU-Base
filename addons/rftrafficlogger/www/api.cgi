@@ -385,6 +385,12 @@ proc cmdAlarmState {params} {
         dict for {a v} $d { dict set addrs $a 1 }
     }
 
+    # Quittierungen: bereits uebernommene (aus dem Zustand) und noch offene
+    # (aus der Warteschlange) - beide gehoeren an die Geraetezeile
+    set ackLog [dictGetOr $st acks {}]
+    set pending {}
+    foreach e [rftl::pendingAcks] { dict set pending [lindex $e 0] 1 }
+
     set devs {}
     dict for {a dummy} $addrs {
         set mean   [expr {[dict exists $baseline $a] ? [dict get $baseline $a] : ""}]
@@ -432,9 +438,6 @@ proc cmdAlarmState {params} {
     }
 
     set knownDevs [dictGetOr $st known_devices ""]
-    set ackLog    [dictGetOr $st acks {}]
-    set pending {}
-    foreach e [rftl::pendingAcks] { dict set pending [lindex $e 0] 1 }
     set lastCheck [dictGetOr $st last_check 0]
     # "frisch" heisst: der Dienst hat innerhalb der letzten drei Zyklen gelaufen
     set fresh [expr {$lastCheck > 0 && ($now - $lastCheck) < [dict get $c interval_sec] * 3}]

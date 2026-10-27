@@ -1290,6 +1290,28 @@ function flashSaved(text, isErr) {
   flashSaved.t = setTimeout(() => { el.textContent = ""; }, 4000);
 }
 
+// Einen Alarm als normal quittieren: der Vergleichswert des Geraets wird auf
+// die gemeldete Rate angehoben, die Alarmschwelle kommt danach obendrauf.
+// Uebernommen wird das vom Dienst im naechsten Zyklus - bis dahin zeigt die
+// Zeile "wird uebernommen".
+async function ackDevice(addr) {
+  const name = devLabel(addr);
+  const d = (alarmUi.st.devices || []).find(x => x.addr === addr);
+  const a = (alarmUi.st.alarms || []).find(x => x.addr === addr);
+  const rate = Math.max(d ? d.rate || 0 : 0, a ? a.rate || 0 : 0);
+  const thr = alarmUi.cfg ? Number(alarmUi.cfg.threshold_pct) : 50;
+  if (!confirm(`${name}\n\n${rate.toFixed(0)} Pakete/h kuenftig als normal behandeln?\n\n` +
+      `Der Vergleichswert wird darauf angehoben. Alarm gibt es dann erst wieder ` +
+      `ueber ${(rate * (1 + thr / 100)).toFixed(0)} Pakete/h.\n` +
+      `Rueckgaengig macht das nur ein Zuruecksetzen der Lernphase.`)) return;
+  try {
+    const r = await (await fetch(API + "?cmd=alarmack&addr=" + encodeURIComponent(addr))).json();
+    if (r.error) { flashSaved(r.error, true); return; }
+    flashSaved(`${name}: ${r.rate} Pakete/h als normal uebernommen`);
+    refreshAlarmState();
+  } catch (e) { flashSaved("Quittierung fehlgeschlagen", true); }
+}
+
 async function resetAlarmLearning() {
   if (!confirm("Alle gelernten Werte verwerfen und die Lernphase neu beginnen?")) return;
   try {
@@ -1397,6 +1419,9 @@ function renderAlarmDevs(learning) {
     base: learning ? d.learn_rate : d.base,
     mean: d.mean,
     peak: d.peak,
+    ackTs: d.ack_ts,
+    ackFrom: d.ack_from,
+    ackPending: !!d.ack_pending,
     rate: d.rate,
     pct: d.pct,
     recent: d.recent,
@@ -1447,15 +1472,18 @@ function renderAlarmDevs(learning) {
     } else if (r.recent > 0) {
       status = `<span class="badge ok">ok</span>`;
     }
-    if (r.alarmTs) {
+    if (r.ackPending) {
+      status += ` <span class="past">Quittierung wird &uuml;bernommen &hellip;</span>`;
+    } else if (r.alarmTs) {
       status += ` <span class="past" title="zuletzt ausgel&ouml;ster Alarm">Alarm ${fmtTs(r.alarmTs)}</span>`;
     }
     html.push(`<tr${over ? ' class="alarmrow"' : ""}>
       <td>${esc(r.name)}</td>
       <td class="mono devaddr">${r.addr}</td>
       <td title="${r.mean === null || r.mean === undefined ? ""
-            : `Mittelwert ${r.mean.toFixed(1)}`}${r.peak ? ` \u00b7 Stundenspitze ${r.peak}` : ""}"
-          >${num(r.base, 1)}</td>
+            : `Mittelwert ${r.mean.toFixed(1)}`}${r.peak ? ` \u00b7 Stundenspitze ${r.peak}` : ""}${
+            r.ackTs ? `&#10;quittiert ${fmtTs(r.ackTs)}, vorher ${num(r.ackFrom, 0)}` : ""}"
+          >${num(r.base, 1)}${r.ackTs ? ` <span class="past">quittiert</span>` : ""}</td>
       <td>${num(r.rate, 1)}</td>
       <td>${r.recent}</td>
       <td>${pctCell}</td>
@@ -1486,21 +1514,30 @@ function renderAlarmDevs(learning) {
 
 function renderAlarmLog() {
   const st = alarmUi.st;
+  const pend = new Set((st.devices || []).filter(d => d.ack_pending).map(d => d.addr));
   if (!st.alarms.length) {
     $("alarmLog").innerHTML =
       `<tr><td class="lbl" style="color:var(--fg-dim)">Keine Alarme in den letzten 7 Tagen.</td></tr>`;
     return;
   }
   const rows = st.alarms.slice().sort((a, b) => b.ts - a.ts);
-  const html = [`<tr><th>Zeitpunkt</th><th>Ger&auml;t</th><th>Meldung</th></tr>`];
+  const html = [`<tr><th>Zeitpunkt</th><th>Ger&auml;t</th><th>Meldung</th><th></th></tr>`];
   for (const a of rows) {
+    const action = pend.has(a.addr)
+      ? `<span class="past">wird &uuml;bernommen &hellip;</span>`
+      : `<button data-ack="${esc(a.addr)}"
+           title="Diesen Wert als normal behandeln - der Vergleichswert wird darauf angehoben">Ist normal</button>`;
     html.push(`<tr>
       <td>${fmtTs(a.ts)}</td>
       <td>${esc(devLabel(a.addr))}</td>
       <td style="white-space:normal">${esc(a.msg)}</td>
+      <td>${action}</td>
     </tr>`);
   }
-  $("alarmLog").innerHTML = html.join("");
+  const tbl = $("alarmLog");
+  tbl.innerHTML = html.join("");
+  tbl.querySelectorAll("button[data-ack]").forEach(b =>
+    b.onclick = () => ackDevice(b.dataset.ack));
 }
 
 /* --- Events --- */

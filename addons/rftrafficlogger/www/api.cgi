@@ -18,6 +18,9 @@
 #   ?cmd=alarmstate                -> JSON: Lernfortschritt, Baseline je Sender,
 #                                     aktuelle Rate und ausgeloeste Alarme
 #   ?cmd=alarmreset                -> Lernphase verwerfen und neu beginnen
+#   ?cmd=alarmack&addr=<hex6>      -> Alarm als "normal" quittieren: der
+#                                     Vergleichswert des Geraets wird auf die
+#                                     gemeldete Rate angehoben
 
 set LOGDIR "/var/log"
 set RFDLOGDIR "/var/log"
@@ -406,11 +409,17 @@ proc cmdAlarmState {params} {
         if {[dict exists $alarms $a]} {
             set al [dictGetOr [dict get $alarms $a] ts 0]
         }
+        set ackPend [expr {[dict exists $pending $a] ? 1 : 0}]
+        set ackTs "null"; set ackFrom "null"
+        if {[dict exists $ackLog $a]} {
+            set ackTs   [jsonNum [dictGetOr [dict get $ackLog $a] ts 0] %.0f]
+            set ackFrom [jsonNum [dictGetOr [dict get $ackLog $a] from 0]]
+        }
         lappend devs "{\"addr\":\"[jsonEscape $a]\",\"base\":[jsonNum $base],\
 \"mean\":[jsonNum $mean],\"peak\":[jsonNum $peak %.0f],\
 \"learn_count\":[jsonNum $cnt %.0f],\"learn_rate\":[jsonNum $lrate],\
 \"recent\":[jsonNum $rec %.0f],\"rate\":[jsonNum $rate],\"pct\":[jsonNum $pct %.1f],\
-\"alarm_ts\":$al}"
+\"alarm_ts\":$al,\"ack_pending\":$ackPend,\"ack_ts\":$ackTs,\"ack_from\":$ackFrom}"
     }
 
     set alist {}
@@ -423,6 +432,9 @@ proc cmdAlarmState {params} {
     }
 
     set knownDevs [dictGetOr $st known_devices ""]
+    set ackLog    [dictGetOr $st acks {}]
+    set pending {}
+    foreach e [rftl::pendingAcks] { dict set pending [lindex $e 0] 1 }
     set lastCheck [dictGetOr $st last_check 0]
     # "frisch" heisst: der Dienst hat innerhalb der letzten drei Zyklen gelaufen
     set fresh [expr {$lastCheck > 0 && ($now - $lastCheck) < [dict get $c interval_sec] * 3}]
@@ -437,6 +449,47 @@ proc cmdAlarmState {params} {
 \"known_only\":[dict get $c known_only],\"known_devices\":[jsonNum $knownDevs %.0f],\
 \"ref_mode\":\"[jsonEscape $refMode]\",\
 \"devices\":\[[join $devs ,]\],\"alarms\":\[[join $alist ,]\]}"
+}
+
+# cmd=alarmack quittiert einen Alarm als normal. Angehoben wird auf die
+# hoehere von gemeldeter und aktuell gemessener Rate - steigt das Geraet
+# gerade weiter, soll es nicht sofort erneut melden. Die Uebernahme macht
+# der Dienst im naechsten Zyklus, weil ihm der Zustand gehoert.
+proc cmdAlarmAck {params} {
+    global haveAlarm
+    if {!$haveAlarm} { alarmUnavailable; return }
+    set addr [string toupper [string trim \
+        [expr {[dict exists $params addr] ? [dict get $params addr] : ""}]]]
+    if {![regexp {^[0-9A-F]{6}$} $addr]} {
+        httpHeader "application/json"
+        puts "{\"error\":\"ungueltige Adresse\"}"
+        return
+    }
+    set st [rftl::readState]
+    set rate 0.0
+    if {[dict exists $st alarms $addr rate]} {
+        set r [dict get $st alarms $addr rate]
+        if {[string is double -strict $r]} { set rate $r }
+    }
+    set winSec [dictGetOr $st window_sec 3600]
+    if {![string is double -strict $winSec] || $winSec <= 0} { set winSec 3600 }
+    set rec [dictGetOr [dictGetOr $st recent {}] $addr 0]
+    if {[string is double -strict $rec]} {
+        set cur [expr {$rec / ($winSec / 3600.0)}]
+        if {$cur > $rate} { set rate $cur }
+    }
+    if {$rate <= 0} {
+        httpHeader "application/json"
+        puts "{\"error\":\"fuer dieses Geraet liegt kein Messwert vor\"}"
+        return
+    }
+    if {![rftl::queueAck $addr $rate]} {
+        httpHeader "application/json"
+        puts "{\"error\":\"Quittierung konnte nicht gespeichert werden\"}"
+        return
+    }
+    httpHeader "application/json"
+    puts "{\"ok\":true,\"addr\":\"$addr\",\"rate\":[format %.1f $rate]}"
 }
 
 # cmd=alarmreset verwirft die gelernten Werte. Der Dienst erkennt den
@@ -473,6 +526,7 @@ if {[catch {
         alarmcfg   { cmdAlarmCfg $params }
         alarmstate { cmdAlarmState $params }
         alarmreset { cmdAlarmReset }
+        alarmack   { cmdAlarmAck $params }
         default {
             httpHeader "application/json"
             puts "{\"error\":\"unknown cmd\"}"

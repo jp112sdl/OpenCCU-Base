@@ -9,11 +9,14 @@
 # persistenten Partition - Lernfortschritt ueberlebt Reboots und Updates):
 #   alarm.conf   key=value, von der Weboberflaeche geschrieben
 #   alarm.state  Tcl-Dict, vom Dienst geschrieben
+#   alarm.ack    Warteschlange quittierter Alarme, von der Weboberflaeche
+#                angehaengt und vom Dienst abgeraeumt
 
 namespace eval rftl {
     variable dir [file normalize [file join [file dirname [info script]] ".."]]
     variable conffile  [file join $dir "alarm.conf"]
     variable statefile [file join $dir "alarm.state"]
+    variable ackfile   [file join $dir "alarm.ack"]
 
     # Voreinstellungen und zugleich die Liste der gueltigen Schluessel:
     # was hier nicht steht, wird beim Lesen und Schreiben verworfen.
@@ -178,4 +181,66 @@ proc rftl::writeState {s} {
         close $fh
         file rename -force $tmp $statefile
     }
+}
+
+# ---------------------------------------------------------------------------
+# Quittierte Alarme
+#
+# Der Zustand gehoert dem Dienst - er schreibt alarm.state in jedem Zyklus
+# aus dem Speicher und wuerde eine Aenderung der Weboberflaeche sofort
+# ueberschreiben. Quittierungen laufen deshalb ueber eine Anforderungsdatei:
+# die Oberflaeche haengt eine Zeile an, der Dienst raeumt sie ab und hebt den
+# Vergleichswert an. Eine Zeile ist "ADRESSE RATE ZEITSTEMPEL".
+
+proc rftl::queueAck {addr rate} {
+    variable ackfile
+    set addr [string toupper [string trim $addr]]
+    if {![regexp {^[0-9A-F]{6}$} $addr]} { return 0 }
+    if {![string is double -strict $rate] || $rate <= 0} { return 0 }
+    if {[catch {
+        set fh [open $ackfile a]
+        puts $fh [format "%s %.1f %d" $addr $rate [clock seconds]]
+        close $fh
+    }]} { return 0 }
+    return 1
+}
+
+proc rftl::parseAckLines {data} {
+    set out {}
+    foreach line [split $data "\n"] {
+        if {[regexp {^([0-9A-F]{6}) ([0-9.]+) ([0-9]+)$} [string trim $line] -> a r t]} {
+            lappend out [list $a $r $t]
+        }
+    }
+    return $out
+}
+
+# noch nicht verarbeitete Quittierungen (fuer die Anzeige)
+proc rftl::pendingAcks {} {
+    variable ackfile
+    set data ""
+    catch {
+        set fh [open $ackfile r]
+        set data [read $fh]
+        close $fh
+    }
+    return [rftl::parseAckLines $data]
+}
+
+# Quittierungen uebernehmen und die Datei leeren. Umbenennen statt
+# lesen-und-loeschen: was die Oberflaeche waehrend der Verarbeitung anhaengt,
+# landet in einer frischen Datei und geht nicht verloren.
+proc rftl::takeAcks {} {
+    variable ackfile
+    set work "${ackfile}.work"
+    if {![file exists $ackfile]} { return {} }
+    if {[catch {file rename -force $ackfile $work}]} { return {} }
+    set data ""
+    catch {
+        set fh [open $work r]
+        set data [read $fh]
+        close $fh
+    }
+    file delete -force $work
+    return [rftl::parseAckLines $data]
 }

@@ -408,6 +408,50 @@ proc fireAlarm {cfg msg} {
 # ---------------------------------------------------------------------------
 # Hauptschleife
 
+# Quittierte Alarme uebernehmen: der Anwender sagt "dieser hohe Wert ist
+# normal", also wird der Vergleichswert des Geraets auf die quittierte Rate
+# angehoben. Die Alarmschwelle kommt danach obendrauf - bei +50 % meldet sich
+# das Geraet erst wieder, wenn es die quittierte Rate um die Haelfte
+# uebersteigt. Rueckgaengig macht das ein Zuruecksetzen der Lernphase.
+proc applyAcks {st} {
+    set acks [rftl::takeAcks]
+    if {![llength $acks]} { return $st }
+    set peaks    [stGet $st peaks {}]
+    set baseline [stGet $st baseline {}]
+    set alarms   [stGet $st alarms {}]
+    set log      [stGet $st acks {}]
+    foreach e $acks {
+        lassign $e addr rate ts
+        if {![string is double -strict $rate]} { continue }
+        # die Stundenspitze ist der Vergleichswert; fehlt sie, ist es der
+        # Mittelwert - dann wird der angehoben
+        if {[dict exists $peaks $addr] && [dict get $peaks $addr] > 0} {
+            set oldv [dict get $peaks $addr]
+            set newv [expr {$rate > $oldv ? int(ceil($rate)) : $oldv}]
+            dict set peaks $addr $newv
+            set what "Stundenspitze"
+        } elseif {[dict exists $baseline $addr]} {
+            set oldv [dict get $baseline $addr]
+            set newv [expr {$rate > $oldv ? double($rate) : $oldv}]
+            dict set baseline $addr $newv
+            set what "Mittelwert"
+        } else {
+            logmsg warning "Quittierung fuer unbekanntes Geraet $addr verworfen"
+            continue
+        }
+        if {[dict exists $alarms $addr]} { dict unset alarms $addr }
+        dict set log $addr [dict create ts $ts from [format %.1f $oldv] \
+                                        to [format %.1f $newv] what $what]
+        logmsg notice "quittiert: [deviceLabel $addr] - $what von\
+                       [format %.0f $oldv] auf [format %.0f $newv] Pakete/h angehoben"
+    }
+    dict set st peaks $peaks
+    dict set st baseline $baseline
+    dict set st alarms $alarms
+    dict set st acks $log
+    return $st
+}
+
 proc resetState {cfg reason} {
     logmsg notice "Lernphase zurueckgesetzt ($reason)"
     return [dict create \
@@ -420,6 +464,7 @@ proc resetState {cfg reason} {
         baseline_at 0 \
         offsets {} \
         alarms {} \
+        acks {} \
         reset_at [dict get $cfg reset_at] \
         version 1]
 }
@@ -471,6 +516,8 @@ proc main {} {
             set runStart $now
             set obsHour [expr {$now / 3600}]
         }
+
+        set st [applyAcks $st]
 
         if {[dict get $cfg enabled]} {
             set st [cycle $cfg $st buckets hcounts dedup $runStart $obsHour $now]

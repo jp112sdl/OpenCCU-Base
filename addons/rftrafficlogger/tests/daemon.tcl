@@ -117,6 +117,67 @@ ok {unter Mindestmenge still}  {![dict exists [evaluate $cfgP $stM {A 19} $old $
 ok {Aufwaermsperre}            {![dict exists [evaluate $cfgP $stM {A 999} [expr {$nw - 60}] $nw 3600] alarms A]}
 file delete -force $::TRIGGER
 
+puts "--- Quittieren: hoher Wert wird als normal uebernommen ---"
+# Warteschlange in den Testordner legen, nicht ins Addon-Verzeichnis
+set rftl::ackfile [file join $here ack.test]
+file delete -force $rftl::ackfile
+proc stateWithAlarm {} {
+    return [dict create phase monitoring \
+        baseline {4E6AE9 12.0 F34401 20.0} \
+        peaks {4E6AE9 66} \
+        alarms {4E6AE9 {ts 1000 actual 118 expected 66.0 rate 118.0 ref Spitze reason anstieg msg x}} \
+        acks {} version 1]
+}
+ok {Warteschlange anfangs leer} {[llength [rftl::pendingAcks]] == 0}
+ok {queueAck nimmt an}          {[rftl::queueAck 4e6ae9 135.0] == 1}
+ok {Adresse normalisiert}       {[lindex [lindex [rftl::pendingAcks] 0] 0] eq "4E6AE9"}
+ok {Rate gemerkt}               {[lindex [lindex [rftl::pendingAcks] 0] 1] == 135.0}
+ok {Unsinn abgewiesen}          {[rftl::queueAck "xyz" 10] == 0 && [rftl::queueAck 4E6AE9 -5] == 0}
+
+set stA [applyAcks [stateWithAlarm]]
+ok {Spitze angehoben}           {[dict get $stA peaks 4E6AE9] == 135}
+ok {Alarm aus der Historie}     {![dict exists $stA alarms 4E6AE9]}
+ok {Vorgang protokolliert}      {[dict get $stA acks 4E6AE9 what] eq "Stundenspitze"}
+ok {alter Wert festgehalten}    {[dict get $stA acks 4E6AE9 from] == 66.0}
+ok {neuer Wert festgehalten}    {[dict get $stA acks 4E6AE9 to] == 135.0}
+ok {Warteschlange geleert}      {[llength [rftl::pendingAcks]] == 0}
+
+# niedrigere Rate darf die Spitze nicht senken
+rftl::queueAck 4E6AE9 40
+set stB [applyAcks $stA]
+ok {Spitze sinkt nicht}         {[dict get $stB peaks 4E6AE9] == 135}
+
+# Geraet ohne Stundenspitze: der Mittelwert ist der Vergleichswert
+rftl::queueAck F34401 55
+set stC [applyAcks [stateWithAlarm]]
+ok {Mittelwert angehoben}       {[dict get $stC baseline F34401] == 55.0}
+ok {als Mittelwert vermerkt}    {[dict get $stC acks F34401 what] eq "Mittelwert"}
+ok {Spitze unberuehrt}          {[dict get $stC peaks 4E6AE9] == 66}
+
+# unbekanntes Geraet wird verworfen
+rftl::queueAck ABCDEF 99
+set stD [applyAcks [stateWithAlarm]]
+ok {unbekanntes Geraet ignoriert} {![dict exists $stD acks ABCDEF]}
+
+# mehrere Quittierungen zwischen zwei Zyklen
+rftl::queueAck 4E6AE9 200
+rftl::queueAck F34401 77
+set stE [applyAcks [stateWithAlarm]]
+ok {beide uebernommen} {[dict get $stE peaks 4E6AE9] == 200 && [dict get $stE baseline F34401] == 77.0}
+
+# nach dem Quittieren meldet sich das Geraet erst deutlich darueber
+set ::TRIGGER [file join $here trig.sh]
+set fh [open $::TRIGGER w]; puts $fh "#!/bin/sh\nexit 0"; close $fh
+file attributes $::TRIGGER -permissions 0755
+proc deviceLabel {a} { return "Test ($a)" }
+set cfgAck [rftl::clampConfig [dict merge $rftl::defaults \
+    {ref_mode peak threshold_pct 50 window_min 60 min_packets 20 cooldown_min 60}]]
+set nowAck [clock seconds]; set oldAck [expr {$nowAck - 7200}]
+set stF [dict merge $stA [dict create alarms {}]]
+ok {quittierte Rate ist still}  {![dict exists [evaluate $cfgAck $stF {4E6AE9 135} $oldAck $nowAck 3600] alarms 4E6AE9]}
+ok {deutlich darueber meldet}   {[dict exists [evaluate $cfgAck $stF {4E6AE9 210} $oldAck $nowAck 3600] alarms 4E6AE9]}
+file delete -force $::TRIGGER $rftl::ackfile
+
 puts "--- Stundenspitzen (commitHours) ---"
 set hcx [dict create A [dict create 100 999 101 30 102 55 103 40 104 7]]
 set pk {}

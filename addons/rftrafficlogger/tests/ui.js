@@ -83,6 +83,40 @@ ok("jetzt ueber Schwelle = markiert", /badge warn/.test(rowFor("alarmDevs", "AAA
   rowFor("alarmDevs", "AAAA01").includes("alarmrow"));
 ok("Hinweiszeile zaehlt aktuelle", out("alarmHint").includes("<b>2</b>"), out("alarmHint"));
 
+/* ----------------------------------------------------------- Quittieren */
+console.log("--- Alarm als normal quittieren ---");
+alarmUi.st.alarms = [
+  { addr: "F34001", ts: drei, reason: "anstieg", ref: "Spitze", rate: 118, expected: 66, msg: "zuviel" },
+  { addr: "BBBB02", ts: drei, reason: "anstieg", ref: "Spitze", rate: 90, expected: 50, msg: "auch zuviel" }
+];
+sandbox.renderAlarm();
+const logRows = out("alarmLog").split("<tr").slice(1);
+ok("Knopf je Alarm", (out("alarmLog").match(/data-ack=/g) || []).length === 2,
+   out("alarmLog").match(/data-ack=/g));
+ok("Knopf traegt die Adresse", out("alarmLog").includes('data-ack="F34001"'));
+ok("Beschriftung", out("alarmLog").includes(">Ist normal<"));
+
+// offene Quittierung: statt Knopf ein Hinweis
+alarmUi.st.devices.find(d => d.addr === "F34001").ack_pending = 1;
+sandbox.renderAlarm();
+ok("offene Quittierung ohne Knopf", !out("alarmLog").includes('data-ack="F34001"'));
+ok("offene Quittierung sichtbar", out("alarmLog").includes("bernommen"));
+ok("anderer Alarm behaelt Knopf", out("alarmLog").includes('data-ack="BBBB02"'));
+ok("Status zeigt die Quittierung", rowFor("alarmDevs", "F34001").includes("bernommen"));
+alarmUi.st.devices.find(d => d.addr === "F34001").ack_pending = 0;
+
+// uebernommene Quittierung: Herkunft des Vergleichswerts
+const dev = alarmUi.st.devices.find(d => d.addr === "CCCC03");
+dev.ack_ts = drei; dev.ack_from = 40;
+sandbox.renderAlarm();
+ok("quittiert markiert", rowFor("alarmDevs", "CCCC03").includes(">quittiert<"));
+ok("alter Wert im Tooltip", /vorher 40/.test(rowFor("alarmDevs", "CCCC03")),
+   rowFor("alarmDevs", "CCCC03"));
+ok("ohne Quittierung keine Markierung", !rowFor("alarmDevs", "AAAA01").includes(">quittiert<"));
+delete dev.ack_ts; delete dev.ack_from;
+alarmUi.st.alarms = [{ addr: "F34001", ts: drei, reason: "anstieg", ref: "Spitze",
+                       rate: 79, expected: 50, msg: "x" }];
+
 /* ------------------------------------------------ DutyCycle im Analyse-Tab */
 console.log("--- DutyCycle: Anteil am Budget von 36 s pro Stunde ---");
 const base = 1700000000000;

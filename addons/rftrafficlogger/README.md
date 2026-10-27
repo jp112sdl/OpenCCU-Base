@@ -51,6 +51,8 @@ Funkmodul ⇄ multimacd (TrafficLogger)          Funk-LAN-Gateway ⇄ rfd (Traff
     (`mean`), Stundenspitze (`peak`) und aktuelle Rate je Sender, ausgelöste
     Alarme, Anzahl der bekannten Geräte
   - `?cmd=alarmreset` — gelernte Werte verwerfen, Lernphase neu beginnen
+  - `?cmd=alarmack&addr=<hex6>` — Alarm als normal quittieren, Vergleichswert
+    des Geräts auf die gemeldete Rate anheben
 - **`www/index.html`** — Telegramm-Tabelle (live), Filter (Suche, Richtung,
   Protokoll, Typ, Gerät), Analyse-Tab (RSSI-Verlauf, Telegramm-Rate,
   Geräte-Statistik mit DutyCycle gegen das 36-s-Budget), Alarm-Tab
@@ -229,16 +231,46 @@ Anführungszeichen, Backslashes und Steuerzeichen befreit, weil
 Mit **„Lernphase zurücksetzen"** werden Baseline, Zähler und Alarmhistorie
 verworfen und die Sammlung beginnt von vorn.
 
+### Fehlalarm quittieren
+
+Auch nach einer langen Lernphase kann ein Gerät einmal mehr senden, als es je
+getan hat, ohne dass etwas kaputt ist — bei anwesenheitsgetriebenen Geräten
+(Schalter, Bewegungsmelder) ist das der Normalfall. Jeder Eintrag im
+Alarmprotokoll hat deshalb den Knopf **„Ist normal"**: er hebt den
+Vergleichswert des Geräts auf die gemeldete Rate an. Die Alarmschwelle kommt
+danach obendrauf — bei +50 % meldet sich das Gerät erst wieder, wenn es die
+quittierte Rate um die Hälfte übersteigt.
+
+Angehoben wird auf die höhere von gemeldeter und gerade gemessener Rate: wenn
+das Gerät weiter steigt, soll es nicht sofort erneut melden. Hat das Gerät
+eine Stundenspitze, wird diese angehoben, sonst der Mittelwert — also jeweils
+der Wert, der tatsächlich als Vergleich dient. Der quittierte Alarm
+verschwindet aus dem Protokoll, und die Gerätetabelle vermerkt die Herkunft
+(„quittiert", mit altem Wert und Zeitpunkt im Tooltip). Rückgängig macht das
+nur ein Zurücksetzen der Lernphase.
+
+Technisch läuft die Quittierung über eine eigene Warteschlange: der Zustand
+gehört dem Dienst, der ihn in jedem Zyklus aus dem Speicher schreibt und eine
+Änderung der Weboberfläche sofort überschreiben würde. Die Oberfläche hängt
+deshalb eine Zeile an `alarm.ack` an, der Dienst räumt die Datei im nächsten
+Zyklus ab (per Umbenennen, damit währenddessen Angehängtes nicht verloren
+geht) und hebt den Wert an. Bis dahin zeigt die Zeile „wird übernommen". Eine
+Warteschlange statt eines Markers in `alarm.conf`, weil zwischen zwei Zyklen
+mehrere Quittierungen anfallen können.
+
 ### Dateien
 
-Beide liegen unter `/usr/local/addons/rftrafficlogger/`, also auf der
+Alle drei liegen unter `/usr/local/addons/rftrafficlogger/`, also auf der
 persistenten Partition — der Lernfortschritt übersteht Reboots, Firmware- und
 Addon-Updates (das `update_script` lässt sie unangetastet):
 
 - `alarm.conf` — Konfiguration als `key=value`, von der Weboberfläche
   geschrieben
 - `alarm.state` — Phase, erfasste Zeit, Zähler, Mittelwerte, Stundenspitzen,
-  Datei-Lesezeiger und Alarmhistorie (Tcl-Dict, vom Dienst geschrieben).
+  Datei-Lesezeiger, Alarmhistorie und quittierte Anhebungen (Tcl-Dict, vom
+  Dienst geschrieben).
+- `alarm.ack` — Warteschlange quittierter Alarme; entsteht beim Klick auf
+  „Ist normal" und verschwindet, sobald der Dienst sie übernommen hat.
   Zustandsdateien älterer Versionen ohne Stundenspitzen werden übernommen; bis
   zum nächsten Reset greift dann geräteweise der Mittelwert.
 

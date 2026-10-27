@@ -1,6 +1,6 @@
 # Tests
 
-Zwei eigenständige Testläufe ohne Testframework — beide finden ihre Dateien
+Drei eigenständige Testläufe ohne Testframework — alle finden ihre Dateien
 relativ zu sich selbst und brauchen keine laufende CCU.
 
 ```sh

@@ -18,7 +18,9 @@
 #include <sstream>
 #include <errno.h>
 #include <vector>
+#include "generated-ssdpd-version.h"
 #include <sys/time.h>
+#include <poll.h>
 
 //static const char* RESPONSE_URL =
 //		"http://127.0.0.1/upnp/basic_dev.cgi?ssdp=response";
@@ -340,6 +342,11 @@ static std::string getSerialNum() {
 int main(int argc, char ** argv) {
 	char buffer[2048];
 
+	if(argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("ssdpd %s (%s)\n", SSDPD_VERSION, __DATE__);
+		return 0;
+	}
+
 	struct sockaddr_in sa_mcast_client;
 	struct sockaddr_in sa_peer;
 
@@ -430,19 +437,19 @@ int main(int argc, char ** argv) {
 
 	while (1) {
 
-		fd_set inFd;
-		FD_ZERO(&inFd);
-		FD_SET(ssdpSock, &inFd);
+		// poll() instead of select(): an fd_set only holds descriptors below FD_SETSIZE (1024)
+		struct pollfd pfd;
+		pfd.fd = ssdpSock;
+		pfd.events = POLLIN;
+		pfd.revents = 0;
 
-		struct timeval tv;
-		tv.tv_sec = REPEAT_AFTER - (time(NULL) - t);
-		tv.tv_usec = 0;
-		if (tv.tv_sec > REPEAT_AFTER || tv.tv_sec < 0)
-			tv.tv_sec = 0;
+		time_t wait = REPEAT_AFTER - (time(NULL) - t);
+		if (wait > REPEAT_AFTER || wait < 0)
+			wait = 0;
 
-		int ret = select(ssdpSock + 1, &inFd, NULL, NULL, &tv);
+		int ret = poll(&pfd, 1, (int)wait * 1000);
 		if (ret < 0) {
-			perror("select failed");
+			perror("poll failed");
 
 			// only exit if not EINVAL (invalid argument)
 			if(errno != EINVAL)

@@ -32,21 +32,26 @@ ToggleChannelView = function()
 
 
 isDutyCycleOK4DevUpdate = function() {
-  var ifaceBidCosRF = "BidCos-RF";
-  var BidCosIFaces = homematic("Interface.listBidcosInterfaces", {"interface": ifaceBidCosRF});
+  var iface = homematic("Interface.listBidcosInterfaces", {"interface": "BidCos-RF"});
   var dcVal = 0,
     dcWarningLevel = 80,
     dcOK = true;
 
-  jQuery.each(BidCosIFaces, function (index, iFace) {
-    if (iFace.type == "CCU2") {
-      dcVal = (typeof iFace.dutyCycle != "undefined") ? parseInt(iFace.dutyCycle) : 0;
-      if (dcVal >= dcWarningLevel) {
-        dcOK = false;
+  if(iface === null || iface.length === 0) {
+    iface = homematic("Interface.listBidcosInterfaces", {"interface": "HmIP-RF"});
+  }
+
+  if(iface !== null) {
+    jQuery.each(iface, function (index, iFace) {
+      if (iFace.type == "CCU2") {
+        dcVal = (typeof iFace.dutyCycle != "undefined") ? parseInt(iFace.dutyCycle) : 0;
+        if (dcVal >= dcWarningLevel) {
+          dcOK = false;
+        }
+        return false; //leave each loop
       }
-      return false; //leave each loop
-    }
-  });
+    });
+  }
   return dcOK;
 };
 
@@ -62,7 +67,7 @@ FirmwareUpdate = function(devType) {
     poststr += "&iface=" + $F('global_iface');
     poststr += "&address=" + $F('global_address');
     poststr += "&cmd=firmware_update";
-    SendRequest('ic_ifacecmd.cgi');
+    SendPOSTRequest('ic_ifacecmd.cgi');
     ProgressBar = new ProgressBarMsgBox(translateKey("performingFirmwareUpdate"), 1);
     ProgressBar.show();
     ProgressBar.StartKnightRiderLight();
@@ -93,6 +98,24 @@ isHeatingControlDirty = function() {
   }
   return false;
 };
+
+RestoreDeviceParameters = function()
+{
+  ProgressBar = new ProgressBarMsgBox(translateKey("transferConfigData"), 0);
+  ProgressBar.show();
+  ProgressBar.StartKnightRiderLight();
+  
+  homematic("Interface.restoreConfigToDevice", {"interface": $F('global_iface'), "address": $F('global_address')}, function(result, error) {
+    ProgressBar.hide();
+    ProgressBar.StopKnightRiderLight();
+    if (error) {
+      var msg = String(error.message || error.text || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      MessageBox.show(translateKey('lblError'), msg, '', 480, 120);
+      return;
+    }
+    CheckConfigPending($F('global_iface'), $F('global_address'), '', $F('global_redirect_url'), true);
+  });
+}
 
 SaveDeviceParameters = function()
 {
@@ -404,7 +427,7 @@ SetParameters = function(iface, address, special_input_id)
 
 
 
-  SendRequest('ic_ifacecmd.cgi', null, function() {
+  SendPOSTRequest('ic_ifacecmd.cgi', null, function() {
     if (device)
     {
       DeviceList.beginUpdateDevice(device.id);
@@ -423,7 +446,7 @@ SendInternalKeyPress = function(iface, sender, receiver, longKeyPress)
   poststr += "&receiver=" + receiver;
   poststr += "&longKeyPress=" + simLongKeyPress;
   poststr += "&cmd=SendInternalKeyPress";
-  SendRequest('ic_ifacecmd.cgi');
+  SendPOSTRequest('ic_ifacecmd.cgi');
 };
 
 SetInternalKey = function(iface, address, special_input_id, peerAddress)
@@ -452,7 +475,7 @@ SetInternalKey = function(iface, address, special_input_id, peerAddress)
   AddSeparateSettings('subset_'   + special_input_id + '_', pnr);
   
   //alert(poststr);
-  SendRequest('ic_ifacecmd.cgi');
+  SendPOSTRequest('ic_ifacecmd.cgi');
 };
 
 ShowInternalKeyProfile = function(selectelem, channel, counter)

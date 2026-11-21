@@ -132,6 +132,7 @@ void HSSManager::ReportEvent(const std::string& address, const std::string& valu
 bool HSSManager::XmlRpcCallSync(const char* method, XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue* result, const std::string& url)
 {
 	XmlRpcClient c(url);
+	c.setTimeout(30000); // this runs on the daemon's main loop: do not wait forever for a receiver that does not answer
 	if(!c.execute(method, params, *result)){
 		LOG(Logger::LOG_ERROR, "XmlRpc transport error calling %s(%s) on %s:", method, params.toText().c_str(), c.getURL().c_str());
 	}else{
@@ -235,7 +236,7 @@ bool HSSManager::CommitReplacedDevices(const std::string url,const std::string& 
 					params[0]=id;
 					params[1]=it->first;
 					params[2] = newDevice;
-					XmlRpcCallAsync("replaceDevice", params);
+					XmlRpcCallAsync("replaceDevice", params, url);
 				}
 
 			}
@@ -319,13 +320,17 @@ bool HSSManager::PlatformInit(const std::string& url, const std::string& id, boo
 				std::map<std::string, int>::iterator it;
 				for(it=remote_version_map.begin();it!=remote_version_map.end();it++){
                     std::string newDevice;
-                    if(supportReplaceDevice && IsDeviceReplaced(it->first,newDevice))
+                    //the channels (A:1, ...) of a replaced device A go with replaceDevice for A
+                    const std::string deviceAddress = it->first.substr(0, it->first.find(':'));
+                    if(supportReplaceDevice && IsDeviceReplaced(deviceAddress,newDevice))
                     {
-                        XmlRpcValue replaceDeviceParams;
-                        replaceDeviceParams[0]=id;
-                        replaceDeviceParams[1]=it->first;
-                        replaceDeviceParams[2] = newDevice;
-                        XmlRpcCallAsync("replaceDevice", replaceDeviceParams);
+                        if(deviceAddress == it->first){
+                            XmlRpcValue replaceDeviceParams;
+                            replaceDeviceParams[0]=id;
+                            replaceDeviceParams[1]=it->first;
+                            replaceDeviceParams[2] = newDevice;
+                            XmlRpcCallAsync("replaceDevice", replaceDeviceParams, url);
+                        }
                     }else{
                         deleteDevicesArray[deleteDevicesArray.size()] = it->first;
                     }

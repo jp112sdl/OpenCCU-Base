@@ -205,24 +205,30 @@ iseButtonsKey.prototype = {
  **/
 iseButtonProg = Class.create();
 iseButtonProg.prototype = {
-  initialize: function(id, progActive) {
+  initialize: function(id, progActive, thenOnly) {
     this.id = id;
     this.progActive = progActive;
     
-    this.startBtn = $(id + "Start");
+    this.startBtn = (thenOnly === true) ? $(id + "StartThenOnly") : $(id + "Start");
     this.actBtn = $(id + "Act");
+    
+    this.thenOnly = thenOnly;
     
     if ( progActive ) { ControlBtn.on(this.actBtn); }
     
     // Add event handlers
     this.clickStart = this.onClickStart.bindAsEventListener(this);
     Event.observe(this.startBtn, 'mousedown', this.clickStart);
+    // Keyboard operation: Enter and Space press the button like the mouse
+    this.startBtn.setAttribute('role', 'button');
+    this.startBtn.setAttribute('tabindex', '0');
+    this.startBtn.setAttribute('data-keyevent', 'mousedown');
   },
   
   onClickStart: function() 
   {
     ControlBtn.pushed(this.startBtn);
-    ExecuteProgram(this.id);
+    ExecuteProgram(this.id, this.thenOnly);
     var t = this;
     new PeriodicalExecuter(function(pe)
     {

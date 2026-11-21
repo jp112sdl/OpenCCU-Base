@@ -241,7 +241,7 @@ FirewallConfigDialog = Class.create({
     firewallPolicy = this.m_portListBox.getSelectedItem().id,
     hmscriptAccess = this.m_hmscriptListBox.getSelectedItem().id,
     mediolaAccess = this.m_mediolaListBox.getSelectedItem().id,
-    ips = this.m_ipTextArea.getText(),
+    ips = this.m_ipTextArea.getText().trim(),
     userPorts = this.m_portTextArea.getText().replace(/\s+/g, '').split(";");
 
     // Remove a trailing ; at the end of ips
@@ -253,7 +253,7 @@ FirewallConfigDialog = Class.create({
       delete firstStartInstallWizard;
       homematic("CCU.setSecurityHint");
       homematic("CCU.setFirewallConfigured");
-      homematic("CCU.setUserAckInstallWizard", {'userName' : userName});
+      homematic("CCU.setUserAckInstallWizard");
     }
 
     if (this.dlgWoPasswd ) {

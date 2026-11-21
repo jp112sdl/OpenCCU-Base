@@ -17,9 +17,8 @@ homematic.com =
   {
     this.m_ccuProduct = getProduct();
     this.preURL = (this.m_ccuProduct < 3) ? "" : "ccu3-";
-    this.m_product ="HM-CCU" + this.m_ccuProduct;
-    this.m_URLServer = (isHTTPS) ? "https://"+this.preURL+"update.homematic.com:8443" : "http://"+this.preURL+"update.homematic.com";
-    this.m_fieldTestURLServer = (isHTTPS) ? "https://fieldtest-ccu3-update.homematic.com" : "http://fieldtest-ccu3-update.homematic.com";
+    this.m_product = "HM-RASPBERRYMATIC";
+    this.m_URLServer = "https://"+this.preURL+"update.homematic.com";
 
     this.serial = homematic("CCU.getSerial");
     this.serial = ((this.serial != "") && (typeof this.serial != "undefined") && (this.serial != null)) ? this.serial : "0";
@@ -28,7 +27,7 @@ homematic.com =
     var script = document.createElement("script");
     script.id = "homematic_com_script";
     script.type = "text/javascript";
-    script.src = this.m_URLServer + "/firmware/download?cmd=js_check_version&version="+WEBUI_VERSION+"&product="+this.m_product+"&serial=" + this.serial;
+    script.src = "https://openccu.de/LATEST-VERSION.js?v=" + WEBUI_VERSION + "&p=" + PRODUCT;
     $("body").appendChild(script);
   },
 
@@ -81,25 +80,19 @@ homematic.com =
       var script = document.createElement("script");
       script.id = "homematic_com_script_" + index;
       script.type = "text/javascript";
-      script.src =  this.m_URLServer + "/firmware/download?cmd=js_check_version&product=" + product + "&serial=0";
+      script.src =  this.m_URLServer + "/firmware/download?cmd=js_check_version&product=" + product + "&serial=0" + "&ts=" + Date.now();
       $("body").appendChild(script);
       homematic.com.callback = callback;
   },
 
   getListOfAvailableFirmware: function(callback) {
-      var fieldTestActive = "/etc/config/fieldTestActive";
-
       // The server should return a string like "homematic.com.setDeviceFirmwareVersions([{"type":"HM-MOD-Re-8","version":"1.0.0"},{"type":"HM-MOD-Re-8","version":"1.0.0"}])"
       var script = document.createElement("script");
       script.id = "homematic_com_script_fw";
       script.type = "text/javascript";
       // script.src =  this.m_URLServer + "/firmware/api/firmware/search/DEVICE";
 
-      if (homematic('CCU.existsFile', {'file': fieldTestActive})) {
-        script.src = this.m_fieldTestURLServer + "/firmware/api/firmware/search/DEVICE?product=HM-CCU"+getProduct()+"&version="+WEBUI_VERSION+"&serial=" + this.serial;
-      } else {
-        script.src = this.m_URLServer + "/firmware/api/firmware/search/DEVICE?product=HM-CCU" + getProduct() + "&version=" + WEBUI_VERSION;
-      }
+      script.src = this.m_URLServer + "/firmware/api/firmware/search/DEVICE?product=HM-CCU" + getProduct() + "&version=" + WEBUI_VERSION + "&ts=" + Date.now();
       $("body").appendChild(script);
       homematic.com.callback = callback;
   },

@@ -21,7 +21,7 @@ if (PLATFORM == "Central") {
   TREE_EXPANDED_FOOTER_HTML: "" +
     "<table border='0' cellspacing='8'>" +
       "<tr>" + 
-        "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton' style='width:auto;padding-left:5px;padding-right:5px;' onclick='WebUI.goBack();'>${footerBtnPageBack}</div></td>" +
+        "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton' onclick='WebUI.goBack();'>${footerBtnPageBack}</div></td>" +
         "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton CLASS04312' onclick='DeviceListPage.resetFilters();'>${footerBtnResetFilter}</div></td>" +
         "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton CLASS04312' onclick='DeviceListPage.collapseTree();'>${footerBtnCloseTree}</div></td>" +
       "</tr>" +
@@ -29,7 +29,7 @@ if (PLATFORM == "Central") {
   FLAT_FOOTER_HTML: "" +
     "<table border='0' cellspacing='8'>" +
       "<tr>" + 
-        "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton' style='width:auto;padding-left:5px;padding-right:5px;' onclick='WebUI.goBack();'>${footerBtnPageBack}</div></td>" +
+        "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton' onclick='WebUI.goBack();'>${footerBtnPageBack}</div></td>" +
         "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton CLASS04312' onclick='DeviceListPage.resetFilters();'>${footerBtnResetFilter}</div></td>" +
         "<td style='text-align:center; vertical-align: middle;'><div class='FooterButton CLASS04312' onclick='DeviceListPage.recoverTree();'>${footerBtnRestoreTree}</div></td>" +
       "</tr>" +
@@ -76,6 +76,8 @@ if (PLATFORM == "Central") {
     {id: "INTERFACE_BIDCOS_WIRED", name: translateKey("BidCosWired-Filter")}, // BidCos-Wired
     {id: "INTERFACE_HMIP_RF", name: translateKey("HmIPRF")}, // HmIP-RF
     {id: "INTERFACE_VIRTUAL_DEVICES", name: translateKey("VirtualDevices")},
+    {id: "INTERFACE_CUXD", name: "CUxD"}, //
+    {id: "INTERFACE_CCU_JACK", name: "CCU-Jack"}, //
     {id: "INTERFACE_SYSTEM", name: "System"} //
   ],
   
@@ -177,7 +179,7 @@ if (PLATFORM == "Central") {
             (this.TypeNameFilter.match(device.typeName))                 &&
             (this.DescriptionFilter.match(translateKey(device.typeDescription)))       &&
             (this.AddressFilter.match(device.address))                   &&
-            (this.InterfaceFilter.matchString(device.interfaceName))     &&
+            (this.InterfaceFilter.matchString(String(device.interfaceDisplayName).escapeHTML()))     &&
             (this.ModeFilter.matchStringArray(device.modes)) &&
             (this.RoomFilter.matchArray(device.rooms))                   &&
             (this.FuncFilter.matchArray(device.subsections)));
@@ -304,7 +306,6 @@ if (PLATFORM == "Central") {
     var result = true;
     switch (channel.channelType) {
       case "ALARM_COND_SWITCH_TRANSMITTER":
-      case "MAINTENANCE":
       case "WEEK_PROGRAM":
         result = false;
         break;
@@ -686,22 +687,26 @@ if (PLATFORM == "Central") {
       setFooter(this.FLAT_FOOTER_HTML);
     }
 
-    jQuery(".j_chMode").each(function(){
-      var elm = jQuery(this);
-
-        switch (elm.text()) {
-          case "Gesichert":
-            elm.html(translateKey("lblSecured"));
-            break;
-          case "Standard":
-            elm.html(translateKey("lblStandard"));
-        }
+    var translatedSecure = translateKey("lblSecured");
+    var translatedStandard = translateKey("lblStandard");
+    jQuery(".j_chMode").each(function(i, e){
+      switch (e.textContent) {
+        case "Gesichert":
+          e.textContent = translatedSecure;
+          break;
+        case "Standard":
+          e.textContent = translatedStandard;
+          break;
+      }
     });
 
     translateJSTemplate("#DeviceListTable");
     translatePage(".j_rooms, .j_functions"); // this translates the room name as well the function name within the main devicelist (Settings > Devices)
     jQuery("#DeviceListPage_RoomFilter").draggable();
     jQuery("#DeviceListPage_FuncFilter").draggable();
+
+    DeviceList.updateDeviceStatus();
+    eQ3.HomeMatic.Event.fire({type: 'DeviceListPageLoaded'});
   },
   
   onRemoveDevice: function(whatEver)
@@ -727,10 +732,6 @@ if (PLATFORM == "Central") {
   };
 
   this.leave = function()
-  {
-  };
-
-  this.resize = function()
   {
   };
 

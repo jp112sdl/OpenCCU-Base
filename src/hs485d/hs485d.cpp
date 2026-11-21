@@ -56,6 +56,12 @@ char buffer[128];
 #include <md5.h>
 
 #include "generated-hs485d-version.h"
+#include "xmlrpc_version.h"
+#include "xmlparser_version.h"
+#include "hsscomm_version.h"
+#include "elvutils_version.h"
+#include "landeviceutils_version.h"
+#include "unifiedlancomm_version.h"
 
 using namespace XmlRpc;
 
@@ -75,16 +81,23 @@ XmlRpcServer s;
 XmlRpcServerProxy serverProxy(&s);
 #endif
 
-bool run=true;
+volatile sig_atomic_t run=true;
 
-/*
 static void sigterm_handler(int sig)
 {
-	printf("Received SIGTERM. Shutting down...\n");
-
 	run=false;
 }
-*/
+
+static void printVersion()
+{
+  std::cout << "hs485d " << HS485D_VERSION << " (" << __DATE__ << ")" << std::endl
+            << "  libXmlRpc " << xmlrpc_version() << std::endl
+            << "  libxmlparser " << xmlparser_version() << std::endl
+            << "  libhsscomm " << hsscomm_version() << std::endl
+            << "  libelvutils " << elvutils_version() << std::endl
+            << "  libLanDeviceUtils " << landeviceutils_version() << std::endl
+            << "  libUnifiedLanComm " << unifiedlancomm_version() << std::endl;
+}
 
 static void usage(const char* procname)
 {
@@ -100,6 +113,7 @@ static void usage(const char* procname)
             << "    -s: HM2 LGW serial number" << std::endl
             << "    -i: HM2 LGW Interface Number. (From /etc/config/hs485d.conf) Use 0 for [Interface 0]" << std::endl
             << "    -k: Encryption Key. (Only valid for HM2 LGW.)" << std::endl
+            << "    -v, --version: show the versions of hs485d and its libraries" << std::endl
             << std::endl
             << "Examples for HM2 Wired LGW:" << std::endl
             << std::endl
@@ -145,13 +159,15 @@ int main(int argc, char* argv[])
 	logger=new SyslogLogger("hs485d");
     Logger::LogLevel loglevel=Logger::LOG_INFO;
 
-	//signal(SIGTERM, sigterm_handler);
-	//signal(SIGINT, sigterm_handler);
 #ifndef WIN32
 	signal(SIGCHLD, SIG_IGN);//we are not interested in exit messages from our childs.
 	const struct rlimit rl={RLIM_INFINITY, RLIM_INFINITY};
 	setrlimit(RLIMIT_CORE, &rl);
 #endif
+    if(argc == 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+        printVersion();
+        return 0;
+    }
     for(int i=1;i<argc;i++)
     {
         if(strcmp(argv[i], "-p")==0&&argc>i+1){
@@ -415,6 +431,11 @@ int main(int argc, char* argv[])
 */
 	mgr.Init(cfgFilePath);
 
+	//handle SIGTERM and SIGINT only from here on: until now there is nothing to
+	//save, so a signal during startup (e.g. while waiting for a gateway) still
+	//terminates the process at once
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
 	try{
 		while(run ){
 			int64_t timeout=TimerTarget::s_timerQueue.TimeBeforeNextDue();
@@ -422,14 +443,15 @@ int main(int argc, char* argv[])
 				TimerTarget::s_timerQueue.Execute();
 				timeout=TimerTarget::s_timerQueue.TimeBeforeNextDue();
 			}
-			s.work(timeout);
+			s.work(timeout < 0 || timeout > 1000 ? 1000 : timeout); //wake up at least once a second to notice a shutdown request
 		}
 	}catch(XmlRpcException e){
 		LOG(Logger::LOG_FATAL_ERROR, "exception catched at top level: %s", e.getMessage().c_str());
 	}
-	delete pw;
+	pController->Stop(); //join its threads before the derived parts of the controller are destroyed
+	s.getDispatcher()->removeSource(pController);
+	delete pController; //deletes the port wrapper
 	delete logger;
-	delete pController;
 	exit(0);
 }
 

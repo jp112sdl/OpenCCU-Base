@@ -21,43 +21,8 @@ WebUI = Singleton.create({
     this.currentPageOptions  = null;    // Argumente der aktuellen Seite
     this.previousPage        = null;    // Vorherige Seite
     this.previousPageOptions = null;    // Argumente der vorherigen Seite
-    this.onResizeHandler     = null;    // EventHandler: onResize
-
-    this.onResizeHandler = this.onResize.bindAsEventListener(this);
-    Event.observe(window, "resize", this.onResizeHandler);
   },  
   
-  /**
-   * Ereignis. Wird bei der Änderung der Fenstergröße aufgerufen.
-   * Passt die Steuerelemente entsprechend der Änderung an.
-   */
-  onResize: function()
-  {
-    var height       = WebUI.getHeight();
-    var width        = WebUI.getWidth();
-    var bodyOverflow = "hidden";
-
-    if (width  < this.MIN_WIDTH)  { width  = this.MIN_WIDTH;  bodyOverflow = "auto"; }
-    if (height < this.MIN_HEIGHT) { height = this.MIN_HEIGHT; bodyOverflow = "auto"; }
-    var contentHeight = height - this.STATIC_HEIGHT;
-
-    if ($("body"))    { Element.setStyle("body", {"overflow": bodyOverflow, "width": width  + "px", "height": height + "px"}); }
-    if ($("header"))  { Element.setStyle("header" , {"height": this.HEADER_HEIGHT  + "px", "width": width + "px"}); }
-    if ($("menubar")) { Element.setStyle("menubar", {"height": this.MENUBAR_HEIGHT + "px", "width": width + "px"}); }
-    if ($("content")) { Element.setStyle("content", {"height": contentHeight       + "px", "width": width + "px"}); }
-    if ($("footer"))  { Element.setStyle("footer" , {"height": this.FOOTER_HEIGHT  + "px", "width": width + "px"}); }
-
-    if (this.currentPage) { this.currentPage.resize(); }
-
-    if(typeof dcTimeout == "undefined") {
-      dcTimeout = window.setTimeout(function () {
-        showDutyCycle();
-        showCarrierSense();
-        delete dcTimeout;
-      }, 10);
-    }
-  },
-
   /*########################*/
   /*# Öffentliche Elemente #*/
   /*########################*/
@@ -217,6 +182,7 @@ WebUI = Singleton.create({
 
       var content = document.createElement("div");
       content.id = "content";
+      content.tabIndex = -1;
       Element.setStyle(content, {cursor: "wait"});
       layer0.appendChild(content);
 
@@ -256,8 +222,6 @@ WebUI = Singleton.create({
 
 
     if (result) {
-      WebUI.resize();
-
       if (!isFF) {
         jQuery(".Layer0").show();
         WebUI.enter(StartPage);
@@ -286,7 +250,6 @@ WebUI = Singleton.create({
       // Check the dutyCycle and carrierSense periodically
       new PeriodicalExecuter(function () {
         showDutyCycle();
-        showCarrierSense();
       }, checkDutyCycleInterval);
 
       if (getProduct() >= 3) {
@@ -322,9 +285,50 @@ WebUI = Singleton.create({
         }
         */
 
+        var toAckName = function(name) {
+          return name.replace(/[ \/\xC4\xD6\xDC\xE4\xF6\xFC\xDF]/g, function(m) {
+                        return {
+                          ' ': ';',
+                          '/': '',
+                          '\xC4': 'AE',
+                          '\xD6': 'OE',
+                          '\xDC': 'UE',
+                          '\xE4': 'ae',
+                          '\xF6': 'oe',
+                          '\xFC': 'ue',
+                          '\xDF': 'ss'
+                        }[m];
+                      }).replace(/[^\x20-\x7e]+/g, '');
+        };
+        var usrName = toAckName(userName);
+
+        // The acknowledgement of the install wizard is stored per user ID
+        // (userAckInstallWizardId_<ID>). Until now, it was stored under the
+        // sanitized user name, and before that under the name decorated with the
+        // role and the UI mode shown in the header (now userNameInfo). Still
+        // accept such a file and store the acknowledgement under the user ID, so
+        // that the wizard does not reappear after the update. The former file is
+        // removed, as accounts whose names sanitize identically shared it: only
+        // the first of them that logs in takes it over.
+        var hasUserAckInstallWizard = function() {
+          var ackFile = "/etc/config/userprofiles/userAckInstallWizard";
+          if (homematic('CCU.existsFile', {'file': ackFile + "Id_" + userId})) {
+            return true;
+          }
+          var found = false;
+          var legacyNames = [usrName, toAckName(userNameInfo)];
+          for (var i = 0; i < legacyNames.length; i++) {
+            if (homematic('CCU.existsFile', {'file': ackFile + "_" + legacyNames[i]})) {
+              homematic("CCU.setUserAckInstallWizard", {'legacyName': legacyNames[i]});
+              found = true;
+            }
+          }
+          return found;
+        };
+
         var usrPwd = homematic('User.hasUserPWD', {'userID': userId});
         if (usrPwd == false) {
-          var result = homematic('CCU.existsFile', {'file': "/etc/config/userprofiles/userAckInstallWizard_" + userName.replace(" ", ";")});
+          var result = hasUserAckInstallWizard();
           if (!result) {
             var checkUpdateContentRunning = window.setInterval(function () {
               if (!bUpdateContentRunning) {
@@ -344,9 +348,14 @@ WebUI = Singleton.create({
 
           // User password set
           // The User will see a hint that new firewall settings are active
-          if ((getUPL() == UPL_USER) && (!homematic('CCU.existsFile', {'file': "/etc/config/userprofiles/userAckInstallWizard_" + userName.replace(" ", ";")}))) {
+          if ((getUPL() == UPL_USER) && (!hasUserAckInstallWizard())) {
             new MessageBox.show(translateKey("dglUserNewFwSettingsTitle"), translateKey("dglUserNewFwSettingsContent"));
-            homematic("CCU.setUserAckInstallWizard", {'userName': userName});
+            homematic("CCU.setUserAckInstallWizard");
+          }
+
+          // open the systemLanguage config dialog if no systemLanguage was selected yet
+          if (homematic('CCU.getSystemLanguage') === 'none') {
+            CreatePopup(ID_SYSTEM_LANGUAGE_CONFIG);
           }
         }
       }
@@ -423,13 +432,6 @@ WebUI = Singleton.create({
       throw new Error("content not defined");
     }
   },
-  /**
-   * Ruft das onResize-Ereignis auf.
-   **/
-  resize: function()
-  {
-    this.onResize();
-  },
   
   /**
    * Lädt eine Seite.
@@ -446,6 +448,12 @@ WebUI = Singleton.create({
     this.currentPageOptions  = options;
     
     this.currentPage.enter(options);
+    window.name = 'ccu-main-window';
+    window.setTimeout(() => {
+      if(jQuery(':focus').length === 0) {
+        jQuery('#content')[0].focus();
+      }
+    }, 200);
   },
   
   reload: function()

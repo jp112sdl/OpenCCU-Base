@@ -13,6 +13,22 @@ function ::ReloadSiCo()
   return;
 }
 
+function ::SetNegateCondition() {
+  if( system.IsVar("scid") && system.IsVar("nc") )
+  {
+    object oTmp = dom.GetObject( system.GetVar("scid") );
+    if( oTmp )
+    {
+      string sNC = system.GetVar("nc");
+      if (sNC == "false") {
+        oTmp.NegateCondition(false);
+      } else {
+        oTmp.NegateCondition(true);
+      }
+    }
+  }
+}
+
 function ::SetOperatorType()
 {
   string sCI = "SetOperatorType[SICO]: ";
@@ -90,6 +106,9 @@ function ::SetLeftValType()
       Write( oTmp.LeftValType( system.GetVar("lvt") ) );
       Write( '|' );
       Write( oTmp.LeftVal( ID_ERROR ) );
+      ! The channel belongs to the previous device selection; SetChannel sets
+      ! it again when a channel is chosen (OpenCCU/OpenCCU#3030).
+      oTmp.ConditionChannel( ID_ERROR );
     }
   }
 }
@@ -292,19 +311,6 @@ function ::SetLeftAndRightValue()
         Write( oTmp.RightVal1( sRV ) );
         Write( "|"#sRV );
       }
-    }
-  }
-}
-
-function ::SetTimeModule()
-{
-  if( system.IsVar("scid") && system.IsVar("tmid") )
-  {
-    object oTmp = dom.GetObject( system.GetVar("scid") );
-    if( oTmp )
-    {
-      oTmp.RightVal1Type( ivtObjectId );
-      Write( oTmp.RightVal1( system.GetVar("tmid") ) );
     }
   }
 }

@@ -10,11 +10,12 @@
 #include <Logger.h>
 #include "UdpCannel.h"
 #include <sys/time.h>
+#include <poll.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 
-UdpCannel::UdpCannel():sockfd(0) {
+UdpCannel::UdpCannel():sockfd(-1) {
 	// TODO Automatisch generierter Konstruktorstub
 
 }
@@ -25,7 +26,7 @@ UdpCannel::~UdpCannel() {
 }
 
 bool UdpCannel::RefreshConnection() {
-	if (sockfd > 0)
+	if (sockfd >= 0)
 		CloseSocket();
 
 	OpenSocket();
@@ -35,7 +36,7 @@ bool UdpCannel::RefreshConnection() {
 }
 
 int UdpCannel::OpenSocket() {
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)) == -1) {
 		LOG(Logger::LOG_ERROR, "UDP_CHANNEL: failed to create UDP-Socket.");
 	}
 
@@ -63,13 +64,12 @@ int UdpCannel::BindServer() {
 ssize_t UdpCannel::ReceiveMessage(std::string& recv_buf) {
 	ssize_t nread;
 	char ptr[BUFFER_SIZE];
-	struct timeval waitTimeout;
-	waitTimeout.tv_sec = 5;
-	waitTimeout.tv_usec = 0;
-	fd_set readSet;
-	FD_ZERO(&readSet);
-	FD_SET(sockfd,&readSet);
-	int ret = select(sockfd+1,&readSet,NULL,NULL,&waitTimeout);
+	// poll() instead of select(): an fd_set only holds descriptors below FD_SETSIZE (1024)
+	struct pollfd pfd;
+	pfd.fd = sockfd;
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+	int ret = poll(&pfd, 1, 5000);
 	if(ret < 1)
 	{
 		return 0;
@@ -87,7 +87,7 @@ ssize_t UdpCannel::ReceiveMessage(std::string& recv_buf) {
 }
 
 void UdpCannel::CloseSocket() {
-	if (sockfd > 0)
+	if (sockfd >= 0)
 		close(sockfd);
-	sockfd = 0;
+	sockfd = -1;
 }

@@ -1277,6 +1277,11 @@ bool RFManager::SetBidcosInterface(const std::string& device_address,
 	if (!inst) {
 		throw XmlRpcException("Unknown instance", -2);
 	}
+	//An empty id selects the default interface; any other id must name a configured interface.
+	//Otherwise the device would silently end up on the default interface while reporting the given id.
+	if (!interface_id.empty() && !GetInterfaceConcentrator()->HasInterface(interface_id)) {
+		throw XmlRpcException("Unknown interface", -2);
+	}
 	RFDevice* dev = inst->GetDevice();
 	return dev->SetBidcosInterface(interface_id, roaming);
 }
@@ -1383,6 +1388,8 @@ bool RFManager::ReplaceDevice(const std::string& old_address,
 		delete instOld;
 		dev_cache.dev = NULL;
 		dev_cache.address = "";
+		//make the replacement known to IsDeviceReplaced() right away and drop entries that still point to instOld
+		this->initReplaceHistory();
 
 
 
@@ -1563,6 +1570,7 @@ bool RFManager::IsDeviceReplaced(const std::string &oldDevieceAddress,
 			oldDevieceAddress);
 	if (it != this->replace_history.end()) {
 		newDeviceAddress = it->second->GetSerial();
+		return true;
 	}
 	return false;
 }

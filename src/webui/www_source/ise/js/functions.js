@@ -15,6 +15,8 @@ iseDOM_BuildLabel = "R1.00.0381.0100";
 dbg = false;
 rfr = true;
 
+ID_EDIT_SYSVAR_VALUE   = 9921;
+
 ID_ROOMS     = 101;  // Rooms collection ID.
 ID_FUNCTIONS = 151;  // Functions collection ID.
 ID_FAVORITES = 201;  // Favorites collection ID.
@@ -42,6 +44,7 @@ ID_CHOOSE_LED            = 1022;
 ID_SET_OUCFM_MODE        = 1023;
 ID_SET_STATUS_DISPLAY    = 1024;
 ID_BIDCOS_INTERFACE = 1025;
+ID_SYSTEM_LANGUAGE_CONFIG = 2001;
 
 nUA = navigator.userAgent;
 NAV_IE = false;
@@ -145,38 +148,40 @@ setDate = function(date)
   if ($("maindate")) { $("maindate").innerHTML = date; }
 };
 
-setAlarmMessageCount = function (count) {
-
-  if ($("msgAlarms")) {
-    //$("msgAlarms").innerHTML = "${Alarmmeldungen} (" + count + ")";
-    $("msgAlarms").innerHTML = translateKey('alarmMsg') + " (" + count + ")";
-
+resetReGaSaveButton = function () {
+  var btnReGaSave = document.getElementById("btnReGaSave");
+  if (btnReGaSave) {
+    btnReGaSave.style.color=WebUI.getColor("textColorB");
+    btnReGaSave.onclick=function() { LogoClick(); };
   }
-  if (count === 0) {
-    if ($("imgAlarms")) {
-      $("imgAlarms").src = "/ise/img/dot/green.png";
+};
+
+setAlarmMessageCount = function (count) {
+  if ($("msgAlarms")) {
+    const newMsg = translateKey('alarmMsg') + " (" + count + ")";
+    if ($("msgAlarms").innerHTML !== newMsg) {
+      $("msgAlarms").innerHTML = newMsg;
     }
   }
-  else {
-    if ($("imgAlarms")) {
-      $("imgAlarms").src = "/ise/img/dot/red.png";
+  if ($("imgAlarms")) {
+    const newImg = (count === 0 ? '/ise/img/dot/green.png' : '/ise/img/dot/red.png');
+    if ($("imgAlarms").getAttribute('src') !== newImg) {
+      $("imgAlarms").src = newImg;
     }
   }
 };
 
 setServiceMessageCount = function (count) {
   if ($("msgServices")) {
-    $("msgServices").innerHTML = translateKey('serviceMsg') + " (" + count + ")";
-
-  }
-  if (count === 0) {
-    if ($("imgServices")) {
-      $("imgServices").src = "/ise/img/dot/green.png";
+    const newMsg = translateKey('serviceMsg') + " (" + count + ")";
+    if ($("msgServices").innerHTML !== newMsg) {
+      $("msgServices").innerHTML = newMsg;
     }
   }
-  else {
-    if ($("imgServices")) {
-      $("imgServices").src = "/ise/img/dot/yellow.png";
+  if ($("imgServices")) {
+    const newImg = (count === 0 ? '/ise/img/dot/green.png' : '/ise/img/dot/yellow.png');
+    if ($("imgServices").getAttribute('src') !== newImg) {
+      $("imgServices").src = newImg;
     }
   }
 };
@@ -206,23 +211,6 @@ ReceiptAlarm = function(id,reload)
   };
   new Ajax.Request(url,opt);
 };
-
-
-/**
- * Aktualisiert Systemvariablen
- **/
-updateSysVar = function(id, value)
-{
-  var PREFIX = "SYSVAR_";
-  var element = $(PREFIX + id);
-  
-  if (element) 
-  {
-    element.innerHTML = "";
-    element.appendChild(document.createTextNode(translateString(value)));
-  }
-};
-
 
 /*setOldEnergyCounterVal = function(chn, value) {
   arrOldEnergyCounterVal[chn] = value;
@@ -307,9 +295,95 @@ LoadingHTML = function()
 
 
 
+// The page of the WebUI menu that is shown (WebUI.enter() sets it before it
+// calls updateContent()), null before the WebUI is set up.
+updateContentCurrentPage = function()
+{
+  return ((typeof WebUI != "undefined") && WebUI) ? WebUI.currentPage : null;
+};
+
+// Called when a page requested by updateContent() is loaded. Prototype
+// runs the scripts of the page right after this (deferred), and the WebUI
+// fires ContentLoaded 100 ms later. A call remembered meanwhile is carried
+// out after that, so it does not replace the page before its scripts ran.
+// It is dropped if another page of the menu was opened since, which then
+// shows its own content. Only the load that kept bUpdateContentRunning set
+// carries it out: after a load without a remembered call, the next page
+// load can start before the timer below runs, and a call remembered during
+// that load is carried out when that load is complete.
+updateContentLoaded = function()
+{
+  iseRefr(true);
+  var keepsLock = (updateContentPending !== null);
+  if( !keepsLock )
+  {
+    bUpdateContentRunning=false;
+  }
+  setTimeout(function() {
+    try
+    {
+      eQ3.HomeMatic.Event.fire({type:'ContentLoaded'});
+    }
+    finally
+    {
+      // also after an error of a ContentLoaded handler, so the page load is
+      // not blocked
+      var pending = updateContentPending;
+      if( keepsLock && (pending !== null) )
+      {
+        updateContentPending = null;
+        bUpdateContentRunning=false;
+        if( pending.page === updateContentCurrentPage() )
+        {
+          doClearTempView = pending.clearTempView;
+          updateContent(pending.file, pending.argsForUrl, pending.codeToExec, pending.bDontSaveUrl);
+        }
+        else
+        {
+          conInfo("updateContent: another page was opened, dropping ["+pending.file+"].");
+        }
+      }
+    }
+  }, 100);
+};
+
+// A call of updateContent() while a page is loading is not dropped any more:
+// the last such call is remembered and carried out once the loading page is
+// complete (after its scripts ran and ContentLoaded was fired). So a reload
+// requested meanwhile, e.g. by a second save of the system variable list,
+// still shows the saved state. Until then bUpdateContentRunning stays true,
+// so further calls replace the remembered one and the order is kept.
+updateContentPending = null;
+
 updateContent = function(file, argsForUrl, codeToExec, bDontSaveUrl)
 {
-  if( !bUpdateContentRunning )
+  if( bUpdateContentRunning )
+  {
+    // A reload of the loading page, as reloadPage() and reloadSortedPage()
+    // make it: same file and arguments, no code to run. A call with other
+    // arguments (e.g. another channel) or code is a new navigation.
+    var isReloadOfLoadingPage = (file == sActPage) && (argsForUrl == sActPageArgs) && !codeToExec;
+    if( (updateContentPending !== null) && isReloadOfLoadingPage && (updateContentPending.file != file) )
+    {
+      // Another page is to be opened after the loading one (e.g. from the
+      // menu), so a reload of the loading page, e.g. by reloadPage() from a
+      // save of that page, is not needed and must not replace it.
+      conInfo("updateContent: page load running, keeping ["+updateContentPending.file+"] instead of reloading ["+file+"].");
+      return;
+    }
+    conInfo("updateContent: page load running, carrying out ["+file+"] afterwards.");
+    // doClearTempView is read when the page is requested, so keep the value
+    // reloadPage() and reloadSortedPage() set for this call.
+    updateContentPending = {
+      file: file,
+      argsForUrl: argsForUrl,
+      codeToExec: codeToExec,
+      bDontSaveUrl: bDontSaveUrl,
+      clearTempView: doClearTempView,
+      page: updateContentCurrentPage()
+    };
+  }
+  else
   {
     bUpdateContentRunning=true;
     iseRefr(false);
@@ -353,11 +427,19 @@ updateContent = function(file, argsForUrl, codeToExec, bDontSaveUrl)
     if (file.substring(0, UI_PATH.length) == UI_PATH)
     {
       //method: 'get' ist für die ELV-CGIs notwendig.
-      opts = {evalScripts: true, method: 'get', onComplete:function(){iseRefr(true);bUpdateContentRunning=false;}};
+      opts = {
+        evalScripts: true,
+        method: 'get',
+        onComplete: updateContentLoaded
+      };
     }
     else
     {
-      opts = {postBody: ReGa.encode(pb),evalScripts: true, onComplete:function(){iseRefr(true);bUpdateContentRunning=false;}};
+      opts = {
+        postBody: ReGa.encode(pb),
+        evalScripts: true,
+        onComplete: updateContentLoaded
+      };
     }
     /* ELV --> */
     
@@ -637,23 +719,50 @@ loadNewLinkPage = function()
 };
 
 setPath = function (path) {
-  var s = "<span onclick='WebUI.enter(StartPage);'>" +translateKey('startPage')+"</span>";
-  if ((path.length > 0) && $("PagePath")) {
-    if ($("PagePath"))$("PagePath").innerHTML = s + " &gt; " + path;
+  var title=document.title;
+  if (title != 'OpenCCU WebUI') {
+    title = '[' + title.escapeHTML() + '] ';
+  } else {
+    title = '';
   }
-  else {
-    if ($("PagePath"))$("PagePath").innerHTML = "<span id='PagePathSpan'>"+translateKey('startPage')+"</span>";
+
+  if ($("PagePath")) {
+    var s = '';
+    if (path.length > 0) {
+      s = "<span onclick='WebUI.enter(StartPage);'>" + title + translateKey('startPage') + "</span>&nbsp;&gt; " + path;
+    } else {
+      s = "<span id='PagePathSpan'>" + title + translateKey('startPage') + "</span>";
+    }
+
+    $("PagePath").innerHTML = s;
+    translatePage("#PagePath");
   }
-  translatePage("#PagePath");
-};
+};  
 
 
 
 logout = function() {
+  // disable logout button
+  jQuery("#btnLogOut > div").css('color', 'graytext');
+  jQuery("#btnLogOut > div").attr("onclick", "").unbind("click");
+
+  // create ProgressBar
+  ProgressBar = new ProgressBarMsgBox(translateKey('logoutInProgress'), 1);
+  ProgressBar.show();
+  ProgressBar.StartKnightRiderLight();
+
+  // stop all update monitors
   regaMonitor.stop();
   InterfaceMonitor.stop();
-  // The second url-param has to be appended by a '?' instead of a '&'
-  location.href = "/logout.htm?sid=" + SessionId+"?lang="+getLang();
+
+  // save the regadom first, since Session.logout ends the session
+  homematic('system.saveObjectModel', {}, function() {
+    homematic('Session.logout', {}, function() {
+      ProgressBar.hide();
+      ProgressBar.StopKnightRiderLight();
+      location.href = "/logout.htm?lang="+getLang();
+    });
+  });
 };
 
 
@@ -676,7 +785,7 @@ buildPropTable= function(id) {
   var opts = {
     evalScripts: true,
     onComplete: function(trans) {
-      window.setTimeout(centerMessageBox, 200);
+      centerMessageBox();
     }
   };
   var url = "/esp/system.htm?sid=" + SessionId + "&action=buildPropTable&id="+id;
@@ -1727,14 +1836,14 @@ convertDomTime = function(s) {
   return arTmp[0]+':'+arTmp[1];
 };
 
-ExecuteProgram = function(dpid)
+ExecuteProgram = function(dpid, thenOnly)
 {
   var url = "/esp/exec.htm?sid=" + SessionId;
   var pb = "";
   pb += "object o = dom.GetObject( "+dpid+" );";
   pb += "if( o )";
   pb += "{";
-  pb += "  o.ProgramExecute();";
+  pb += (thenOnly === true) ? "  o.ProgramExecute();" : "  o.State(1);";
   pb += "}";
   var opts = {postBody: ReGa.encode(pb)};
   if(dbg)alert(pb);
@@ -1891,51 +2000,15 @@ iseArraySwap = function(arr,entryA,entryB)
 iseSortMultiArray = function(arr,dsc,dir,sln, sessionVar,popup)
 {
   conInfo("Sort multi array.");
-  do
-  {
-    var n = arr.length - 1;
-    var bSwapped = false;
-    for(var i=0;i<n;i++)
-    {
-      if( typeof arr[i][dsc] == "undefined" )
-      {
-        arr[i][dsc] = "";
-      }
-      if( typeof arr[i+1][dsc] == "undefined" )
-      {
-        arr[i+1][dsc] = "";
-      }      
-      var item = arr[i][dsc].toLowerCase();
-      item = item.replace("ö", "o");
-      item = item.replace("ä", "a");
-      item = item.replace("ü", "u");
-      item = item.replace("ß", "ss");
-      var nextitem = arr[i+1][dsc].toLowerCase();
-      nextitem = nextitem.replace("ö", "o");
-      nextitem = nextitem.replace("ä", "a");
-      nextitem = nextitem.replace("ü", "u");
-      nextitem = nextitem.replace("ß", "ss");
-      if( dir === 0 )
-      {
-        if( item > nextitem )
-        {
-          iseArraySwap(arr,i,i+1);
-          bSwapped = true;
-        }
-      }
-      else
-      {
-        if( item < nextitem )
-        {
-          iseArraySwap(arr,i,i+1);
-          bSwapped = true;
-        }
-      }
-    }
-  } while( bSwapped );
-    
+  const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+  // a missing (undefined or null) value sorts as an empty string; the stable sort keeps rows with equal values in order in both directions
+  var order = (dir === 1) ? -1 : 1;
+  arr.sort( (x, y) => {
+    var a = (x[dsc] == null) ? "" : String(x[dsc]);
+    var b = (y[dsc] == null) ? "" : String(y[dsc]);
+    return order * collator.compare(a, b);
+  } );
   if (!popup) iseTransferSortedArray(arr,dsc,sln, sessionVar);
-  
 };
 
 iseTransferSortedArray = function(arr,dsc,sortListNumber, sessionVar)
@@ -2176,6 +2249,12 @@ recreateControl = function(chnId,sTimeStamp)
 
 LogoClick = function()
 {
+  var btnReGaSave = document.getElementById("btnReGaSave");
+  if (btnReGaSave) {
+    btnReGaSave.style.color=WebUI.getColor("grayText");
+    btnReGaSave.onclick="";
+  }
+
   //alert( iseUpdateIDArray.join("_") );
   //alert( iseUpdateTMArray.join("_") );
   //loadLinkList();
@@ -2229,11 +2308,11 @@ StartFlashing = function()
       {
         if( $("headerLogo").src.indexOf("_red") >= 0 )
         {
-          $("headerLogo").src = "/ise/img/homematic_logo_small.png";
+          $("headerLogo").src = "/ise/img/occu-logo_small.png";
         }
         else
         {
-          $("headerLogo").src = "/ise/img/homematic_logo_small_red.png";
+          $("headerLogo").src = "/ise/img/occu-logo_small_red.png";
         }
       }
     },
@@ -2248,12 +2327,14 @@ StopFlashing = function()
 
 SwitchOnFlashLight = function()
 {
-  if ($("headerLogo")) { $("headerLogo").src = "/ise/img/homematic_logo_small_red.png"; }
+  if ($("headerLogo")) { $("headerLogo").classList.add('hidden'); }
+  if ($("headerLogoRed")) { $("headerLogoRed").classList.remove('hidden'); }
 };
 
 SwitchOffFlashLight = function()
 {
-  if ($("headerLogo")) { $("headerLogo").src = "/ise/img/homematic_logo_small.png"; }
+  if ($("headerLogo")) { $("headerLogo").classList.remove('hidden'); }
+  if ($("headerLogoRed")) { $("headerLogoRed").classList.add('hidden'); }
 };
 
 getAjaxLoadElem = function() {
@@ -2565,79 +2646,121 @@ changeRoomOrSubsection = function(id)
 };
 
 
+var dutyCycleRequestId = 0;
+
 showDutyCycle = function() {
-  if (jQuery("#PagePathSpan").text() == translateKey("startPage")) {
+  if (jQuery("#PagePathSpan").text().endsWith(translateKey("startPage"))) {
     var ifaceBidCosRF = "BidCos-RF",
       ifaceHmIPRF = "HmIP-RF",
       arInterfaceDutyCycle = {},
+      arInterfaceCarrierSense = {},
       showPartingLine = false,
       dcUnit = "%",
       dcNotAvailable = -1,
-      dcAlarm = 89;  // Attention when dc >= 90%
+      csNotAvailable = -1,
+      dcWarn  = 69,  // Warning when dc >= 70%
+      dcAlarm = 89,  // Attention when dc >= 90%
+      csWarn  = 10,  // Warning when cs >= 11%
+      csAlarm = 19;  // Attention when cs >= 20%
 
-    homematic("Interface.listBidcosInterfaces", {"interface": ifaceBidCosRF}, function (BidCosIFaces) {
-      if (BidCosIFaces) {
-        var linkElem = jQuery("#iFaceShowAll");
-        if ((BidCosIFaces.length > 1) && (!linkElem.hasClass("UILink"))) {
-          linkElem
-            .addClass("UILink")
-            .on("click", function () {
-              showDutyCycle(); // actualize the dc value of the start page
-              showDCAllInterfaces();
-            });
-        }
+    var requestId = ++dutyCycleRequestId;
+    homematic("Interface.getDutyCycle", {}, function(dcArray) {
+      // ignore the response of a request that a newer one has superseded
+      if (requestId !== dutyCycleRequestId) { return; }
+      if(jQuery.isArray(dcArray)) {
+        jQuery.each(dcArray, function(index, iface) {
+          var dutyCycleValElm = jQuery("#dutyCycleVal"+index),
+            dutyCycleAddrElm = jQuery("#dutyCycleAddr"+index),
+            trDutyCycle = jQuery("[name='trDutyCycle"+index+"']"),
+            dutyCycleBar = jQuery("[name='dutyCycleBar"+index+"']"),
+            carrierSenseValElm = jQuery("#carrierSenseVal"+index),
+            carrierSenseBar = jQuery("[name='carrierSenseBar"+index+"']"),
+            carrierSenseCol = jQuery("[name='carrierSenseCol"+index+"']"),
+            trPartingLineElm = jQuery("#partingLine0, #partingLine1"),
+            csVal,
+            dcVal;
 
-        jQuery.each(BidCosIFaces, function (index, iFace) {
-          if (iFace.type == "CCU2") {
-            var dutyCycleProgressElem = jQuery("#dutyCycleProgress"),
-              dutyCycleProgressBarElm = jQuery("#dutyCycleProgressBar"),
-              dutyCycleValElm = jQuery("#dutyCycleVal"),
-              trDutyCycle = jQuery("[name='trDutyCycle']"),
-              trPartingLineElm = jQuery("#partingLine1"),
-              dcVal,
-              width, value;
+          if (typeof iface.dutyCycle !== "undefined") {
+            dcVal = Math.floor(iface.dutyCycle);
+            csVal = Math.floor(iface.carrierSense);
+            conInfo("dutyCycle - " + ifaceBidCosRF + ": " + dcVal + " " + dcUnit);
+            conInfo("carrierSense - " + ifaceBidCosRF + ": " + csVal + " " + dcUnit);
+            arInterfaceDutyCycle[ifaceBidCosRF] = ((dcVal >= 0) && (dcVal <= 100)) ? dcVal : dcNotAvailable;
+            arInterfaceCarrierSense[ifaceBidCosRF] = ((csVal >= 0) && (csVal <= 100)) ? csVal : csNotAvailable;
+          } else {
+            conInfo("No gateway status for the interface " + ifaceBidCosRF + " available!");
+            arInterfaceDutyCycle[ifaceBidCosRF] = dcNotAvailable;
+          }
 
-            if (typeof iFace.dutyCycle != "undefined") {
-              dcVal = parseInt(iFace.dutyCycle);
-              conInfo("dutyCycle - " + ifaceBidCosRF + ": " + dcVal + dcUnit);
-              arInterfaceDutyCycle[ifaceBidCosRF] = ((dcVal >= 0) && (dcVal <= 100)) ? dcVal : dcNotAvailable;
-            } else {
-              conInfo("No gateway status for the interface " + ifaceBidCosRF + " available!");
-              arInterfaceDutyCycle[ifaceBidCosRF] = dcNotAvailable;
-            }
-
-            if (arInterfaceDutyCycle[ifaceBidCosRF] != dcNotAvailable) {
-              dutyCycleValElm.text(arInterfaceDutyCycle[ifaceBidCosRF] + dcUnit);
-
-              width = parseInt(dutyCycleProgressElem.css("width"));
-              value = width - (width / 100 * arInterfaceDutyCycle[ifaceBidCosRF]);
-
-              window.setTimeout(function () {
-                //dutyCycleProgressBarElm.css("width", value + "px");
-                dutyCycleProgressBarElm.css("margin-left", (width - parseInt(value)) + "px");
-
-              }, 25);
-
-              if (arInterfaceDutyCycle[ifaceBidCosRF] > dcAlarm) {
-                trDutyCycle.addClass("attention");
+          if (arInterfaceDutyCycle[ifaceBidCosRF] != dcNotAvailable) {
+            dutyCycleValElm.text(arInterfaceDutyCycle[ifaceBidCosRF] + " " + dcUnit);
+            if (iface.type === "CCU2") {
+              dutyCycleAddrElm.text("CCU:");
+            } else if(iface.type === "HMIP-HAP") {
+              if(iface.name !== "") {
+                dutyCycleAddrElm.text("HAP ("+iface.name+"):");
               } else {
-                trDutyCycle.removeClass("attention");
+                dutyCycleAddrElm.text("HAP ("+iface.address+"):");
               }
-              trPartingLineElm.show();
-              showPartingLine = true;
-              trDutyCycle.css("visibility", "visible");
+            } else if(iface.name !== "") {
+              dutyCycleAddrElm.text("LGW ("+iface.name+"):");
             } else {
-              trDutyCycle.css("visibility", "hidden");
+              dutyCycleAddrElm.text("LGW ("+iface.address+"):");
             }
 
-            if (!showPartingLine) {
-              trPartingLineElm.hide();
+            dutyCycleBar.css("width", arInterfaceDutyCycle[ifaceBidCosRF]+"%").attr('aria-valuenow', arInterfaceDutyCycle[ifaceBidCosRF]);
+            dutyCycleBar.removeClass("bg-success");
+            dutyCycleBar.removeClass("bg-warning");
+            dutyCycleBar.removeClass("bg-danger");
+
+            if (arInterfaceDutyCycle[ifaceBidCosRF] > dcAlarm) {
+              dutyCycleBar.addClass("bg-danger");
+            } else if (arInterfaceDutyCycle[ifaceBidCosRF] > dcWarn) {
+              dutyCycleBar.addClass("bg-warning");
+            } else {
+              dutyCycleBar.addClass("bg-success");
             }
-            return false; // Leave each loop
+
+            if (arInterfaceCarrierSense[ifaceBidCosRF] != csNotAvailable) {
+              carrierSenseValElm.text(arInterfaceCarrierSense[ifaceBidCosRF] + " " + dcUnit);
+              carrierSenseBar.css("width", arInterfaceCarrierSense[ifaceBidCosRF]+"%").attr('aria-valuenow', arInterfaceCarrierSense[ifaceBidCosRF]);
+              carrierSenseBar.removeClass("bg-info");
+              carrierSenseBar.removeClass("bg-warning");
+              carrierSenseBar.removeClass("bg-danger");
+
+              if (arInterfaceCarrierSense[ifaceBidCosRF] > csAlarm) {
+                carrierSenseBar.addClass("bg-danger");
+              } else if (arInterfaceCarrierSense[ifaceBidCosRF] > csWarn) {
+                carrierSenseBar.addClass("bg-warning");
+              } else {
+                carrierSenseBar.addClass("bg-info");
+              }
+            } else {
+              carrierSenseValElm.text("n/a");
+              carrierSenseBar.css("width", "0%").removeAttr("aria-valuenow");
+            }
+            trPartingLineElm.show();
+            showPartingLine = true;
+            trDutyCycle.css("display", "table-row");
+          } else {
+            trDutyCycle.css("display", "none");
+          }
+
+          if (!showPartingLine) {
+            trPartingLineElm.hide();
           }
         });
+
+        // hide the rows of interfaces that are missing in this response
+        jQuery("[name^='trDutyCycle']").each(function() {
+          if (parseInt(jQuery(this).attr("name").substr(11), 10) >= dcArray.length) {
+            jQuery(this).css("display", "none");
+          }
+        });
+        if (!showPartingLine) {
+          jQuery("#partingLine0, #partingLine1").hide();
+        }
       }
-      showDutyCycleHmIP();
     });
   }
 };
@@ -2645,7 +2768,7 @@ showDutyCycle = function() {
 showDutyCycleHmIP = function() {
   // Currently only in use for HAPs. Here we collect the available HAP addresses.
   // The display of the HAP-DutyCycle is done in showDCAllInterfaces()
-  if (jQuery("#PagePathSpan").text() == translateKey("startPage")) {
+  if (jQuery("#PagePathSpan").text().endsWith(translateKey("startPage"))) {
     var linkElem = jQuery("#iFaceShowAll"),
       arRelevantAddresses = [];
 
@@ -2670,7 +2793,7 @@ showDutyCycleHmIP = function() {
 
 //Attention: To work properly Adapter.Local.Device.Enabled of the crRFD.conf must be set to true
 showCarrierSense = function() {
-  if (jQuery("#PagePathSpan").text() == translateKey("startPage")) {
+  if (jQuery("#PagePathSpan").text().endsWith(translateKey("startPage"))) {
     var ccuAddress = homematic("CCU.getSerial"),
       linkElem = jQuery("#lblCarrierSense"),
       arHAPAddresses = [];
@@ -3268,15 +3391,15 @@ getExtendedDescription = function(oChannelDescr)  {
     multiMode = oChannelDescr.multiMode;
   var tmpDev;
 
-  if (typeof channelAddress != "undefined") {
+  if (typeof channelType != "undefined") {
+    chType = channelType;
+  } else if (typeof channelAddress != "undefined") {
     var channel = DeviceList.getChannelByAddress(channelAddress);
     if (channel) {
       chType = channel.channelType;
       channelIsVisible = channel.isVisible;
     }
-  } else if (typeof channelType != "undefined") {
-    chType = channelType;
-  }
+  } 
 
   if (chType == "KEY_TRANSCEIVER") {
     if (deviceType.toLowerCase().indexOf("hmip-asir") != -1) {
@@ -3355,6 +3478,11 @@ getExtendedDescription = function(oChannelDescr)  {
         case "hmip-wgt-a":
         case "hmip-wgtc":
         case "hmip-wgtc-a":
+          if (channel === undefined) { var channel = DeviceList.getChannelByAddress(channelAddress); }
+          if (channel === undefined) {
+            result = translateKey("chType_SWITCH_VIRTUAL_RECEIVER");
+            break;
+          }
           var channelMode = homematic("Interface.getMetadata", {
             "objectId": channel.id,
             "dataId": "channelMode"
@@ -3475,12 +3603,14 @@ getExtendedDescription = function(oChannelDescr)  {
         typeExt = "_" + multiMode;
       } else {
         if (channelAddress != "undefined") {
-          var chn = DeviceList.getChannelByAddress(channelAddress),
-          chnMode = parseInt(chn.multiMode);
+          var chn = DeviceList.getChannelByAddress(channelAddress);
+          if (typeof chn != "undefined") {
+          var chnMode = parseInt(chn.multiMode);
           if (! isNaN(chnMode)) {
             typeExt = "_" + chnMode;
           } else {
             typeExt = "";
+          }
           }
         } else {
           typeExt = "_1";
@@ -3848,99 +3978,94 @@ getDualWhiteControllerDiagramURLs = function() {
   }
 };
 
-getTimeZoneDefinition = function(timeZone) {
-  var tz = [];
-  tz["ACST"] = [9.5, 9.5];
-  tz["ACST/ACDT"] = [9.5, 10.5];
-  tz["AEST"] = [10, 10];
-  tz["AEST/AEDT"] = [10, 11];
-  tz["AKST/AKDT"] = [-9, -8];
-  tz["AST/ADT"] = [-4, -3];
-  tz["AWST/AWDT"] = [8, 9];
-  tz["BRST/BRDT"] = [-3, -2];
-  tz["CET/CEST"] = [1, 2];
-  tz["CST"] = [-6, -6];
-  tz["CST/CDT"] = [-6, -5];
-  tz["EET/EEST"] = [2, 3];
-  tz["EST/EDT"] = [-5, -4];
-  tz["GMT/BST"] = [0, 1];
-  tz["GMT/IST"] = [0, 1];
-  tz["HAW"] = [-10, -10];
-  tz["HKT"] = [8, 8];
-  tz["MSK/MSD"] = [3, 4];
-  tz["RMST/RMDT"] = [3, 4];
-  tz["MST"] = [-7, -7];
-  tz["MST/MDT"] = [-7, -6];
-  tz["NST/NDT"] = [-3.5, -2.5];
-  tz["NZST/NZDT"] = [12, 13];
-  tz["PST/PDT"] = [-8, -7];
-  tz["SGT"] = [8, 8];
-  tz["ULAT/ULAST"] = [8, 9];
-  tz["WET/WEST"] = [0, 1];
-  tz["WIB"] = [7, 7];
-  return tz[timeZone];
-};
-
-getUTCOffset = function(tz) {
-  return getTimeZoneDefinition(tz);
-};
-
-setPositionAllDevices = function(lon, lat, timeZone) {
+setPositionAllDevices = function() {
   if (ConfigData.isPresent) {
 
-    var arUtcOffset = [];
-    arUtcOffset = getUTCOffset(timeZone);
+  homematic("system.getPositionData", {}, function(posData, error) {
+    // The position is saved already, only the devices could not be updated.
+    if (!posData || (posData.length < 4)) {
+      conInfo("system.getPositionData failed, the devices were not updated");
+      MessageBox.show(translateKey("Info"), translateKey("dialogSettingsTimePositionMessageSetPositionDevicesFailure") + String((error && error.message) || "").escapeHTML());
+      return;
+    }
+    var lon = posData[0].split(":")[1],
+      lat = posData[1].split(":")[1],
+      utcOffset = posData[2].split(":")[1],
+      utcOffsetDST = posData[3].split(":")[1];
 
-    var utcOffset = arUtcOffset[0] * 60,
-      utcOffsetDST = arUtcOffset[1] * 60;
-
+    // Collect the requests first, so the result can be reported once all of
+    // them have answered.
+    var requests = [];
     jQuery.each(DeviceList.devices, function (index, device) {
       var iFace = device.interfaceName;
       if ((iFace.toLowerCase() == "hmip-rf") && (device.typeName.toLowerCase() != "hmip-rcv-50") && (device.typeName.toLowerCase() != "hmip-dld") && (device.typeName.toLowerCase() != "hmip-dld-a") && (device.typeName.toLowerCase() != "hmip-dld-s") ) {
         // Check if the device has the channel *_WEEK_PROFILE
         jQuery.each(device.channels, function (index, channel) {
           if (channel.channelType.indexOf("_WEEK_PROFILE") != -1) {
-            conInfo("Set the position of this device: " + channel.address.split(":")[0] + ":0 - lon: " + lon + " - lat: " + lat + " - utcOffset: " + utcOffset + " - utcOffsetDST: " + utcOffsetDST );
+            conInfo("Set utcOffsets+position of this device: " + channel.address.split(":")[0] + ":0 - lon: " + lon + " - lat: " + lat + " - utcOffset: " + utcOffset + " - utcOffsetDST: " + utcOffsetDST );
 
-            homematic("Interface.putParamset", {
-              'interface': iFace,
-              'address': channel.address.split(":")[0] + ":0",
-              'paramsetKey': 'MASTER',
-              'set':
-                [
-                  {name: 'LONGITUDE', type: 'double', value: lon},
-                  {name: 'LATITUDE', type: 'double', value: lat},
-                  {name: 'UTC_OFFSET', type: 'double', value: utcOffset},
-                  {name: 'UTC_DST_OFFSET', type: 'double', value: utcOffsetDST}
-                ]
-            }, function (result) {
-              conInfo(result);
+            requests.push({
+              device: device,
+              params: {
+                'interface': iFace,
+                'address': channel.address.split(":")[0] + ":0",
+                'paramsetKey': 'MASTER',
+                'set':
+                  [
+                    {name: 'LONGITUDE', type: 'double', value: lon},
+                    {name: 'LATITUDE', type: 'double', value: lat},
+                    {name: 'UTC_OFFSET', type: 'double', value: utcOffset},
+                    {name: 'UTC_DST_OFFSET', type: 'double', value: utcOffsetDST}
+                  ]
+              }
             });
           } else if (channel.channelType == "HEATING_CLIMATECONTROL_TRANSCEIVER") {
-            conInfo("Set the position of this device: " + channel.address.split(":")[0] + ":0 - lon: " + lon + " - lat: " + lat + " - utcOffset: " + utcOffset + " - utcOffsetDST: " + utcOffsetDST );
+            conInfo("Set utcOffsets of this device: " + channel.address.split(":")[0] + ":0 - utcOffset: " + utcOffset + " - utcOffsetDST: " + utcOffsetDST );
 
-            homematic("Interface.putParamset", {
-              'interface': iFace,
-              'address': channel.address.split(":")[0] + ":0",
-              'paramsetKey': 'MASTER',
-              'set':
-                [
-                  {name: 'UTC_OFFSET', type: 'double', value: utcOffset},
-                  {name: 'UTC_DST_OFFSET', type: 'double', value: utcOffsetDST}
-                ]
-            }, function (result) {
-              conInfo(result);
+            requests.push({
+              device: device,
+              params: {
+                'interface': iFace,
+                'address': channel.address.split(":")[0] + ":0",
+                'paramsetKey': 'MASTER',
+                'set':
+                  [
+                    {name: 'UTC_OFFSET', type: 'double', value: utcOffset},
+                    {name: 'UTC_DST_OFFSET', type: 'double', value: utcOffsetDST}
+                  ]
+              }
             });
           }
         });
       }
     });
+
+    // Report the devices whose update failed, once every request answered.
+    var pending = requests.length;
+    var failedDevices = [];
+    jQuery.each(requests, function (index, request) {
+      homematic("Interface.putParamset", request.params, function (result, error) {
+        conInfo(result);
+        if (result !== true) {
+          var label = String(request.device.name) + " (" + request.params.address.split(":")[0] + ")";
+          if (jQuery.inArray(label, failedDevices) == -1) {
+            failedDevices.push(label);
+          }
+          conInfo("Interface.putParamset failed for " + request.params.address + ": " + ((error && error.message) || ""));
+        }
+        pending--;
+        if ((pending == 0) && (failedDevices.length > 0)) {
+          MessageBox.show(translateKey("Info"), translateKey("dialogSettingsTimePositionMessageSetPositionSomeDevicesFailure") + "<br/><br/>" + jQuery.map(failedDevices, function (label) { return label.escapeHTML(); }).join("<br/>"));
+        }
+      });
+    });
+  });
   } else {
     window.setTimeout(function() {
       conInfo("ConfigData.isPresent: " + ConfigData.isPresent);
       counterSetPosition++;
       if (counterSetPosition < 30) {
-        setPositionAllDevices(lon, lat, timeZone);
+        setPositionAllDevices();
       }
     }, 2500);
   }
@@ -3948,11 +4073,15 @@ setPositionAllDevices = function(lon, lat, timeZone) {
 
 setNewDevicePos2SystemPos = function(oDevice) {
   homematic("system.getPositionData", {}, function(posData) {
+    // Without position data the device keeps its own position.
+    if (!posData || (posData.length < 4)) {
+      conInfo("system.getPositionData failed, the position of " + oDevice.sn + " was not set");
+      return;
+    }
     var lon = posData[0].split(":")[1],
       lat = posData[1].split(":")[1],
-      arUtcOffset = getUTCOffset(posData[2].split(":")[1]),
-      utcOffset = arUtcOffset[0] * 60,
-      utcOffsetDST = arUtcOffset[1] * 60;
+      utcOffset = posData[2].split(":")[1],
+      utcOffsetDST = posData[3].split(":")[1];
 
     var iFace = oDevice.iface;
     if (iFace.toLowerCase() == "hmip-rf" && (oDevice.type.toLowerCase() != "hmip-rcv-50") && (oDevice.type.toLowerCase() != "hmip-dld") && (oDevice.type.toLowerCase() != "hmip-dld-a") && (oDevice.type.toLowerCase() != "hmip-dld-s")) {
@@ -4049,22 +4178,6 @@ setColorWebUI = function() {
   dlg.resetHeight();
 };
 
-function activateDeviceBetaFw() {
-  var showBetaDevFw = jQuery("#inputShowBetaFw").is(":checked"),
-    fieldTestActive = "/etc/config/fieldTestActive";
-
-  if (showBetaDevFw) {
-    if (! homematic('CCU.existsFile', {'file': fieldTestActive})) {
-      homematic("CCU.createFile", {'file': fieldTestActive});
-    }
-  } else {
-    if (homematic('CCU.existsFile', {'file': fieldTestActive})) {
-      homematic("CCU.removeFieldTestActive");
-    }
-  }
-};
-
-
 /**
  *
  * Tmporarily introduced with the HmIP-RGBW - this may not be the best place here
@@ -4125,3 +4238,286 @@ function hsvToRgb(h, s, v) {
 
   return { r: r * 255, g: g * 255, b: b * 255 };
 };
+/**
+ * Returns the value of a system variable as HTML that keeps only text
+ * formatting and structure. The values of string system variables may contain
+ * HTML (line breaks become <br/>), but can be set by other users, so they
+ * must not run scripts or load content.
+ *
+ * Kept: text formatting (br, b, strong, i, em, u, s, strike, del, ins, mark,
+ * small, big, sub, sup, tt, code, span, font), blocks (div, p, pre,
+ * blockquote, center, hr, h1 to h6), lists (ul, ol, li, dl, dt, dd) and
+ * tables (table, caption, colgroup, col, thead, tbody, tfoot, tr, td, th).
+ * Of their attributes only the presentational ones are kept, each with a
+ * checked value (e.g. align, width, colspan, bgcolor; color, size and face of
+ * font), and the declarations of style that set a harmless property (colors,
+ * fonts, text, spacing, borders, sizes) to a value without url(), escapes or
+ * other functions than rgb() and hsl(). Other elements are removed but keep
+ * their text; the content of script, style and similar elements is removed as
+ * well. All other attributes (event handlers, class, id, href, src, ...) are
+ * removed.
+ */
+sanitizeSysVarHtml = function(html) {
+  var allowed = {BR: 1, B: 1, STRONG: 1, I: 1, EM: 1, U: 1, S: 1, STRIKE: 1, DEL: 1, INS: 1, MARK: 1,
+      SMALL: 1, BIG: 1, SUB: 1, SUP: 1, TT: 1, CODE: 1, SPAN: 1, FONT: 1,
+      DIV: 1, P: 1, PRE: 1, BLOCKQUOTE: 1, CENTER: 1, HR: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1,
+      UL: 1, OL: 1, LI: 1, DL: 1, DT: 1, DD: 1,
+      TABLE: 1, CAPTION: 1, COLGROUP: 1, COL: 1, THEAD: 1, TBODY: 1, TFOOT: 1, TR: 1, TD: 1, TH: 1},
+    isVoid = {BR: 1, HR: 1, COL: 1},
+    dropWithContent = {SCRIPT: 1, STYLE: 1, IFRAME: 1, FRAME: 1, FRAMESET: 1, OBJECT: 1, EMBED: 1, APPLET: 1,
+      NOSCRIPT: 1, NOEMBED: 1, NOFRAMES: 1, TEMPLATE: 1, TEXTAREA: 1, TITLE: 1, SELECT: 1, XMP: 1,
+      SVG: 1, MATH: 1, HEAD: 1},
+    reColor = /^(#[0-9a-f]{3,8}|[a-z]+|rgba?\([0-9\s.,%]+\)|hsla?\([0-9\s.,%deg]+\))$/i,
+    reCount = /^\d{1,3}$/,
+    reSize = /^\d{1,4}%?$/,
+    // the attributes kept besides style, and the values they may have
+    attrValues = {
+      align: /^(left|right|center|justify)$/i,
+      valign: /^(top|middle|bottom|baseline)$/i,
+      bgcolor: reColor,
+      color: reColor,
+      face: /^[a-z0-9 ,\-]{1,100}$/i,
+      size: /^[+\-]?\d$/,
+      width: reSize,
+      height: reSize,
+      border: reCount,
+      cellpadding: reCount,
+      cellspacing: reCount,
+      colspan: reCount,
+      rowspan: reCount,
+      span: reCount
+    },
+    tableSection = ["align", "valign", "bgcolor", "height"],
+    tableCell = ["align", "valign", "bgcolor", "width", "height", "colspan", "rowspan"],
+    column = ["span", "width", "align", "valign"],
+    block = ["align"],
+    elementAttrs = {
+      FONT: ["color", "size", "face"],
+      TABLE: ["align", "bgcolor", "border", "cellpadding", "cellspacing", "width", "height"],
+      THEAD: tableSection, TBODY: tableSection, TFOOT: tableSection, TR: tableSection,
+      TD: tableCell, TH: tableCell,
+      COLGROUP: column, COL: column,
+      DIV: block, P: block, CAPTION: block, H1: block, H2: block, H3: block, H4: block, H5: block, H6: block,
+      HR: ["align", "width"]
+    },
+    // the style properties kept: none of them positions the element outside
+    // of its place or loads content
+    reStyleProperty = new RegExp("^(color|background-color|opacity|"
+      + "font|font-(family|size|style|weight|variant)|"
+      + "text-(align|decoration|transform|indent)|vertical-align|line-height|"
+      + "letter-spacing|word-spacing|white-space|word-break|word-wrap|overflow-wrap|"
+      + "(padding|margin)(-(top|right|bottom|left))?|"
+      + "border(-(top|right|bottom|left))?(-(width|style|color))?|border-(collapse|spacing|radius)|"
+      + "(min-|max-)?(width|height)|display|table-layout|empty-cells|caption-side|list-style-type)$"),
+    // no quotes, backslashes, slashes, colons or exclamation marks: neither
+    // url(...), escapes, comments nor !important can be written
+    reStyleValue = /^[a-z0-9\s.,%#()+\-]{1,200}$/i,
+    reStyleFunction = /([a-z\-]*)\s*\(/gi,
+    doc = null;
+
+  var escapeText = function(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  };
+
+  var trim = function(text) {
+    return (text == null) ? "" : String(text).replace(/^\s+|\s+$/g, "");
+  };
+
+  var validStyleValue = function(value) {
+    var match;
+    // no negative values, which could move the content over other elements
+    if (!reStyleValue.test(value) || /(^|[\s,(])-/.test(value)) {
+      return false;
+    }
+    reStyleFunction.lastIndex = 0;
+    while ((match = reStyleFunction.exec(value)) !== null) {
+      if (!/^(rgba?|hsla?)$/i.test(match[1])) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  var sanitizeStyle = function(style) {
+    var parts = trim(style).split(";"), out = [], i, pos, property, value;
+    for (i = 0; i < parts.length; i++) {
+      pos = parts[i].indexOf(":");
+      if (pos < 1) {
+        continue;
+      }
+      property = trim(parts[i].substring(0, pos)).toLowerCase();
+      value = trim(parts[i].substring(pos + 1)).replace(/\s+/g, " ");
+      if (reStyleProperty.test(property) && validStyleValue(value)) {
+        out.push(property + ":" + value);
+      }
+    }
+    return out.join(";");
+  };
+
+  var attributes = function(node, name) {
+    var names = elementAttrs[name] || [], out = "", i, value;
+    for (i = 0; i < names.length; i++) {
+      value = node.getAttribute(names[i]);
+      if (value == null) {
+        continue;
+      }
+      value = trim(value);
+      if (attrValues[names[i]].test(value)) {
+        out += " " + names[i] + '="' + escapeText(value) + '"';
+      }
+    }
+    value = node.getAttribute("style");
+    if (value != null) {
+      value = sanitizeStyle(value);
+      if (value !== "") {
+        out += ' style="' + escapeText(value) + '"';
+      }
+    }
+    return out;
+  };
+
+  var walk = function(node) {
+    var out = "", child, name, tag;
+    for (child = node.firstChild; child; child = child.nextSibling) {
+      if (child.nodeType === 3) {
+        out += escapeText(child.nodeValue);
+        continue;
+      }
+      if (child.nodeType !== 1) {
+        continue;
+      }
+      name = String(child.nodeName).toUpperCase();
+      if (dropWithContent[name]) {
+        continue;
+      }
+      if (!allowed[name]) {
+        out += walk(child);
+        continue;
+      }
+      tag = name.toLowerCase();
+      if (isVoid[name]) {
+        out += "<" + tag + attributes(child, name) + "/>";
+        continue;
+      }
+      out += "<" + tag + attributes(child, name) + ">" + walk(child) + "</" + tag + ">";
+    }
+    return out;
+  };
+
+  html = (html == null) ? "" : String(html);
+  // Parse into a document without a window: it runs no scripts and loads
+  // nothing.
+  try {
+    if (typeof DOMParser != "undefined") {
+      doc = new DOMParser().parseFromString(html, "text/html");
+    }
+  } catch (e) {
+    doc = null;
+  }
+  if ((!doc || !doc.body) && document.implementation && document.implementation.createHTMLDocument) {
+    doc = document.implementation.createHTMLDocument("");
+    doc.body.innerHTML = html;
+  }
+  if (!doc || !doc.body) {
+    return escapeText(html);
+  }
+  return walk(doc.body);
+};
+
+/**
+ * Translates the ${key} placeholders of a system variable value.
+ */
+translateSysVarValue = function(value) {
+  return translateString(String(value));
+};
+
+/**
+ * Shows the values of system variables, which the pages write HTML-escaped
+ * into data-sysvar-value (startpage.htm, esp/system.fn::writeSysVarVal()),
+ * in the parent elements of these placeholders.
+ */
+showSysVarValues = function(root) {
+  var show = function() {
+    var cell = this.parentNode;
+    if (cell) {
+      cell.innerHTML = sanitizeSysVarHtml(translateSysVarValue(this.getAttribute("data-sysvar-value")));
+    }
+  };
+  root = jQuery(root || document);
+  root.filter("[data-sysvar-value]").each(show);
+  root.find("[data-sysvar-value]").each(show);
+};
+
+// The pages with system variable values are loaded in many ways (Ajax.Updater,
+// popups, channel loaders), so the values are shown as soon as their
+// placeholders are inserted into the document.
+if (typeof MutationObserver != "undefined") {
+  new MutationObserver(function(mutations) {
+    var i, j, nodes;
+    for (i = 0; i < mutations.length; i++) {
+      nodes = mutations[i].addedNodes;
+      for (j = 0; j < nodes.length; j++) {
+        if (nodes[j].nodeType === 1) {
+          showSysVarValues(nodes[j]);
+        }
+      }
+    }
+  }).observe(document.documentElement, {childList: true, subtree: true});
+}
+/**
+ * Keyboard operation of elements that act as buttons (role="button" and
+ * tabindex="0"). Elements without visible text name the translation key of
+ * their label in data-aria-key; images also get it as their alt text.
+ */
+applyAriaKeys = function(root) {
+  jQuery(root || document).find("[data-aria-key]").addBack("[data-aria-key]").each(function() {
+    var label = translateKey(this.getAttribute("data-aria-key"));
+    this.setAttribute("aria-label", label);
+    if (String(this.tagName).toUpperCase() === "IMG") {
+      this.setAttribute("alt", label);
+    }
+  });
+};
+
+jQuery(document).on("focusin", "[data-aria-key]", function() {
+  applyAriaKeys(this);
+});
+
+// Enter and Space press the button. Elements that react to mousedown instead
+// of click name that event in data-keyevent="mousedown". A held key presses
+// the button only once.
+jQuery(document).on("keydown", "[role='button']", function(event) {
+  var key = event.key,
+    keyCode = event.keyCode || event.which,
+    eventType, mouseEvent;
+
+  if (event.target !== this || /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(this.tagName)) {
+    return;
+  }
+  if (!(key === "Enter" || key === " " || key === "Spacebar" || keyCode === 13 || keyCode === 32)) {
+    return;
+  }
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+  event.preventDefault();
+  if (event.repeat || (event.originalEvent && event.originalEvent.repeat)) {
+    return;
+  }
+
+  if (this.getAttribute("data-keyevent") === "mousedown") {
+    for (eventType = "mousedown"; eventType; eventType = (eventType === "mousedown") ? "mouseup" : null) {
+      if (typeof MouseEvent === "function") {
+        mouseEvent = new MouseEvent(eventType, {bubbles: true, cancelable: true, view: window, button: 0});
+      } else {
+        mouseEvent = document.createEvent("MouseEvents");
+        mouseEvent.initMouseEvent(eventType, true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+      }
+      this.dispatchEvent(mouseEvent);
+    }
+  } else if (typeof this.click === "function") {
+    this.click();
+  } else {
+    jQuery(this).trigger("click");
+  }
+});

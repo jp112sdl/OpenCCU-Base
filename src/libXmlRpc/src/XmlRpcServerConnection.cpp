@@ -291,6 +291,11 @@ XmlRpcServerConnection::executeMethod(const std::string& methodName,
 
   if ( ! method) return false;
 
+  // Methods index params[i] beyond the arguments a client sent, which grows the array. Without room
+  // the array moves its elements, and a reference or c_str() a method took to an earlier argument
+  // then points to freed memory. Reserve room for more arguments than any method reads.
+  params.reserveArray(8);
+
   method->execute(params, result);
 
   // Ensure a valid result value
@@ -330,8 +335,18 @@ XmlRpcServerConnection::executeMulticall(const std::string& methodName,
     XmlRpcValue resultValue;
     resultValue.setSize(1);
     try {
-      if ( ! executeMethod(methodName, methodParams, resultValue[0]) &&
-           ! executeMulticall(methodName, params, resultValue[0]))
+      // A system.multicall must not contain nested system.multicall calls
+      // (forbidden by the specification). The former code also passed the
+      // outer 'params' instead of the sub-call's 'methodParams' to the
+      // recursive call, so a nested system.multicall recursed on itself
+      // unboundedly and crashed the server with a stack overflow (SIGSEGV),
+      // reachable unauthenticated via the RPC port.
+      if (methodName == SYSTEM_MULTICALL)
+      {
+        result[i][FAULTCODE] = -1;
+        result[i][FAULTSTRING] = SYSTEM_MULTICALL + ": recursive calls are not allowed";
+      }
+      else if ( ! executeMethod(methodName, methodParams, resultValue[0]))
       {
         result[i][FAULTCODE] = -1;
         result[i][FAULTSTRING] = methodName + ": unknown method name";

@@ -4,7 +4,7 @@
  * for portability. It works by using recursion and a node tree for breaking
  * down the elements of an XML document.  </P>
  *
- * @version     V1.14
+ * @version     V1.15
  *
  * @author      Frank Vanden Berghen
  * based on original implementation by Martyn C Brown
@@ -69,6 +69,7 @@
 #include <stddef.h>
 #include <limits.h>
 #include <new>
+#include "xmlparser_version.h"
 #include "xmlParser.h"
 
 //#ifdef WIN32
@@ -2217,3 +2218,8 @@ XMLNode      XMLNode::getChildNode (int i) { if (!d) return emptyXMLNode;      i
 char         XMLNode::isDeclaration(     ) { if (!d) return 0;                 return d->isDeclaration; }
 char         XMLNode::isEmpty      (     ) { return (d==NULL); }
 int          XMLNode::nElement     (     ) { if (!d) return 0; return d->nChild+d->nText+d->nClear+d->nAttribute; }
+
+extern "C" const char* xmlparser_version()
+{
+    return XMLPARSER_VERSION_NUMBER;
+}

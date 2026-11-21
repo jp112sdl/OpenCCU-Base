@@ -55,12 +55,17 @@ showMaintenanceCP = function()
   CreateCPPopup("/config/cp_maintenance.cgi");
 };
 
+showAdvancedSettingsCP = function()
+{
+  CreateCPPopup("/config/cp_advancedsettings.cgi");
+};
+
 showNewFirmwareDownload = function() {
   CreateCPPopup("/config/cp_maintenance.cgi", "downloadOnly=1");
 };
 
-CreateCPPopup = function(src, pb) {
-  dlgPopup = new cpMessageBox(src, pb);
+CreateCPPopup = function(src, pb, errorLbl) {
+  dlgPopup = new cpMessageBox(src, pb, errorLbl);
 
   PopupClose = function() {
     dlgPopup.close();
@@ -100,7 +105,7 @@ cpMessageBox = Class.create();
 
 cpMessageBox.prototype =
 {
-  initialize: function(src, pb)
+  initialize: function(src, pb, errorLbl)
   {
     if ( $('messagebox') ){
       $("messagebox").hide();
@@ -112,7 +117,7 @@ cpMessageBox.prototype =
     this.setWidth(800);
 
     this.createMessagebox();
-    this.LoadFromFile(src, pb);
+    this.LoadFromFile(src, pb, errorLbl);
   },
 
   getViewPortDim : function()
@@ -236,9 +241,22 @@ cpMessageBox.prototype =
     this.removeMessagebox();
   },
   
-  LoadFromFile: function(src, pb) {
-    var url = src+'?sid='+SessionId;
+  LoadFromFile: function(src, pb, errorLbl) {
+    var url = src;
+    if(url.indexOf('?sid=') === -1)
+    {                                                                                 
+      url = url+'?sid='+SessionId;                                                  
+    }                                                                 
     var t = this;
+    var showLoadError = function(statusText) {
+      $('centerbox').hide();
+      $('trlayer').hide();
+      if(typeof errorLbl != 'undefined') {
+        MessageBox.show(translateKey('lblError'), translateKey(errorLbl), '', 480,120);
+      } else {
+        Ajax_failure(url, statusText);
+      }
+    };
     var opt = 
     {
       method: 'post',
@@ -246,8 +264,16 @@ cpMessageBox.prototype =
       postBody: pb,
       sendXML: false,
       onComplete: function(trans) {
+        // Prototype treats status 0 (e.g. a network error) as success and does not call onFailure
+        if(trans.status == 0) {
+          showLoadError(trans.statusText);
+          return;
+        }
         centerMessageBox();
         $('messagebox').style.display="";
+      },
+      onFailure: function(response) {
+        showLoadError(response.statusText);
       }
     };
     new Ajax.Updater('messagebox',url,opt);
@@ -255,6 +281,9 @@ cpMessageBox.prototype =
   
   ShowPopup: function() {
     this.show();
+    setTimeout(function() {
+      eQ3.HomeMatic.Event.fire({type:'ContentLoaded'});
+    }, 100);
   }
 };
 
@@ -363,7 +392,11 @@ cpMessageBox2.prototype =
   
   LoadFromFile: function(src, pb)
   {
-    var url = src+'?sid='+SessionId;
+    var url = src;
+    if(url.indexOf('?sid=') === -1)
+    {                                                                                 
+      url = url+'?sid='+SessionId;                                                  
+    }                                                                 
     var t = this;
     var opt = 
     {
@@ -382,5 +415,8 @@ cpMessageBox2.prototype =
   ShowPopup: function()
   {
     this.show();
+    setTimeout(function() {
+      eQ3.HomeMatic.Event.fire({type:'ContentLoaded'});
+    }, 100);
   }
 };

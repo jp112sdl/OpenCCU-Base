@@ -1,0 +1,26 @@
+# libUnifiedLanComm ChangeLog
+
+Changes of `libUnifiedLanComm`, the library for the connection to the LAN
+gateways (HM-LGW, HMW-LGW) of rfd and hs485d. Newest version first.
+
+Changes not yet released are collected under `Unreleased` and get the
+version and date with the next version bump (`version.sh`).
+
+## 1.1.0 (2026-11-18)
+
+* add `UnifiedLanCommController::setConnectTimeout()`, which limits the TCP
+  connect to a gateway. Without it (the default, unchanged) the connect to a
+  gateway that does not answer at all waits until the kernel gives up, about
+  127 s. rfd uses it.
+  ([#383](https://github.com/OpenCCU/OpenCCU-Base/issues/383), @hobbyquaker)
+
+## 1.0.0 (2026-11-02)
+
+* first version with a version string (`version.sh`), returned by
+  `unifiedlancomm_version()`.
+  ([#294](https://github.com/OpenCCU/OpenCCU-Base/pull/294), @jens-maus)
+
+## Older versions
+
+Changes of earlier versions are only recorded in the git history of this
+repository.

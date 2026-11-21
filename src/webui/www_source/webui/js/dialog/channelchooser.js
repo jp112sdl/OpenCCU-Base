@@ -100,7 +100,7 @@ ChannelChooser = Singleton.create({
 
     conInfo("filterHmIPChannels4ProgramConditions");
     // If the channel is visible and no KEY_TRANSCEIVER or *_WEEK_PROFILE then show the channel
-    if (channel.isVisible
+    if (channel
       && (channel.channelType != "KEY_TRANSCEIVER")
       && (channel.channelType != "UNIVERSAL_LIGHT_RECEIVER")
       && (channel.channelType != "DISPLAY_INPUT_TRANSMITTER")
@@ -115,7 +115,7 @@ ChannelChooser = Singleton.create({
     // If the channel is a KEY_TRANSCEIVER and the device type no HmIP-PS / PSM (-IT/-CH/-PE/-UK) / PDT /PCBS then show the channel
     // A key press of the internal button doesn't work for the above-named devices
     if ((channel.channelType == "KEY_TRANSCEIVER")
-      && channel.isVisible
+      && channel
       && (channelTypeName != "hmip-ps")
       && (channelTypeName.indexOf("hmip-psm") == -1)
       && (channelTypeName != "hmip-pdt")
@@ -302,14 +302,7 @@ ChannelChooser = Singleton.create({
     var channelTypeName = channel.typeName.toLowerCase(),
     oMaintChannel, deviceMode, endOfScreens = false;
 
-    if (channel.isVisible) {
-
-      // Channel 1 of the hmip-esi-ind has only 1 parameter (SELF_CALIBRATION) for the use in a program condition but it's not in use
-      // Therefore we hide the channel
-      if (channelTypeName == "hmip-esi-ind") {
-        return arChannels;
-      }
-
+    if (channel) {
       if (channelTypeName == "hmip-wkp") {
         if ((channel.channelType == "MAINTENANCE") || ((channel.channelType == "ACCESS_TRANSCEIVER") && (channel.index % 2 != 0))) {
           arChannels.push(channel);
@@ -471,7 +464,7 @@ ChannelChooser = Singleton.create({
 
     channels.each(function(channel) {
       var self = this;
-      if (this.match(channel)) {
+      if (this.match(channel) && (channel.address != "BidCoS-RF:0")) {
 
         if ((channel.device.interfaceName == this.HmIPIdentifier) || (channel.device.interfaceName == this.HmIPWIdentifier)) {
           if ((this.src == this.PRG_CONDITION) || (this.src == this.FAV_CHANNELS)) {
@@ -639,9 +632,7 @@ ChannelChooser = Singleton.create({
       //channels         : this.filter(this.channels)
     });
 
-    if (! userIsNoExpert) {
-      jQuery(".j_expertChannel").show();
-    }
+    jQuery(".j_expertChannel").show();
 
     translateJSTemplate("#ChannelChooserDialog");
     translatePage(".j_rooms, .j_functions");
@@ -684,5 +675,7 @@ ChannelChooser = Singleton.create({
         conInfo(e);
       }
     });
+
+    DeviceList.updateDeviceStatus();
   }
 });

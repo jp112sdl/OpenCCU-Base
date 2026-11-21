@@ -98,6 +98,8 @@ bool HS485Manager::ReplaceDevice(const std::string& oldDeviceSerial, const std::
 
 		//delete the xml file of replaced dev
 		delete newDev;
+		//make the replacement known to IsDeviceReplaced() right away and drop entries that still point to newDev
+		initReplacementHistory();
 		std::string filename(deviceFilesPath);
 		filename+="/"+oldDeviceSerial+".dev";
 		unlink(filename.c_str());
@@ -373,6 +375,14 @@ bool HS485Manager::AddNewDevice(unsigned int address, HS485Frame* add_frame/*=NU
 			}
 			dev_instance->SetDeviceDescription(dev);
 			dev_instance->SetEnforcedParameters();
+			//a replaced device that is added again is no longer replaced (as in rfd)
+			if(replacementHistory.find(dev_instance->GetSerial())!=replacementHistory.end()){
+				//check every device, the serial may be listed in more than one history
+				for(t_dev_instances::iterator it=dev_instances.begin();it!=dev_instances.end();++it){
+					if(it->second->DeleteFromReplacementHistory(dev_instance->GetSerial()))it->second->RequestSave();
+				}
+				initReplacementHistory();
+			}
 			dev_instances[dev_instance->GetSerial()]=dev_instance;
 			address_map[address]=dev_instance;
 			dev_instance->InitNewDevice();
@@ -607,6 +617,8 @@ bool HS485Manager::DeleteDevice(const std::string& address, int flags)
 	dev_instances.erase(dev->GetSerial());
 	address_map.erase(dev->GetAddress());
 	delete dev;
+	//drop replacement history entries that still point to the deleted device
+	initReplacementHistory();
 	ValidateServiceMessages();
 	return true;
 }
@@ -706,6 +718,17 @@ bool HS485Manager::ClearConfigCache(const std::string& address)
 	if(!dev)return false;
 	dev->ClearConfigCache();
 	return true;
+}
+
+bool HS485Manager::RestoreConfigToDevice(const std::string& address)
+{
+	HS485LogicalInstance* inst=GetInstance(address);
+	if(!inst){
+		throw XmlRpcException("Unknown instance", -2);
+	}
+	HS485Device* dev=inst->GetDevice();
+	if(!dev)return false;
+	return dev->RestoreConfigToDevice();
 }
 
 bool HS485Manager::ActivateLinkParamset(const std::string address, const std::string& peer, bool longpress)

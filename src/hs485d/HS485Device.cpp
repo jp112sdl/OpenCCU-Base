@@ -22,6 +22,7 @@
 #include <fstream>
 #include <type_registry.h>
 #include <inttypes.h>
+#include <algorithm>
 
 using namespace XmlRpc;
 
@@ -68,9 +69,27 @@ void HS485Device::CheckConfigPendingEvent()
 void HS485Device::ClearChannels()
 {
 	for(channels_t::iterator it=channels.begin();it!=channels.end();it++){
+		//a HS485MaintenanceChannel registers itself for the internal values of this device
+		LogicalInstance::EventReceiver* rec=dynamic_cast<LogicalInstance::EventReceiver*>(it->second);
+		if(rec)UnregisterInternalValueEvents(rec);
 		delete it->second;
 	}
 	channels.clear();
+}
+
+bool HS485Device::RestoreConfigToDevice()
+{
+	// Send the configuration stored on the CCU (EEPROM cache, paramsets and
+	// links) to the device again, as done for the restore of a replaced device.
+	// Write pending changes first: GetConfig() reads the written cache data and
+	// RestoreConfig() clears the cache, so they would be lost otherwise. If the
+	// device cannot be reached, nothing is restored and nothing is lost.
+	if(!GetEEPromCache()->Flush())return false;
+	XmlRpcValue config;
+	if(!GetConfig(&config))return false;
+	bool retval=RestoreConfig(config, false);
+	RequestSave();
+	return retval;
 }
 
 void HS485Device::ClearConfigCache()
@@ -409,9 +428,11 @@ void HS485Device::SetDeviceDescription(HS485DeviceDescription* description, bool
 			int start=ch_desc->GetIndex();
 			int count=ch_desc->GetCount();
 			for(int j=0;j<count;j++){
-				HS485Channel* ch=channels[j+start]=CreateChannel();
-				ch->SetParent(this, j+start, ch_desc);
-				if(ch_desc->HasSubdescriptions())ch->GetBehaviour();
+				if(!AddChannel(j+start, ch_desc->GetType())){
+					HS485Channel* ch=channels[j+start]=CreateChannel();
+					ch->SetParent(this, j+start, ch_desc);
+				}
+				if(ch_desc->HasSubdescriptions())channels[j+start]->GetBehaviour();
 			}
 			i++;
 			ch_desc=description->GetChannel(i);
@@ -899,9 +920,11 @@ bool HS485Device::Rebuild(const bool enforceConfigRestore /*=false*/, const bool
 			int count=ch_desc->GetCount();
 			for(int j=0;j<count;j++){
 				if(!channels[j+start]){
-					HS485Channel* ch=channels[j+start]=CreateChannel();
-					ch->SetParent(this, j+start, ch_desc);
-					if(ch_desc->HasSubdescriptions())ch->GetBehaviour();
+					if(!AddChannel(j+start, ch_desc->GetType())){
+						HS485Channel* ch=channels[j+start]=CreateChannel();
+						ch->SetParent(this, j+start, ch_desc);
+					}
+					if(ch_desc->HasSubdescriptions())channels[j+start]->GetBehaviour();
 				}else{
 					channels[j+start]->SetDescription(ch_desc);
 				}
@@ -1000,6 +1023,14 @@ const std::vector<std::string>& HS485Device::getReplacementHistory() const
 	return replacementHistory;
 }
 
+bool HS485Device::DeleteFromReplacementHistory(const std::string& serial)
+{
+	std::vector<std::string>::iterator it=std::find(replacementHistory.begin(), replacementHistory.end(), serial);
+	if(it==replacementHistory.end())return false;
+	replacementHistory.erase(it);
+	return true;
+}
+
 bool HS485Device::replaceDeviceWith(HS485Device* newDevice)
 {
 	if(newDevice == NULL) {
@@ -1065,12 +1096,12 @@ bool HS485Device::replaceDeviceWith(HS485Device* newDevice)
 		}
 		++oldDevChannelIter;
 	}
+	//Update replacement history before this device takes the serial of newDevice
+	replacementHistory.push_back(this->serial);//store old/this device serial in history.
 	//Set serial and address of newDevice to this (old device) to take identity of newDevice.
 	SetSerial(newDevice->serial);
 	SetAddress(newDevice->address);
 	//SetSysinfo(newDevice->sysinfo);
-	//Update replacement history
-	replacementHistory.push_back(this->serial);//store old/this device serial in history.
 
 	return true;
 }

@@ -96,6 +96,7 @@ public:
 	bool UpdateFirmware();
 	bool GetConfig(XmlRpc::XmlRpcValue* c);
 	bool RestoreConfig(XmlRpc::XmlRpcValue& c, const bool disableEEPCacheFlushing = true);
+	bool RestoreConfigToDevice();
 	void RequestSave(int timeout=0);
 
 	virtual bool SetDefaultConfig() { return true; }
@@ -106,6 +107,8 @@ public:
 	bool IsCompatible(const HS485Device* newDevice);
 
 	const std::vector<std::string>& getReplacementHistory() const;
+	/** Removes serial from the replacement history. Returns false if it is not in it. */
+	bool DeleteFromReplacementHistory(const std::string& serial);
 
 	bool replaceDeviceWith(HS485Device* newDevice);
 	bool Rebuild(const bool enforceConfigRestore = false, const bool reportNewDevice = true);

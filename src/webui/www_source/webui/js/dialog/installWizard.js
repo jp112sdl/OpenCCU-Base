@@ -42,7 +42,7 @@ DialogUserPassword = Class.create({
 
         if (homematic('CCU.existsFile', {'file': "/etc/config/firewallConfigured"})) {
           WebUI.enter(StartPage);
-          homematic("CCU.setUserAckInstallWizard", {'userName' : userName});
+          homematic("CCU.setUserAckInstallWizard");
 
           if (getUPL() == UPL_USER) {
             new MessageBox.show(translateKey("dglUserNewFwSettingsTitle"),translateKey("dglUserNewFwSettingsContent"));
@@ -53,7 +53,7 @@ DialogUserPassword = Class.create({
             new DialogChooseSecuritySettings();
           } else {
             WebUI.enter(StartPage);
-            homematic("CCU.setUserAckInstallWizard", {'userName' : userName});
+            homematic("CCU.setUserAckInstallWizard");
           }
         }
       }
@@ -144,7 +144,7 @@ DialogUserPassword = Class.create({
           html += translateKey("lblUserPassword");
         html += "</td>";
         html += "<td>";
-          html += "<input id='pwd_1' onchange='onPw1Change()' type='password' value="+passWord+">";
+          html += "<input id='pwd_1' onchange='onPw1Change()' type='password' autocomplete='new-password' value="+passWord+">";
         html += "</td>";
       html += "</tr>";
       html += "<tr>";
@@ -152,7 +152,7 @@ DialogUserPassword = Class.create({
           html += translateKey("lblUserPasswordRepeat");
         html += "</td>";
         html += "<td>";
-         html += "<input id='pwd_2' type='password' value="+passWord+">";
+         html += "<input id='pwd_2' type='password' autocomplete='new-password' value="+passWord+">";
         html += "</td>";
 
       html += "</tr>";
@@ -280,7 +280,7 @@ DialogExpressSettings = Class.create({
           delete firstStartInstallWizard;
           homematic("CCU.setSecurityHint");
           homematic("CCU.setFirewallConfigured");
-          homematic("CCU.setUserAckInstallWizard", {'userName' : userName});
+          homematic("CCU.setUserAckInstallWizard");
         }
 
         if (self.dlgWoPasswd) {

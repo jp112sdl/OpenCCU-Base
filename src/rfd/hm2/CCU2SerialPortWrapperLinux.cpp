@@ -15,6 +15,9 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <errno.h>
+#include <string.h>
+#include <Logger.h>
 // Konstruktion/Destruktion
 
 //#define DUMP 1
@@ -23,7 +26,6 @@
 using namespace HM2;
 
 #ifdef DUMP
- #include <Logger.h>
  #include <HM2Utils.h>
 #endif
 
@@ -32,6 +34,7 @@ CCU2SerialPortWrapperLinux::CCU2SerialPortWrapperLinux()
 : CCU2SerialPortWrapper()
 {
 	fd=-1;
+	readError=false;
 }
 CCU2SerialPortWrapperLinux::~CCU2SerialPortWrapperLinux()
 {
@@ -44,7 +47,6 @@ int CCU2SerialPortWrapperLinux::SendData(const std::string& data)
 #endif
 	unsigned int count=0;
 	int retval;
-	tcflush(fd, TCIFLUSH);
 	int i=0;
 	while(count<data.size()){
 		retval=write(fd, data.data()+count, data.size()-count);
@@ -80,17 +82,48 @@ int CCU2SerialPortWrapperLinux::WaitForData(int msTime)
 }
 
 
+int CCU2SerialPortWrapperLinux::handleReadError(const char* what)
+{
+	if(errno == EINTR) {
+		return 0;
+	}
+	return handleReadError(what, strerror(errno));
+}
+
+int CCU2SerialPortWrapperLinux::handleReadError(const char* what, const char* reason)
+{
+	if(!readError) {
+		LOG(Logger::LOG_ERROR, "CCU2SerialPortWrapperLinux::ReadData(): %s() failed: %s", what, reason);
+		readError = true;
+	}
+	// The error usually persists (e.g. a hung up /dev/mmd_bidcos after a
+	// multimacd restart), and select() keeps reporting the device readable.
+	// So wait a bit to not spin in the receive thread.
+	sleep(1);
+	return -1;
+}
+
 int CCU2SerialPortWrapperLinux::ReadData(std::string* data)
 {
 	int n = 0;
 	do {
 		n = WaitForData(1000);
 	} while( n == 0);
+	if(n < 0) {
+		return handleReadError("select");
+	}
 	
 	//data->clear();
 	
-	char* buf = new char[256];//TODO Optimization: Use class member buffer
-	const unsigned int count = read(fd, buf, 256);
+	char buf[256];
+	const ssize_t count = read(fd, buf, sizeof(buf));
+	if(count < 0) {
+		return handleReadError("read");
+	}
+	if(count == 0) { //end of file: the device is gone (e.g. a hung up pty or an unplugged USB adapter)
+		return handleReadError("read", "end of file");
+	}
+	readError = false;
 	if(count>0){
 #ifdef DUMP
 		std::string chunk(buf,count);
@@ -99,11 +132,10 @@ int CCU2SerialPortWrapperLinux::ReadData(std::string* data)
 		data->append( buf, count );
 	}
 #ifdef DUMP
-	LOG(Logger::LOG_ALL, "CCU2SerialPortWrapperLinux::ReadData(): Received %u bytes", count);
+	LOG(Logger::LOG_ALL, "CCU2SerialPortWrapperLinux::ReadData(): Received %zd bytes", count);
 	LOG(Logger::LOG_ALL, "CCU2SerialPortWrapperLinux::ReadData(): Read: %s", toDebugHexStr((*data)).c_str());
 #endif
-	delete[] buf;
-	return count;
+	return (int)count;
 }
 bool CCU2SerialPortWrapperLinux::Open(std::string dev)
 {
@@ -115,6 +147,7 @@ bool CCU2SerialPortWrapperLinux::Open(std::string dev)
 		//printf("failure %s open\n", dev);
 		return -1;
 	}
+	readError = false;
 	
 	tcgetattr(fd, &newtio);
 	cfmakeraw(&newtio);
@@ -135,7 +168,9 @@ void CCU2SerialPortWrapperLinux::Close()
 
 bool CCU2SerialPortWrapperLinux::IsConnected() 
 {
-	return (fd != -1);
+	// a persistent read error (e.g. a hung up /dev/mmd_bidcos) is reported as
+	// not connected, e.g. in listBidcosInterfaces()
+	return (fd != -1) && !readError;
 }
 
 
